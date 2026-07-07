@@ -6,16 +6,27 @@
 
 - 名称：Sapient Spend
 - 一句话定位：Local-first YNAB-clone budgeting web app — offline PWA, zero dependencies, no backend; all data in localStorage (Basiq bank sync planned but not wired).
-- 当前阶段：Feature-complete v1. Current work is pixel-fidelity polish against the real YNAB web app and mobile-layout quality.
+- 当前阶段：v1 + two beyond-YNAB features shipped (50/30/20 rule view at `#/fifty`, Forecast
+  what-if spreadsheet at `#/forecast`). Local git repo with clean history; private GitHub push pending
+  (`gh` installed, awaiting auth). Ongoing: fidelity polish, mobile quality, feature hardening.
 
 ## 术语与风格约定
 
 - Money is **integer cents** everywhere; months are `"YYYY-MM"`, dates `"YYYY-MM-DD"`.
 - Vanilla ES modules, no build step, no npm dependencies. Charts are hand-rolled inline SVG.
-- `SPEC.md` is the store-API contract; `js/store.js` is the money engine. `YNAB-PIXEL.md` holds design values measured from the real YNAB app — all colors/fonts/spacing come from tokens in `css/app.css`, no hardcoded hex in view CSS.
+- `SPEC.md` is the store-API contract; `js/store.js` is the money engine. `FEATURES.md` is the
+  contract for the 50/30/20 + Forecast features (`js/lib/fifty.js`, `js/lib/forecast.js` — pure,
+  Node-testable; views consume them). `YNAB-PIXEL.md` holds design values measured from the real
+  YNAB app — all colors/fonts/spacing come from tokens in `css/app.css`, no hardcoded hex in view CSS.
+- On-budget semantics are `account.onBudget` ONLY (no type-based fallback) — everything must match
+  `store.isOnBudget`; a divergence here already caused a phantom-money bug once.
+- View stylesheets MUST scope shared-sounding class names (`.chip`, `.segmented`, `.seg-btn`…) under
+  a view class — unscoped selectors leak across views (this bug has now happened twice).
 - The `h\`\`` tagged template escapes interpolated strings; arrays and whole `<...>` fragments pass through raw.
 - View modules (`js/views/*.js`) export `render(root, params)` and fully re-render on store changes; UI state lives in module-local variables.
-- `node test/engine-check.mjs` must stay green — it asserts the budget math (RTA, carryover, credit-card handling, Age of Money, targets, matching, loans).
+- `node test/engine-check.mjs` AND `node test/features-check.mjs` must both stay green — budget math
+  (RTA, carryover, credit-card handling, Age of Money, targets, matching, loans) and the feature math
+  (baselines, what-if overrides, loan payoff ripple, 50/30/20 identities).
 - Dev server: `python3 serve.py` (port 8437, sends no-store). UI copy is original — never copy YNAB's prose.
 
 ## 当前重点
@@ -38,7 +49,8 @@
 - Cross-file CSS audits: token usage vs `YNAB-PIXEL.md`, class-name collisions between view stylesheets (one already bit us: an unscoped `.chip` in reports.css leaked into the budget view), dead selectors.
 - Spec-vs-implementation drift checks: `SPEC.md` store API vs actual `js/store.js` exports and return shapes.
 - Consistency sweeps: popover/menu style family (radius/shadow/padding), 12px-uppercase table headers, `fmt()` usage for all money rendering, h`` escaping mistakes (raw HTML in plain-string interpolations).
-- Running `node test/engine-check.mjs` and `impeccable detect` and reporting regressions with file:line pointers.
+- Running `node test/engine-check.mjs`, `node test/features-check.mjs`, and `impeccable detect` and reporting regressions with file:line pointers.
+- Drift checks for `FEATURES.md` vs `js/lib/*` return shapes vs what `js/views/fifty.js` / `js/views/forecast.js` consume.
 
 ## 边界（§12 硬约束）
 
