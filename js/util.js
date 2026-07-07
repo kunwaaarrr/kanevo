@@ -75,4 +75,6 @@ export const ICONS = {
   eye: I('<path d="M2.8 12S6.5 5.8 12 5.8 21.2 12 21.2 12 17.5 18.2 12 18.2 2.8 12 2.8 12z"/><circle cx="12" cy="12" r="2.6"/>'),
   clock: I('<circle cx="12" cy="12" r="8.3"/><path d="M12 7.2V12l3.4 2"/>'),
   more: I('<g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></g>'),
+  fifty: I('<circle cx="12" cy="12" r="8.3"/><path d="M12 3.7V12l5.9 5.9M12 12H3.7"/>'),
+  forecast: I('<path d="M3.5 20.5h17M4.5 16.5l4.5-4.5 3 3 5.5-5.5"/><path d="M14 9.5h3.5V13"/>'),
 };

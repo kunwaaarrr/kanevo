@@ -105,3 +105,5 @@
   .data-actions { flex-direction: column; align-items: stretch; }
   .data-actions .btn { text-align: center; justify-content: center; }
 }
+
+.settings-quick-links { display: flex; gap: 10px; flex-wrap: wrap; }

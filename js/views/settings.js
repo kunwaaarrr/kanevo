@@ -17,6 +17,15 @@ export function render(root, params) {
     <div class="settings-body">
 
       <section class="settings-card">
+        <h3>More views</h3>
+        <div class="settings-quick-links">
+          <a class="btn subtle" href="#/fifty">50/30/20 Rule</a>
+          <a class="btn subtle" href="#/forecast">Forecast &amp; What-Ifs</a>
+          <a class="btn subtle" href="#/loans">Loan Planner</a>
+        </div>
+      </section>
+
+      <section class="settings-card">
         <h3>Budget</h3>
         <div class="form-row">
           <label for="set-budget-name">Budget name</label>

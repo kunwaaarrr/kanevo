@@ -1,12 +1,14 @@
 /* ================= header ================= */
 .budget-head { flex-direction: column; align-items: stretch; gap: 12px; }
-/* real app: month block left, RTA card centered, spacer balances the right side */
-.budget-head-top { display: flex; align-items: center; gap: 12px; }
-.month-group { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+/* real app: month block left, RTA card centered, spacer balances the right side.
+   wrap + fit-content keep it intact when the resizable sidebar squeezes the view */
+.budget-head-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 8px; }
+.month-group { display: flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: fit-content; }
 .month-stack { display: flex; flex-direction: column; align-items: center; }
-.head-spacer { flex: 1; }
+.head-spacer { flex: 1 1 0; min-width: 0; }
 .month-nav-btn {
-  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--blue); color: var(--blue); font-size: 16px; font-weight: 700;
 }
 .month-nav-btn:hover { background: var(--blue-light); }
@@ -92,7 +94,8 @@
 .chip-fv-wrap { position: relative; margin-left: auto; }
 .fv-menu {
   position: absolute; top: calc(100% + 6px); right: 0; background: var(--bg);
-  border-radius: 8px; box-shadow: var(--shadow); min-width: 200px; z-index: 20; overflow: hidden;
+  border: 1px solid var(--line); /* white menu over white toolbar needs an edge */
+  border-radius: 8px; box-shadow: var(--shadow); min-width: 200px; z-index: 30; overflow: hidden;
 }
 .fv-menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; }
 .fv-menu button:hover { background: var(--bg-alt); }
@@ -104,7 +107,8 @@
 .addgroup-wrap, .recent-wrap { position: relative; }
 .addgroup-menu {
   position: absolute; top: calc(100% + 6px); left: 0; background: var(--bg);
-  border-radius: 8px; box-shadow: var(--shadow); min-width: 190px; z-index: 20; overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px; box-shadow: var(--shadow); min-width: 190px; z-index: 30; overflow: hidden;
 }
 .addgroup-menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; }
 .addgroup-menu button:hover { background: var(--bg-alt); }

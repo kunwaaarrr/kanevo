@@ -1,0 +1,134 @@
+/* 50/30/20 view — tokens only, mirrors budget.css conventions */
+:root {
+  --fifty-need: var(--blue-light);
+  --fifty-need-accent: var(--blue);
+  --fifty-want: var(--orange);
+  --fifty-want-accent: var(--warning-text); /* dark dandelion token, AA on the orange tint */
+  --fifty-savings: var(--pill-pos-bg);
+  --fifty-savings-accent: var(--green);
+}
+
+.fifty-head { gap: 14px; flex-wrap: wrap; }
+.fifty-head .month-group { display: flex; align-items: center; gap: 6px; }
+.fifty-head .month-label { font-size: 16px; font-weight: 700; padding: 2px 4px; }
+.fifty-head .month-nav-btn {
+  width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--blue); color: var(--blue); font-size: 16px; font-weight: 700;
+}
+.fifty-head .month-nav-btn:hover { background: var(--blue-light); }
+.fifty-head .head-spacer { flex: 1 1 0; min-width: 0; }
+
+/* scoped — an unscoped .segmented here would clobber the budget view's cadence toggle */
+.fifty-head .segmented, .split-control .segmented {
+  display: flex; background: var(--track); border-radius: 999px; padding: 3px;
+}
+.fifty-head .seg-btn, .split-control .seg-btn {
+  flex: initial; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-2); white-space: nowrap;
+}
+.fifty-head .seg-btn.active, .split-control .seg-btn.active {
+  background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+
+.fifty-body { padding: 16px 20px 32px; display: flex; flex-direction: column; gap: 22px; max-width: 900px; margin: 0 auto; }
+
+/* ---- split control ---- */
+.split-control { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.custom-split-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.custom-split-input { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
+.custom-split-input input {
+  width: 56px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); text-align: right;
+}
+.custom-split-input input:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+.split-error { color: var(--red); font-size: 12px; font-weight: 600; }
+
+/* ---- sections ---- */
+.fifty-section { display: flex; flex-direction: column; gap: 12px; }
+.section-title { font-size: 16px; font-weight: 800; }
+.section-hint { font-size: 13px; margin-top: -6px; }
+
+/* ---- section A: calculator ---- */
+.calc-income-row { display: flex; flex-direction: column; gap: 4px; max-width: 260px; }
+.calc-income-row label { font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.calc-income-input {
+  padding: 8px 10px; border: 1.5px solid var(--blue); border-radius: 6px; background: var(--bg);
+  font-size: 16px;
+}
+.calc-income-input:focus { outline: none; }
+
+.target-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.target-stat { background: var(--bg-alt); border-radius: 8px; padding: 14px 16px; }
+.target-stat-label { font-size: 13px; color: var(--text-2); font-weight: 600; margin-bottom: 6px; }
+.target-stat-amt { font-size: 22px; font-weight: 800; }
+
+/* ---- section B: comparison cards ---- */
+.class-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.class-card { border-radius: 10px; padding: 16px; background: var(--bg-alt); }
+.card-need { background: var(--fifty-need); }
+.card-want { background: color-mix(in srgb, var(--fifty-want) 22%, var(--bg)); }
+.card-savings { background: color-mix(in srgb, var(--fifty-savings) 45%, var(--bg)); }
+
+.class-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.class-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot-need { background: var(--fifty-need-accent); }
+.dot-want { background: var(--fifty-want-accent); }
+.dot-savings { background: var(--fifty-savings-accent); }
+.class-card-title { font-size: 14px; font-weight: 700; }
+
+.class-card-amounts { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 10px; }
+.class-card-amounts strong { font-size: 15px; display: block; margin-top: 2px; }
+
+.class-progress-track { height: 8px; background: rgba(0,0,0,.08); border-radius: 999px; overflow: hidden; display: flex; }
+.class-progress-fill { height: 100%; border-radius: 999px 0 0 999px; }
+.fill-need { background: var(--fifty-need-accent); }
+.fill-want { background: var(--fifty-want-accent); }
+.fill-savings { background: var(--fifty-savings-accent); }
+.class-progress-over { height: 100%; background: var(--pill-neg-bg); }
+
+.class-delta { font-size: 13px; font-weight: 600; margin-top: 8px; }
+
+/* ---- donut ---- */
+.donut-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.donut-wrap { width: 180px; flex-shrink: 0; }
+.fifty-donut-svg { width: 100%; height: auto; display: block; }
+.donut-total { font-size: 15px; font-weight: 800; fill: var(--text); }
+.donut-total-label { font-size: 11px; fill: var(--text-faint); }
+.unalloc-note { flex: 1 1 220px; font-size: 13px; }
+
+/* ---- section C: classification manager ---- */
+.class-group { margin-bottom: 6px; }
+.class-group-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); margin-bottom: 8px; }
+.class-group-empty { font-size: 13px; padding: 4px 0 8px; }
+.class-rows { display: flex; flex-direction: column; }
+.class-row {
+  display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px solid var(--line-subtle);
+}
+.class-row-name { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.class-row-group { font-size: 12px; }
+.class-row-amt { font-size: 14px; font-weight: 600; flex-shrink: 0; width: 90px; text-align: right; }
+.class-row-select {
+  flex-shrink: 0; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 13px;
+}
+.class-row-select:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+
+/* ---- empty state ---- */
+.fifty-empty { padding: 40px 16px; text-align: center; display: flex; flex-direction: column; gap: 6px; }
+
+/* ================= mobile ================= */
+@media (max-width: 767px) {
+  .fifty-head { padding: 10px 12px; justify-content: center; }
+  .fifty-head .head-spacer { display: none; flex-basis: 100%; }
+  .fifty-body { padding: 12px 12px 28px; }
+  .target-stats { grid-template-columns: 1fr; }
+  .class-cards { grid-template-columns: 1fr; }
+  .donut-row { flex-direction: column; align-items: stretch; }
+  .donut-wrap { width: 160px; margin: 0 auto; }
+  .class-row { flex-wrap: wrap; }
+  .class-row-name { flex: 1 1 100%; order: 1; }
+  .class-row-amt { order: 2; width: auto; }
+  .class-row-select { order: 3; margin-left: auto; }
+}
+@media (max-width: 480px) {
+  .class-row-select { width: 100%; flex: 1 1 100%; }
+}

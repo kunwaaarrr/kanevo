@@ -7,6 +7,8 @@ import * as registerView from './views/register.js';
 import * as reportsView from './views/reports.js';
 import * as loansView from './views/loans.js';
 import * as settingsView from './views/settings.js';
+import * as fiftyView from './views/fifty.js';
+import * as forecastView from './views/forecast.js';
 
 // ---------- modal ----------
 const modalRoot = document.getElementById('modal-root');
@@ -49,6 +51,8 @@ function renderView() {
     reports:  () => reportsView.render(viewEl, { report: r.params[0] || 'spending' }),
     loans:    () => loansView.render(viewEl, { accountId: r.params[0] || null }),
     settings: () => settingsView.render(viewEl, {}),
+    fifty:    () => fiftyView.render(viewEl, { month: r.params[0] || thisMonth() }),
+    forecast: () => forecastView.render(viewEl, {}),
   };
   (table[r.name] || table.budget)();
   renderSidebar(r);
@@ -64,6 +68,8 @@ function renderSidebar(route) {
     { hash: `#/budget/${month}`, ico: ICONS.plan, label: 'Plan', active: route.name === 'budget' },
     { hash: '#/reports/spending', ico: ICONS.reflect, label: 'Reflect', active: route.name === 'reports' },
     { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' },
+    { hash: '#/fifty', ico: ICONS.fifty, label: '50/30/20', active: route.name === 'fifty' },
+    { hash: '#/forecast', ico: ICONS.forecast, label: 'Forecast', active: route.name === 'forecast' },
     { hash: '#/loans', ico: ICONS.loans, label: 'Loan Planner', active: route.name === 'loans' },
     { hash: '#/settings', ico: ICONS.settings, label: 'Settings', active: route.name === 'settings' },
   ];
