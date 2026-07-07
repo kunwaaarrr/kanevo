@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1c1f58">
+<title>Sapient Spend</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/budget.css">
+<link rel="stylesheet" href="css/register.css">
+<link rel="stylesheet" href="css/reports.css">
+<link rel="stylesheet" href="css/loans.css">
+</head>
+<body>
+<div id="layout">
+  <aside id="sidebar">
+    <div id="sidebar-head">
+      <div id="budget-name">Sapient Spend</div>
+      <div id="budget-sub">My Budget</div>
+    </div>
+    <nav id="sidebar-nav"></nav>
+    <div id="sidebar-accounts"></div>
+    <button id="add-account-btn" class="sidebar-add"><span>＋</span><span>Add Account</span></button>
+    <button id="bank-connections-btn" class="sidebar-add"><span class="btn-ico" data-ico="accounts"></span><span>Bank Connections</span></button>
+    <button id="sidebar-collapse" title="Collapse sidebar">◀</button>
+  </aside>
+  <div id="sidebar-resizer"></div>
+  <main id="view" tabindex="-1"></main>
+</div>
+<button id="sidebar-expand" title="Expand sidebar">▶</button>
+<nav id="tabbar">
+  <button data-tab="budget"><span class="tab-ico" data-ico="plan"></span>Budget</button>
+  <button data-tab="accounts"><span class="tab-ico" data-ico="accounts"></span>Accounts</button>
+  <button data-tab="add" id="tab-add"><span class="tab-add-circle">＋</span></button>
+  <button data-tab="reflect"><span class="tab-ico" data-ico="reflect"></span>Reflect</button>
+  <button data-tab="more"><span class="tab-ico" data-ico="more"></span>More</button>
+</nav>
+<div id="modal-root" hidden></div>
+<div id="toast-root"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
