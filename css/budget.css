@@ -140,10 +140,6 @@
 .budget-table td.num { text-align: right; }
 .chk-cell { width: 24px; padding: 0 4px 0 0 !important; }
 .chev-cell { width: 24px; padding: 0 0 0 12px !important; }
-.row-chk, .snooze-row input[type="checkbox"], .template-item input[type="checkbox"], .fv-cat-item input[type="checkbox"] {
-  width: 13px; height: 13px; accent-color: var(--blue);
-}
-
 .group-row { background: var(--bg-alt); height: 40px; }
 .group-row td { border-bottom: none; }
 .group-row:hover .add-cat-btn { opacity: 1; }

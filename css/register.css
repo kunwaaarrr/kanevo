@@ -114,10 +114,9 @@
 /* flag icon: outline flag (none) or filled colored flag (set) — stroke/fill via currentColor */
 .flag-cell { cursor: pointer; }
 .flag-ico { display: inline-block; vertical-align: middle; }
-.flag-ico .flag-pole { stroke: currentColor; fill: none; }
-.flag-ico .flag-flame { stroke: none; fill: currentColor; }
+.flag-ico path { fill: currentColor; }
 .flag-ico-none { color: var(--text-faint); }
-.flag-ico-none path { fill: none; }
+.flag-ico-none path { fill: none; stroke: currentColor; stroke-width: 1.3; }
 .flag-ico-red { color: var(--red); }
 .flag-ico-orange { color: var(--orange); }
 .flag-ico-yellow { color: var(--flag-yellow); }

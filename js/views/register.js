@@ -501,14 +501,14 @@ function renderTable(txs, accountId) {
 // Flag glyph: unset = subtle gray outline flag; set = filled colored flag. Color comes from the
 // .flag-ico-<color> CSS class (same palette as the old flag-dot classes), not inlined here.
 function flagIcon(flag) {
+  const path = 'M1.5 4.5h8l3.5 4.25-3.5 4.25h-8Z';
   if (!flag) {
     return `<svg class="flag-ico flag-ico-none" viewBox="0 0 14 17.5" width="14" height="17.5">
-      <path d="M4 2v13.5M4 2.5h6.5l-1.4 2.6 1.4 2.6H4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${path}" stroke-width="1.3" stroke-linejoin="round"/>
     </svg>`;
   }
   return `<svg class="flag-ico flag-ico-${flag}" viewBox="0 0 14 17.5" width="14" height="17.5">
-    <path class="flag-pole" d="M4 2v13.5" stroke-width="1.3" stroke-linecap="round"/>
-    <path class="flag-flame" d="M4 2.5h6.5l-1.4 2.6 1.4 2.6H4Z"/>
+    <path d="${path}"/>
   </svg>`;
 }
 

@@ -95,7 +95,6 @@
 .dd-popover { max-height: 320px; overflow-y: auto; width: 280px; }
 .dd-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 14px; border-radius: 8px; }
 .dd-row:hover { background: var(--bg-alt); }
-.dd-row input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--blue); }
 .dd-actions { display: flex; gap: 14px; padding: 4px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
 .dd-actions button { font-size: 12px; font-weight: 700; color: var(--link); }
 .dd-actions button:hover { color: var(--blue-dark); text-decoration: underline; }
