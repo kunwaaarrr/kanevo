@@ -47,18 +47,20 @@ function burndownSvg(baseline, withExtra) {
     gridlines.push(`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" class="ln-grid"/>`);
     gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmt(v)}</text>`);
   }
-  const yearMonths = [];
-  for (let m = 0; m <= maxMonth; m += 12) yearMonths.push(m);
-  if (yearMonths.at(-1) !== maxMonth) yearMonths.push(maxMonth);
-  const xlabels = yearMonths.map(m =>
-    `<text x="${x(m).toFixed(1)}" y="${H - 6}" class="ln-xlabel" text-anchor="middle">Yr ${Math.round(m / 12)}</text>`).join('');
+  // stride years so labels keep ~50 viewBox-units apart (a 30yr mortgage would otherwise cram 30+ overlapping labels)
+  const unitsPerYear = (12 / maxMonth) * plotW;
+  const yearStride = Math.max(1, Math.ceil(50 / unitsPerYear));
+  const xlabels = [];
+  for (let yr = 0; yr * 12 <= maxMonth; yr += yearStride)
+    xlabels.push(`<text x="${x(yr * 12).toFixed(1)}" y="${H - 6}" class="ln-xlabel" text-anchor="middle">Yr ${yr}</text>`);
+  const xlabelsStr = xlabels.join('');
 
   return `<svg viewBox="0 0 ${W} ${H}" class="burndown-svg" preserveAspectRatio="xMidYMid meet">
     ${gridlines.join('')}
     <path d="${areaPath(withExtra.points)}" class="area-extra"/>
     <path d="${path(baseline.points)}" class="line-baseline"/>
     <path d="${path(withExtra.points)}" class="line-extra"/>
-    ${xlabels}
+    ${xlabelsStr}
   </svg>`;
 }
 
@@ -95,34 +97,13 @@ function monthsToYM(n) {
   return `${y} yr ${m} mo`;
 }
 
-function renderSimulator(root, account) {
-  if (curAccountId !== account.id) { curAccountId = account.id; extraCents = 0; }
+function simResults(account, balance, rate, payment) {
   const base = store.loanStats(account.id, 0);
   const withExtra = store.loanStats(account.id, extraCents);
-  const balance = Math.abs(store.accountBalances(account.id).working);
-  const rate = account.loanInfo.interestRate;
-  const payment = account.loanInfo.minimumPayment;
-
   const degenerate = withExtra.months === Infinity;
-
-  root.innerHTML = h`<div class="view-head">
-      <div>
-        <div class="view-title">${account.name}</div>
-        <div class="muted">${rate}% APR · min payment ${fmt(payment)}/mo · balance <span class="neg-text">${fmt(balance)}</span></div>
-      </div>
-    </div>
-    <div class="loans-body">
-      <div class="extra-payment-card">
-        <label for="extra-slider">Extra monthly payment</label>
-        <div class="extra-controls">
-          <input type="range" id="extra-slider" min="0" max="${MAX_EXTRA}" step="${STEP}" value="${extraCents / 100}">
-          <div class="extra-amount-wrap">$<input type="number" id="extra-input" min="0" max="${MAX_EXTRA}" step="${STEP}" value="${extraCents / 100}"></div>
-        </div>
-      </div>
-      ${degenerate
-        ? `<div class="empty-state"><p>Payment too low to ever pay off.</p><p class="muted">Increase the extra monthly payment to see a payoff date.</p></div>`
-        : [`
-      <div class="loan-stats-grid">
+  return degenerate
+    ? `<div class="empty-state"><p>Payment too low to ever pay off.</p><p class="muted">Increase the extra monthly payment to see a payoff date.</p></div>`
+    : `<div class="loan-stats-grid">
         <div class="stat-card">
           <div class="stat-label">Payoff Date</div>
           <div class="stat-value">${fmtDate(base.payoffDate)} <span class="arrow">→</span> ${fmtDate(withExtra.payoffDate)}</div>
@@ -139,18 +120,48 @@ function renderSimulator(root, account) {
       <div class="burndown-card">
         <div class="burndown-legend"><span class="dot dot-baseline"></span>Baseline <span class="dot dot-extra"></span>With extra payment</div>
         ${burndownSvg(simulate(balance, rate, payment), simulate(balance, rate, payment + extraCents))}
-      </div>`]}
+      </div>`;
+}
+
+function renderSimulator(root, account) {
+  if (curAccountId !== account.id) { curAccountId = account.id; extraCents = 0; }
+  const balance = Math.abs(store.accountBalances(account.id).working);
+  const rate = account.loanInfo.interestRate;
+  const payment = account.loanInfo.minimumPayment;
+
+  root.innerHTML = h`<div class="view-head">
+      <div>
+        <div class="view-title">${account.name}</div>
+        <div class="muted">${rate}% APR · min payment ${fmt(payment)}/mo · balance <span class="neg-text">${fmt(balance)}</span></div>
+      </div>
+    </div>
+    <div class="loans-body">
+      <div class="extra-payment-card">
+        <label for="extra-slider">Extra monthly payment</label>
+        <div class="extra-controls">
+          <input type="range" id="extra-slider" min="0" max="${MAX_EXTRA}" step="${STEP}" value="${extraCents / 100}">
+          <div class="extra-amount-wrap">$<input type="number" id="extra-input" min="0" max="${MAX_EXTRA}" step="${STEP}" value="${extraCents / 100}"></div>
+        </div>
+      </div>
+      <div id="sim-results">${simResults(account, balance, rate, payment)}</div>
       <a class="register-link" href="#/account/${account.id}">View account register →</a>
     </div>`;
 
   const slider = root.querySelector('#extra-slider');
   const numInput = root.querySelector('#extra-input');
-  const onChange = val => {
+  const results = root.querySelector('#sim-results');
+  const setExtra = val => {
     extraCents = Math.max(0, Math.min(MAX_EXTRA, Math.round(val / STEP) * STEP)) * 100;
+  };
+  slider.oninput = () => {
+    setExtra(+slider.value);
+    numInput.value = extraCents / 100;
+    results.innerHTML = simResults(account, balance, rate, payment);
+  };
+  numInput.onchange = () => {
+    setExtra(+numInput.value || 0);
     renderSimulator(root, account);
   };
-  slider.oninput = () => onChange(+slider.value);
-  numInput.onchange = () => onChange(+numInput.value || 0);
   if (document.activeElement !== slider && document.activeElement !== numInput) slider.focus({ preventScroll: true });
 }
 
