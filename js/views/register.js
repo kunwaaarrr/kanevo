@@ -1,6 +1,6 @@
 import { store, INFLOW } from '../store.js';
 import { openModal, closeModal, toast, navigate } from '../app.js';
-import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce } from '../util.js';
+import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMonths } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
@@ -1135,126 +1135,348 @@ function wireMobileList(root, txs, accountId) {
   });
 }
 
-// ---------- add transaction modal (mobile / tab-bar +) ----------
+// ---------- add/edit transaction editor (mobile / tab-bar +) ----------
+// Full-screen, YNAB-flow-shaped editor: tappable rows open in-place picker panels
+// instead of native <select>s. Desktop never calls this — it uses the inline table editor above.
+function accountName(id) {
+  const a = store.state.accounts.find(x => x.id === id);
+  return a ? a.name : '';
+}
+
 export function openAddTransactionModal(presetAccountId, editTxId) {
   const editing = editTxId ? store.state.transactions.find(t => t.id === editTxId) : null;
-  const accounts = store.state.accounts.filter(a => !a.closed);
   let isInflow = editing ? editing.amount > 0 : false;
   let amountCents = editing ? Math.abs(editing.amount) : 0;
+  let accountId = editing ? editing.accountId : (presetAccountId || curAccountId || store.state.accounts.find(a => !a.closed)?.id || null);
+  let date = editing ? editing.date : todayISO();
   let payeeId = editing ? editing.payeeId : null;
+  let payeeText = payeeId ? (store.getPayee(payeeId)?.name || '') : '';
   let categoryId = editing ? editing.categoryId : null;
+  let memo = editing ? (editing.memo || '') : '';
+  let cleared = editing ? editing.cleared !== 'uncleared' : false;
+  let flag = editing ? editing.flag : null;
+  // ponytail: no Photo/attachments row — not in this task's field list; existing attachments are
+  // carried through untouched on save so editing a tx here never silently drops its photos.
+  const attachments = editing ? (editing.attachments || []) : [];
+  let recurring = 'none';
+  let panel = null; // null | 'payee' | 'category' | 'account' | 'date' | 'flag'
+  let payeeQuery = '';
+  let categoryQuery = '';
+  let dateCursor = date.slice(0, 7);
   let suggestedHint = false;
   let geo = null;
-  let recurring = 'none';
 
-  const form = () => h`<h2>${editing ? 'Edit Transaction' : 'Add Transaction'}</h2>
-    <div class="amt-toggle">
-      <button type="button" class="amt-toggle-btn ${!isInflow ? 'active outflow' : ''}" id="at-outflow-tab">Outflow</button>
-      <button type="button" class="amt-toggle-btn ${isInflow ? 'active inflow' : ''}" id="at-inflow-tab">Inflow</button>
-    </div>
-    <input class="big-amount-input ${isInflow ? 'pos-text' : 'neg-text'}" id="at-amount" type="text" value="${amountCents ? fmtExact(amountCents).replace('$', '') : ''}" placeholder="0.00">
-    <div class="form-row"><label>Account</label>
-      <select id="at-account">${accounts.map(a => `<option value="${a.id}" ${a.id === (editing ? editing.accountId : presetAccountId) ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>
-    </div>
-    <div class="form-row"><label>Date</label><input id="at-date" type="date" value="${editing ? editing.date : todayISO()}"></div>
-    <div class="form-row ef-payee">
-      <label>Payee</label>
-      <input id="at-payee" type="text" value="${esc(payeeId ? store.getPayee(payeeId).name : '')}" autocomplete="off">
-      <div class="autocomplete-list" id="at-payee-ac" hidden></div>
-      ${suggestedHint ? '<div class="suggested-hint">📍 suggested</div>' : ''}
-    </div>
-    <div class="form-row"><label>Category</label><select id="at-category">${categoryOptionsHtml(categoryId, isInflow)}</select></div>
-    <div class="form-row"><label>Memo</label><input id="at-memo" type="text" value="${esc(editing ? editing.memo || '' : '')}"></div>
-    <div class="form-row"><label>Make recurring</label>
-      <select id="at-recurring">
-        <option value="none">None</option>
-        <option value="weekly">Weekly</option>
-        <option value="fortnightly">Fortnightly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      ${editing ? '<button class="btn danger" id="at-delete" style="margin-right:auto">Delete</button>' : ''}
-      <button class="btn secondary" id="at-cancel">Cancel</button>
-      <button class="btn" id="at-save">Save</button>
+  function rowPayee() {
+    return h`<button type="button" class="txe-row" id="txe-row-payee">
+      <span class="txe-row-ico">🔁</span>
+      <span class="txe-row-body">
+        <span class="txe-row-label">Payee</span>
+        <span class="txe-row-value ${!payeeText ? 'txe-placeholder' : ''}">${payeeText || 'Choose Payee'}</span>
+      </span>
+      ${suggestedHint ? '<span class="txe-suggested-badge" title="Suggested from your location">📍</span>' : ''}
+    </button>`;
+  }
+  function rowCategory() {
+    const label = categoryId === INFLOW ? 'Ready to Assign' : (categoryId ? categoryName(categoryId) : 'Select category');
+    return h`<button type="button" class="txe-row" id="txe-row-category">
+      <span class="txe-row-ico">🏷️</span>
+      <span class="txe-row-body"><span class="txe-row-label">Category</span><span class="txe-row-value ${!categoryId ? 'txe-placeholder' : ''}">${label}</span></span>
+    </button>`;
+  }
+  function rowAccount() {
+    return h`<button type="button" class="txe-row" id="txe-row-account">
+      <span class="txe-row-ico">🏦</span>
+      <span class="txe-row-body"><span class="txe-row-label">Account</span><span class="txe-row-value">${esc(accountName(accountId))}</span></span>
+    </button>`;
+  }
+  function rowDate() {
+    return h`<button type="button" class="txe-row" id="txe-row-date">
+      <span class="txe-row-ico">📅</span>
+      <span class="txe-row-body"><span class="txe-row-label">Date</span><span class="txe-row-value">${fmtDate(date)}</span></span>
+    </button>`;
+  }
+  function rowMemo() {
+    return h`<div class="txe-row txe-row-input">
+      <span class="txe-row-ico">📝</span>
+      <span class="txe-row-body"><span class="txe-row-label">Memo</span>
+        <input type="text" id="txe-memo" class="txe-inline-input" value="${esc(memo)}" placeholder="Add a memo">
+      </span>
     </div>`;
+  }
+  function rowCleared() {
+    return h`<label class="txe-row txe-row-switch" for="txe-cleared">
+      <span class="txe-row-ico">Ⓒ</span>
+      <span class="txe-row-body"><span class="txe-row-label-solo">Cleared</span></span>
+      <span class="txe-switch"><input type="checkbox" id="txe-cleared" ${cleared ? 'checked' : ''}><span class="txe-switch-track"></span></span>
+    </label>`;
+  }
+  function rowFlag() {
+    return h`<button type="button" class="txe-row" id="txe-row-flag">
+      <span class="txe-row-ico">${flagIcon(flag)}</span>
+      <span class="txe-row-body"><span class="txe-row-label">Flag</span><span class="txe-row-value">${flag ? flag[0].toUpperCase() + flag.slice(1) : 'None'}</span></span>
+    </button>`;
+  }
+  function rowRepeat() {
+    return h`<div class="txe-row txe-row-select">
+      <span class="txe-row-ico">🔁</span>
+      <span class="txe-row-body"><span class="txe-row-label">Repeat</span>
+        <select id="txe-repeat" class="txe-inline-select">
+          <option value="none" ${recurring === 'none' ? 'selected' : ''}>Never Repeat</option>
+          <option value="weekly" ${recurring === 'weekly' ? 'selected' : ''}>Weekly</option>
+          <option value="fortnightly" ${recurring === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
+          <option value="monthly" ${recurring === 'monthly' ? 'selected' : ''}>Monthly</option>
+          <option value="yearly" ${recurring === 'yearly' ? 'selected' : ''}>Yearly</option>
+        </select>
+      </span>
+    </div>`;
+  }
 
-  const modal = openModal(form(), { onOpen: m => bind(m) });
+  function payeeListItemsHtml() {
+    const q = payeeQuery.trim().toLowerCase();
+    const recency = {};
+    for (const t of store.state.transactions) {
+      if (t.payeeId && (!recency[t.payeeId] || t.date > recency[t.payeeId])) recency[t.payeeId] = t.date;
+    }
+    const all = store.state.payees.slice().sort((a, b) =>
+      (recency[b.id] || '').localeCompare(recency[a.id] || '') || a.name.localeCompare(b.name));
+    const filtered = q ? all.filter(p => p.name.toLowerCase().includes(q)) : all;
+    const exact = q && all.some(p => p.name.toLowerCase() === q);
+    const rows = [];
+    if (q && !exact) rows.push(`<div class="txe-list-item txe-new-payee" data-new="1">⊕ New payee: "${esc(payeeQuery.trim())}"</div>`);
+    for (const p of filtered) rows.push(`<div class="txe-list-item ${p.id === payeeId ? 'selected' : ''}" data-payee="${p.id}">${esc(p.name)}</div>`);
+    return rows.join('') || '<div class="txe-list-empty muted">No payees yet.</div>';
+  }
+  function payeePanelHtml() {
+    return h`<input type="text" class="txe-search" id="txe-payee-search" placeholder="Search or add a payee" value="${esc(payeeQuery)}">
+      <div class="txe-list" id="txe-payee-list">${payeeListItemsHtml()}</div>`;
+  }
+
+  function categoryListItemsHtml() {
+    const q = categoryQuery.trim().toLowerCase();
+    const month = (date || todayISO()).slice(0, 7);
+    const md = store.monthData(month);
+    const groups = store.state.categoryGroups.filter(g => !g.hidden);
+    const rows = [];
+    if (isInflow && (!q || 'ready to assign'.includes(q))) {
+      rows.push(`<div class="txe-cat-group-label">Inflow</div>
+        <div class="txe-cat-item ${categoryId === INFLOW ? 'selected' : ''}" data-cat="${INFLOW}"><span>Ready to Assign</span><span class="txe-cat-amt pos-text">${fmt(md.rta)}</span></div>`);
+    }
+    for (const g of groups) {
+      const mdGroup = md.groups.find(x => x.id === g.id);
+      const cats = store.state.categories.filter(c => c.groupId === g.id && !c.hidden && (!q || c.name.toLowerCase().includes(q)));
+      if (!cats.length) continue;
+      rows.push(`<div class="txe-cat-group-label">${esc(g.name)}</div>`);
+      for (const c of cats) {
+        const mc = mdGroup?.categories.find(x => x.id === c.id);
+        const avail = mc ? fmt(mc.available) : '';
+        rows.push(`<div class="txe-cat-item ${c.id === categoryId ? 'selected' : ''}" data-cat="${c.id}"><span>${esc(c.name)}</span><span class="txe-cat-amt muted">${avail}</span></div>`);
+      }
+    }
+    return rows.join('') || '<div class="txe-list-empty muted">No matches.</div>';
+  }
+  function categoryPanelHtml() {
+    return h`<input type="text" class="txe-search" id="txe-cat-search" placeholder="Search categories" value="${esc(categoryQuery)}">
+      <div class="txe-list" id="txe-cat-list">${categoryListItemsHtml()}</div>`;
+  }
+
+  function accountPanelHtml() {
+    const accs = store.state.accounts.filter(a => !a.closed);
+    const onB = accs.filter(a => a.onBudget);
+    const off = accs.filter(a => !a.onBudget);
+    const row = a => {
+      const bal = store.accountBalances(a.id).working;
+      return `<div class="txe-list-item ${a.id === accountId ? 'selected' : ''}" data-acct="${a.id}"><span>${esc(a.name)}</span><span class="txe-acct-bal ${bal < 0 ? 'neg-text' : 'pos-text'}">${fmt(bal)}</span></div>`;
+    };
+    return h`<div class="txe-list">${onB.map(row).join('')}${off.length ? `<div class="txe-cat-group-label">Tracking</div>${off.map(row).join('')}` : ''}</div>`;
+  }
+
+  function datePanelHtml() {
+    const cur = date;
+    const today = todayISO();
+    const [y, m] = dateCursor.split('-').map(Number);
+    const startDow = new Date(y, m - 1, 1).getDay();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startDow; i++) cells.push('<div class="cal-cell cal-empty"></div>');
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      cells.push(`<button type="button" class="cal-cell cal-day ${iso === cur ? 'selected' : ''} ${iso === today ? 'today' : ''}" data-date="${iso}">${d}</button>`);
+    }
+    return h`<div class="cal-nav"><button type="button" id="txe-cal-prev">‹</button><span>${MONTH_NAMES[m - 1]} ${y}</span><button type="button" id="txe-cal-next">›</button></div>
+      <div class="cal-grid cal-dow">${DOW.map(d => `<div class="cal-cell cal-dow-cell">${d}</div>`).join('')}</div>
+      <div class="cal-grid">${cells.join('')}</div>`;
+  }
+
+  function flagPanelHtml() {
+    const rows = [`<div class="txe-list-item txe-flag-item ${!flag ? 'selected' : ''}" data-flag="">${flagIcon(null)}<span>None</span></div>`];
+    for (const f of FLAGS) rows.push(`<div class="txe-list-item txe-flag-item ${f === flag ? 'selected' : ''}" data-flag="${f}">${flagIcon(f)}<span>${f[0].toUpperCase()}${f.slice(1)}</span></div>`);
+    return h`<div class="txe-list">${rows.join('')}</div>`;
+  }
+
+  function renderPanel() {
+    const titles = { payee: 'Choose Payee', category: 'Category', account: 'Account', date: 'Date', flag: 'Flag' };
+    const body = panel === 'payee' ? payeePanelHtml()
+      : panel === 'category' ? categoryPanelHtml()
+      : panel === 'account' ? accountPanelHtml()
+      : panel === 'date' ? datePanelHtml()
+      : panel === 'flag' ? flagPanelHtml() : '';
+    return h`<div class="txe-panel" id="txe-panel">
+      <div class="txe-panel-head">
+        <button type="button" class="txe-back" id="txe-panel-back">‹ Back</button>
+        <div class="txe-panel-title">${titles[panel] || ''}</div>
+      </div>
+      <div class="txe-panel-body">${body}</div>
+    </div>`;
+  }
+
+  function view() {
+    return h`<div class="txe ${isInflow ? 'txe-inflow' : 'txe-outflow'}">
+      <div class="txe-topbar">
+        <button type="button" class="txe-close" id="txe-close" aria-label="Close">✕</button>
+        <div class="txe-title">${editing ? 'Edit Transaction' : 'Add Transaction'}</div>
+        <div class="txe-topbar-spacer"></div>
+      </div>
+      <div class="txe-amtband">
+        <div class="amt-toggle txe-toggle">
+          <button type="button" class="amt-toggle-btn ${!isInflow ? 'active outflow' : ''}" id="txe-outflow-tab">− Outflow</button>
+          <button type="button" class="amt-toggle-btn ${isInflow ? 'active inflow' : ''}" id="txe-inflow-tab">+ Inflow</button>
+        </div>
+        <input class="big-amount-input txe-amount ${isInflow ? 'pos-text' : 'neg-text'}" id="txe-amount" type="text" inputmode="decimal"
+          value="${amountCents ? fmtExact(amountCents).replace('$', '') : ''}" placeholder="0.00">
+      </div>
+      <div class="txe-body">
+        <div class="txe-card">${rowPayee()}${rowCategory()}${rowAccount()}${rowDate()}</div>
+        <div class="txe-card">${rowMemo()}</div>
+        <div class="txe-card">${rowCleared()}${rowFlag()}${rowRepeat()}</div>
+        ${editing ? '<button type="button" class="txe-delete-row" id="txe-delete">Delete Transaction</button>' : ''}
+      </div>
+      <div class="txe-footer"><button type="button" class="btn txe-save" id="txe-save">✓ Save</button></div>
+      ${panel ? renderPanel() : ''}
+    </div>`;
+  }
+
+  function wirePayeeItems(listEl) {
+    listEl.querySelectorAll('[data-payee]').forEach(el => {
+      el.onclick = () => {
+        payeeId = el.dataset.payee;
+        const p = store.getPayee(payeeId);
+        payeeText = p ? p.name : '';
+        if (p?.lastCategoryId && !categoryId) categoryId = p.lastCategoryId;
+        suggestedHint = false;
+        panel = null;
+        rerender();
+      };
+    });
+    const newEl = listEl.querySelector('[data-new]');
+    if (newEl) newEl.onclick = () => {
+      payeeText = payeeQuery.trim();
+      payeeId = null;
+      suggestedHint = false;
+      panel = null;
+      rerender();
+    };
+  }
+  function wireCategoryItems(listEl) {
+    listEl.querySelectorAll('[data-cat]').forEach(el => {
+      el.onclick = () => { categoryId = el.dataset.cat; panel = null; rerender(); };
+    });
+  }
+
+  function wirePanel(m) {
+    m.querySelector('#txe-panel-back').onclick = () => { panel = null; rerender(); };
+    if (panel === 'payee') {
+      const searchEl = m.querySelector('#txe-payee-search');
+      const listEl = m.querySelector('#txe-payee-list');
+      searchEl.focus();
+      searchEl.oninput = () => { payeeQuery = searchEl.value; listEl.innerHTML = payeeListItemsHtml(); wirePayeeItems(listEl); };
+      wirePayeeItems(listEl);
+    } else if (panel === 'category') {
+      const searchEl = m.querySelector('#txe-cat-search');
+      const listEl = m.querySelector('#txe-cat-list');
+      searchEl.focus();
+      searchEl.oninput = () => { categoryQuery = searchEl.value; listEl.innerHTML = categoryListItemsHtml(); wireCategoryItems(listEl); };
+      wireCategoryItems(listEl);
+    } else if (panel === 'account') {
+      m.querySelectorAll('[data-acct]').forEach(el => { el.onclick = () => { accountId = el.dataset.acct; panel = null; rerender(); }; });
+    } else if (panel === 'date') {
+      m.querySelector('#txe-cal-prev').onclick = () => { dateCursor = addMonths(dateCursor, -1); rerender(); };
+      m.querySelector('#txe-cal-next').onclick = () => { dateCursor = addMonths(dateCursor, 1); rerender(); };
+      m.querySelectorAll('.cal-day').forEach(btn => { btn.onclick = () => { date = btn.dataset.date; panel = null; rerender(); }; });
+    } else if (panel === 'flag') {
+      m.querySelectorAll('[data-flag]').forEach(el => { el.onclick = () => { flag = el.dataset.flag || null; panel = null; rerender(); }; });
+    }
+  }
+
+  function bind(m, { initial = false } = {}) {
+    m.querySelector('#txe-close').onclick = closeModal;
+    m.querySelector('#txe-outflow-tab').onclick = () => { isInflow = false; rerender(); };
+    m.querySelector('#txe-inflow-tab').onclick = () => { isInflow = true; rerender(); };
+
+    const amountEl = m.querySelector('#txe-amount');
+    amountEl.oninput = () => { amountCents = parseAmount(amountEl.value); };
+    amountEl.onblur = () => { amountEl.value = amountCents ? fmtExact(amountCents).replace('$', '') : ''; };
+    if (initial && !editing) amountEl.focus();
+
+    m.querySelector('#txe-row-payee').onclick = () => { panel = 'payee'; payeeQuery = ''; rerender(); };
+    m.querySelector('#txe-row-category').onclick = () => { panel = 'category'; categoryQuery = ''; rerender(); };
+    m.querySelector('#txe-row-account').onclick = () => { panel = 'account'; rerender(); };
+    m.querySelector('#txe-row-date').onclick = () => { panel = 'date'; dateCursor = date.slice(0, 7); rerender(); };
+    m.querySelector('#txe-row-flag').onclick = () => { panel = 'flag'; rerender(); };
+
+    m.querySelector('#txe-memo').oninput = e => { memo = e.target.value; };
+    m.querySelector('#txe-cleared').onchange = e => { cleared = e.target.checked; };
+    m.querySelector('#txe-repeat').onchange = e => { recurring = e.target.value; };
+
+    const delBtn = m.querySelector('#txe-delete');
+    if (delBtn) delBtn.onclick = () => {
+      if (confirm('Delete this transaction?')) { store.deleteTransaction(editing.id); closeModal(); }
+    };
+
+    m.querySelector('#txe-save').onclick = save;
+
+    if (panel) wirePanel(m);
+  }
+
+  function save() {
+    const name = payeeText.trim();
+    // findOrCreatePayee already returns the payee's id (a string), not a payee object — no `.id` here.
+    const payeeIdResolved = name ? store.findOrCreatePayee(name) : null;
+    const amount = isInflow ? amountCents : -amountCents;
+    const tx = {
+      accountId, date, payeeId: payeeIdResolved, categoryId, memo, amount,
+      cleared: cleared ? 'cleared' : 'uncleared', approved: true, flag, attachments,
+    };
+    if (editing) store.updateTransaction(editing.id, tx);
+    else store.addTransaction(tx);
+    if (payeeIdResolved && geo) store.rememberPayeeContext(payeeIdResolved, categoryId, geo.lat, geo.lng);
+    if (recurring !== 'none' && payeeIdResolved) {
+      store.addScheduled({ frequency: recurring, nextDate: date, accountId, payeeId: payeeIdResolved, categoryId, memo, amount, flag });
+    }
+    closeModal();
+    toast(editing ? 'Transaction updated' : 'Transaction added');
+  }
+
+  function rerender() { modal.innerHTML = view(); bind(modal); }
+
+  const modal = openModal(view(), { onOpen: m => bind(m, { initial: true }) });
+  modal.classList.add('txe-modal');
 
   if (!editing && navigator.geolocation) {
-    const timer = setTimeout(() => {}, 1500);
     navigator.geolocation.getCurrentPosition(
       pos => {
-        clearTimeout(timer);
         geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         const hit = store.nearestPayee(geo.lat, geo.lng);
-        if (hit && !modal.querySelector('#at-payee').value) {
+        if (hit && !payeeId) {
           payeeId = hit.id;
-          categoryId = hit.lastCategoryId || categoryId;
+          payeeText = hit.name;
+          if (hit.lastCategoryId) categoryId = hit.lastCategoryId;
           suggestedHint = true;
-          modal.innerHTML = form();
-          bind(modal);
+          rerender();
         }
       },
       () => {},
       { timeout: 1500 },
     );
-  }
-
-  function bind(m) {
-    m.querySelector('#at-cancel').onclick = closeModal;
-    m.querySelector('#at-outflow-tab').onclick = () => { isInflow = false; m.innerHTML = form(); bind(m); };
-    m.querySelector('#at-inflow-tab').onclick = () => { isInflow = true; m.innerHTML = form(); bind(m); };
-    const amountEl = m.querySelector('#at-amount');
-    amountEl.oninput = () => { amountCents = parseAmount(amountEl.value); };
-    amountEl.onblur = () => { amountEl.value = amountCents ? fmtExact(amountCents).replace('$', '') : ''; };
-
-    const payeeEl = m.querySelector('#at-payee');
-    const acEl = m.querySelector('#at-payee-ac');
-    payeeEl.oninput = () => {
-      const q = payeeEl.value.trim();
-      const items = store.payeeSuggestions(q);
-      if (!items.length) { acEl.hidden = true; return; }
-      acEl.innerHTML = items.map((p, i) => `<div class="ac-item" data-i="${i}">${esc(p.name)}</div>`).join('');
-      acEl.hidden = false;
-      acEl.querySelectorAll('.ac-item').forEach(el => {
-        el.onmousedown = e => {
-          e.preventDefault();
-          const p = items[+el.dataset.i];
-          payeeEl.value = p.name;
-          payeeId = p.id;
-          if (p.lastCategoryId) { categoryId = p.lastCategoryId; m.querySelector('#at-category').value = p.lastCategoryId; }
-          acEl.hidden = true;
-        };
-      });
-    };
-
-    m.querySelector('#at-category').onchange = e => { categoryId = e.target.value || null; };
-    m.querySelector('#at-recurring').onchange = e => { recurring = e.target.value; };
-
-    m.querySelector('#at-save').onclick = () => {
-      const name = payeeEl.value.trim();
-      const payee = name ? store.findOrCreatePayee(name) : null;
-      const accId = m.querySelector('#at-account').value;
-      const date = m.querySelector('#at-date').value;
-      const memo = m.querySelector('#at-memo').value;
-      const cat = m.querySelector('#at-category').value || null;
-      const amount = isInflow ? amountCents : -amountCents;
-      const tx = { accountId: accId, date, payeeId: payee ? payee.id : null, categoryId: cat, memo, amount, cleared: 'uncleared', approved: true, flag: null };
-      if (editing) store.updateTransaction(editing.id, tx);
-      else store.addTransaction(tx);
-      if (payee && geo) store.rememberPayeeContext(payee.id, cat, geo.lat, geo.lng);
-      if (recurring !== 'none' && payee) {
-        store.addScheduled({ frequency: recurring, nextDate: date, accountId: accId, payeeId: payee.id, categoryId: cat, memo, amount, flag: null });
-      }
-      closeModal();
-      toast(editing ? 'Transaction updated' : 'Transaction added');
-    };
-
-    if (editing) m.querySelector('#at-delete').onclick = () => {
-      if (confirm('Delete this transaction?')) { store.deleteTransaction(editing.id); closeModal(); }
-    };
   }
 }
 

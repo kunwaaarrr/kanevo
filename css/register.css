@@ -291,3 +291,93 @@
 @media (min-width: 768px) {
   .reg-mobile-list { display: none; }
 }
+
+/* ================= full-screen transaction editor (mobile only) ================= */
+@media (max-width: 767px) {
+  #modal-root .modal.txe-modal {
+    position: fixed; inset: 0; transform: none;
+    width: 100%; height: 100%; max-height: none; border-radius: 0; padding: 0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+}
+.txe { display: flex; flex-direction: column; height: 100%; background: var(--bg); position: relative; }
+.txe-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
+.txe-close { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.txe-close:hover, .txe-close:active { background: rgba(0, 0, 0, .06); }
+.txe-title { font-size: 18px; font-weight: 700; }
+.txe-topbar-spacer { flex: 1; }
+.txe-amtband { padding: 6px 14px 20px; }
+.txe-toggle { max-width: 320px; margin: 0 auto 16px; }
+.txe-amount { font-size: 40px; }
+.txe.txe-outflow .txe-topbar, .txe.txe-outflow .txe-amtband { background: var(--pill-neg-bg); }
+.txe.txe-inflow .txe-topbar, .txe.txe-inflow .txe-amtband { background: var(--pill-pos-bg); }
+.txe-body { flex: 1; overflow-y: auto; padding: 14px; padding-bottom: 90px; display: flex; flex-direction: column; gap: 14px; }
+.txe-card { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; flex-shrink: 0; }
+.txe-row {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-bottom: 1px solid var(--line-subtle); text-align: left; background: var(--bg);
+}
+.txe-row:hover, .txe-row:active { background: var(--bg-alt); }
+.txe-card .txe-row:last-child { border-bottom: none; }
+.txe-row-ico { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+.txe-row-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.txe-row-label { font-size: 11px; color: var(--text-dim); }
+.txe-row-label-solo { font-size: 15px; }
+.txe-row-value { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.txe-row-value.txe-placeholder { font-weight: 400; color: var(--text-dim); }
+.txe-suggested-badge { font-size: 13px; flex-shrink: 0; }
+.txe-inline-input, .txe-inline-select { border: none; background: transparent; font-size: 15px; font-weight: 600; padding: 0; width: 100%; }
+.txe-inline-input:focus, .txe-inline-select:focus { outline: none; }
+.txe-inline-input::placeholder { color: var(--text-dim); font-weight: 400; }
+
+/* Cleared switch */
+/* .modal label (app.css) forces display:block + dim bold caption text; win it back for the switch row */
+.txe label.txe-row-switch { display: flex; font-size: 15px; font-weight: 400; color: var(--text); margin-bottom: 0; }
+.txe-switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.txe-switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.txe-switch-track { position: absolute; inset: 0; background: var(--track); border-radius: 999px; transition: background .15s; }
+.txe-switch-track::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .15s;
+}
+.txe-switch input:checked + .txe-switch-track { background: var(--blue); }
+.txe-switch input:checked + .txe-switch-track::after { transform: translateX(18px); }
+.txe-switch input:focus-visible + .txe-switch-track { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.txe-delete-row {
+  width: 100%; padding: 13px; border-radius: 14px; background: var(--pill-neg-bg); color: var(--red-dark); font-weight: 700; text-align: center;
+  flex-shrink: 0;
+}
+.txe-delete-row:hover, .txe-delete-row:active { background: #f79c92; }
+
+.txe-footer { padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+.txe-save { width: 100%; height: 46px; font-size: 16px; font-weight: 700; border-radius: 12px; }
+
+/* in-editor picker panel — one consistent full-screen-list pattern for payee/category/account/date/flag */
+.txe-panel { position: absolute; inset: 0; z-index: 5; background: var(--bg); display: flex; flex-direction: column; }
+.txe-panel-head { display: flex; align-items: center; gap: 10px; padding: 14px; border-bottom: 1px solid var(--line); }
+.txe-back { font-size: 15px; font-weight: 600; color: var(--link); }
+.txe-panel-title { font-size: 16px; font-weight: 700; }
+.txe-panel-body { flex: 1; overflow-y: auto; padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); }
+.txe-search {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-alt);
+  font-size: 15px; margin-bottom: 8px; box-sizing: border-box;
+}
+.txe-search:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
+.txe-list-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 6px; font-size: 15px; border-bottom: 1px solid var(--line-subtle); }
+.txe-list-item:hover, .txe-list-item:active { background: var(--bg-alt); }
+.txe-list-item.selected { background: var(--blue-light); border-radius: 8px; }
+.txe-list-item.txe-new-payee { color: var(--link); font-weight: 700; }
+.txe-list-empty { padding: 14px 6px; }
+.txe-cat-group-label { padding: 10px 6px 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
+.txe-cat-item { display: flex; justify-content: space-between; gap: 10px; padding: 11px 6px; font-size: 15px; border-bottom: 1px solid var(--line-subtle); }
+.txe-cat-item:hover, .txe-cat-item:active { background: var(--bg-alt); }
+.txe-cat-item.selected { background: var(--blue-light); border-radius: 8px; }
+.txe-cat-amt { font-variant-numeric: tabular-nums; font-size: 13px; }
+.txe-acct-bal { font-variant-numeric: tabular-nums; font-weight: 600; }
+.txe-flag-item { gap: 10px; }
+
+/* calendar inside the date panel reuses .cal-* from the desktop date popover, enlarged for touch */
+.txe-panel .cal-cell { width: auto; height: 42px; font-size: 14px; }
+.txe-panel .cal-nav { font-size: 15px; margin-bottom: 10px; }
+.txe-panel .cal-nav button { padding: 6px 12px; font-size: 18px; }
