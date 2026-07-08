@@ -1,0 +1,296 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sapient Spend — User Flow (YNAB reference)</title>
+<style>
+:root{--bg:#f5f6fa;--panel:#fff;--ink:#161826;--soft:#5a6078;--line:#e4e6f0;--accent:#4b4ddb;--pop:#16a34a;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{max-width:1240px;margin:0 auto;padding:34px 28px 6px}
+.kick{font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+h1{margin:0 0 8px;font-size:30px;letter-spacing:-.02em}
+header p{margin:0;color:var(--soft);max-width:76ch}
+.note{max-width:1240px;margin:14px auto 0;padding:0 28px}
+.note .box{background:#eef7f0;border:1px solid #bfe0c8;border-radius:12px;padding:14px 16px;font-size:14px;color:#1c4b2e}
+.note .box b{color:#14532d}
+.legend{display:flex;gap:10px 20px;flex-wrap:wrap;margin:16px 0 4px;font-size:13px;color:var(--soft)}
+.legend b{color:var(--ink)}
+main{max-width:1240px;margin:0 auto;padding:0 28px 20px}
+.sec{margin-top:26px;border-radius:16px;padding:2px 2px 6px}
+.sec.star{background:linear-gradient(180deg,#eef0ff,transparent 120px);box-shadow:inset 0 0 0 1px #dfe1fb;padding:2px 14px 10px}
+.sechead{display:flex;align-items:center;gap:10px;padding:14px 6px 8px}
+.sechead h2{margin:0;font-size:19px;letter-spacing:-.01em}
+.sechead .sub{color:var(--soft);font-size:13px}
+.sechead .cnt{margin-left:auto;font:600 11px/1 ui-monospace,monospace;color:var(--soft);background:var(--panel);border:1px solid var(--line);padding:5px 9px;border-radius:20px}
+.dot{width:11px;height:11px;border-radius:50%}
+.d0{background:#4b4ddb}.d1{background:#e11d48}.d2{background:#0891b2}.d3{background:#64748b}.d4{background:#7c3aed}.d5{background:#d97706}.d6{background:#0d9488}.d7{background:#16a34a}.d8{background:#c026d3}.d9{background:#0284c7}
+.row{display:flex;gap:16px;overflow-x:auto;padding:6px 4px 16px;scroll-snap-type:x proximity}
+.card{flex:0 0 auto;width:216px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;text-decoration:none;color:inherit;scroll-snap-align:start;transition:transform .12s,box-shadow .12s}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(22,24,38,.14)}
+.card.pop{border-color:var(--pop);box-shadow:0 0 0 1px var(--pop)}
+.ph{position:relative;background:#0c0e18;aspect-ratio:1080/2340;display:block}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.num{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font:600 13px/26px ui-monospace,monospace;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.tag{position:absolute;top:9px;right:8px;font:600 10px/1 ui-monospace,monospace;color:#fff;background:rgba(20,22,34,.82);padding:4px 7px;border-radius:20px}
+.card.pop .tag{background:var(--pop)}
+.meta{padding:11px 12px 13px}
+.meta .t{font-weight:650;font-size:13.5px;margin-bottom:4px;letter-spacing:-.01em}
+.meta .c{font-size:12px;color:var(--soft);line-height:1.42}
+.meta .ts{margin-top:7px;font:11px/1 ui-monospace,monospace;color:#99a0bb}
+.tree{max-width:1240px;margin:10px auto 0;padding:0 28px}
+.tree h2{font-size:22px;margin:30px 0 4px}
+.tree p{color:var(--soft);margin:0 0 14px;max-width:76ch}
+.treebox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;overflow:auto}
+footer{max-width:1240px;margin:0 auto;padding:24px 28px 60px;color:var(--soft);font-size:13px}
+@media(max-width:640px){.card{width:168px}header,main,footer,.tree,.note{padding-left:16px;padding-right:16px}}
+</style></head><body>
+<header>
+  <div class="kick">Screen recording · 15 fps · settled frames only</div>
+  <h1>Sapient Spend — YNAB user-flow reference</h1>
+  <p>Every distinct screen from the recording, grouped by app section, plus a decision map of how they connect. Frames were taken only where the video is <b>temporally still</b>, so nothing is mid-animation. This set now also folds in four follow-up recordings — custom <b>Views</b>, <b>Move Money</b>, category <b>Targets</b> and <b>Settings</b>. Click any screen to open it full-resolution (native 1080×2340).</p>
+</header>
+<div class="note"><div class="box">
+  <b>How the Assigned / Available columns show:</b> they are not a separate screen — it’s a toggle. Open the <b>⋮ menu → Progress Bars</b>. When Progress Bars is <b>ON</b> the budget shows one “Available to Spend” column with a bar under each row (screen 1). Turn Progress Bars <b>OFF</b> and it switches to the two-column <b>Assigned + Available</b> numeric view (screen 2). That is the button you pressed.
+</div></div>
+<main>
+  <div class="legend" style="max-width:1240px;margin:18px auto 0">
+    <span><b>65</b> screens · 10 sections</span>
+    <span><span style="color:#16a34a">■</span> green = undo/redo bottom popup</span>
+    <span>tag <b>⋮ menu</b> = opened from the three-dot menu</span>
+    <span>Numbers = flow order · mm:ss = time in clip</span>
+  </div>
+  <section class="sec">
+      <div class="sechead"><span class="dot d0"></span><h2>Plan / Budget</h2><span class="sub">Give every dollar a job</span><span class="cnt">5</span></div>
+      <div class="row"><a class="card" href="screens/01_plan.jpg" target="_blank">
+          <div class="ph"><span class="num">1</span><img loading="lazy" src="screens/01_plan.jpg" alt=""></div>
+          <div class="meta"><div class="t">Budget — default (Available)</div><div class="c">Default view: one <b>Available to Spend</b> column with a progress bar under each category. This is with ⋮ menu → Progress Bars ON.</div><div class="ts">0:01.1</div></div>
+        </a><a class="card" href="screens/02_plan.jpg" target="_blank">
+          <div class="ph"><span class="num">2</span><span class="tag">⋮ toggle</span><img loading="lazy" src="screens/02_plan.jpg" alt=""></div>
+          <div class="meta"><div class="t">Budget — Assigned &amp; Available</div><div class="c">The SAME budget after ⋮ menu → <b>Progress Bars is turned OFF</b>: two columns (Assigned + Available), no bars. This is what you pressed to make the columns show.</div><div class="ts">2:39.5</div></div>
+        </a><a class="card" href="screens/03_plan.jpg" target="_blank">
+          <div class="ph"><span class="num">3</span><span class="tag">top bar</span><img loading="lazy" src="screens/03_plan.jpg" alt=""></div>
+          <div class="meta"><div class="t">Views filter sheet</div><div class="c">Top-bar Views icon: All / Underfunded / Overfunded / Money Available / Snoozed.</div><div class="ts">0:07.2</div></div>
+        </a><a class="card" href="screens/04_plan.jpg" target="_blank">
+          <div class="ph"><span class="num">4</span><span class="tag">top bar</span><img loading="lazy" src="screens/04_plan.jpg" alt=""></div>
+          <div class="meta"><div class="t">Month picker</div><div class="c">Tapping “Jul 2026 ▾” opens the month/year picker.</div><div class="ts">0:03.1</div></div>
+        </a><a class="card" href="screens/05_plan.jpg" target="_blank">
+          <div class="ph"><span class="num">5</span><span class="tag">✎ top bar</span><img loading="lazy" src="screens/05_plan.jpg" alt=""></div>
+          <div class="meta"><div class="t">Edit Plan (Cost to Be Me)</div><div class="c">Set monthly income and per-category targets via Add Target — opens from the ✎ pencil icon in the top bar.</div><div class="ts">0:09.7</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d8"></span><h2>Views — custom filters</h2><span class="sub">Filter the budget by state</span><span class="cnt">7</span></div>
+      <div class="row"><a class="card" href="screens/06_views.jpg" target="_blank">
+          <div class="ph"><span class="num">6</span><span class="tag">views</span><img loading="lazy" src="screens/06_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">Filter applied — Underfunded</div><div class="c">Budget shows only underfunded categories; “Viewing Underfunded” banner with View All Categories to exit.</div><div class="ts">0:05.1</div></div>
+        </a><a class="card" href="screens/07_views.jpg" target="_blank">
+          <div class="ph"><span class="num">7</span><span class="tag">views</span><img loading="lazy" src="screens/07_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">Overfunded — empty state</div><div class="c">No overfunded targets; “Um, why is this view always empty?” help link and View All.</div><div class="ts">0:07.4</div></div>
+        </a><a class="card" href="screens/08_views.jpg" target="_blank">
+          <div class="ph"><span class="num">8</span><span class="tag">views</span><img loading="lazy" src="screens/08_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">Filter applied — Money Available</div><div class="c">“Viewing Money Available” banner over the filtered budget.</div><div class="ts">0:10.0</div></div>
+        </a><a class="card" href="screens/09_views.jpg" target="_blank">
+          <div class="ph"><span class="num">9</span><span class="tag">views</span><img loading="lazy" src="screens/09_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">Snoozed — empty state</div><div class="c">No snoozed targets this month.</div><div class="ts">0:13.0</div></div>
+        </a><a class="card" href="screens/10_views.jpg" target="_blank">
+          <div class="ph"><span class="num">10</span><span class="tag">views</span><img loading="lazy" src="screens/10_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">Manage Views</div><div class="c">Views sheet → Edit; lists the four stock views.</div><div class="ts">0:17.7</div></div>
+        </a><a class="card" href="screens/11_views.jpg" target="_blank">
+          <div class="ph"><span class="num">11</span><span class="tag">views</span><img loading="lazy" src="screens/11_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">New View — name it</div><div class="c">Views sheet → New; name field (“Keep ’em short &amp; sweet!”) with keyboard.</div><div class="ts">0:21.3</div></div>
+        </a><a class="card" href="screens/12_views.jpg" target="_blank">
+          <div class="ph"><span class="num">12</span><span class="tag">views</span><img loading="lazy" src="screens/12_views.jpg" alt=""></div>
+          <div class="meta"><div class="t">New View — pick categories</div><div class="c">Checklist of every category group to include in the custom view.</div><div class="ts">0:24.7</div></div>
+        </a></div>
+    </section><section class="sec star">
+      <div class="sechead"><span class="dot d1"></span><h2>The ⋮ overflow menu</h2><span class="sub">Every button, top to bottom</span><span class="cnt">11</span></div>
+      <div class="row"><a class="card" href="screens/13_the.jpg" target="_blank">
+          <div class="ph"><span class="num">13</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/13_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">Overflow menu — full</div><div class="c">Every item top-to-bottom. <b>Progress Bars</b> toggles the Assigned/Available columns; Refresh (sync) and Support (help) act in place; the rest open the screens below.</div><div class="ts">0:11.5</div></div>
+        </a><a class="card" href="screens/14_the.jpg" target="_blank">
+          <div class="ph"><span class="num">14</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/14_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Recent Moves — All</div><div class="c">Money-move history, All tab.</div><div class="ts">0:15.0</div></div>
+        </a><a class="card" href="screens/15_the.jpg" target="_blank">
+          <div class="ph"><span class="num">15</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/15_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Recent Moves — Moved</div><div class="c">Moved tab (No Money Moves yet).</div><div class="ts">0:16.3</div></div>
+        </a><a class="card" href="screens/16_the.jpg" target="_blank">
+          <div class="ph"><span class="num">16</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/16_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Recent Moves — Assigned</div><div class="c">Assigned tab — where each dollar went.</div><div class="ts">0:17.3</div></div>
+        </a><a class="card" href="screens/17_the.jpg" target="_blank">
+          <div class="ph"><span class="num">17</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/17_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ After Undo, menu shows Redo</div><div class="c">Once you undo, the menu’s second item becomes Redo.</div><div class="ts">0:22.9</div></div>
+        </a><a class="card pop" href="screens/18_the.jpg" target="_blank">
+          <div class="ph"><span class="num">18</span><span class="tag">popup</span><img loading="lazy" src="screens/18_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Undo — bottom popup</div><div class="c">Undo pops a bottom pill: Phone &amp; Internet reverted to $0.00.</div><div class="ts">0:22.5</div></div>
+        </a><a class="card pop" href="screens/19_the.jpg" target="_blank">
+          <div class="ph"><span class="num">19</span><span class="tag">popup</span><img loading="lazy" src="screens/19_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Redo — bottom popup</div><div class="c">Redo pops the green pill: Phone &amp; Internet re-applied at $20.00.</div><div class="ts">0:21.3</div></div>
+        </a><a class="card" href="screens/20_the.jpg" target="_blank">
+          <div class="ph"><span class="num">20</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/20_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Open Plan</div><div class="c">Switch plans / plans shared with you.</div><div class="ts">0:28.8</div></div>
+        </a><a class="card" href="screens/21_the.jpg" target="_blank">
+          <div class="ph"><span class="num">21</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/21_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Collapse/Expand</div><div class="c">Submenu: Collapse All / Expand All Groups.</div><div class="ts">0:39.1</div></div>
+        </a><a class="card" href="screens/22_the.jpg" target="_blank">
+          <div class="ph"><span class="num">22</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/22_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Collapse result</div><div class="c">Groups collapsed to headers only.</div><div class="ts">0:41.1</div></div>
+        </a><a class="card" href="screens/23_the.jpg" target="_blank">
+          <div class="ph"><span class="num">23</span><span class="tag">⋮ menu</span><img loading="lazy" src="screens/23_the.jpg" alt=""></div>
+          <div class="meta"><div class="t">→ Hide Amounts to Share</div><div class="c">Privacy mode — amounts masked.</div><div class="ts">0:48.7</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d2"></span><h2>Assign Money</h2><span class="sub">Fund categories &amp; move money</span><span class="cnt">7</span></div>
+      <div class="row"><a class="card" href="screens/24_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">24</span><span class="tag">tap bar</span><img loading="lazy" src="screens/24_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Assign Money (helper)</div><div class="c">Reached by tapping the green <b>Ready to Assign ▸</b> bar. Auto-assign helper; underfunded highlighted.</div><div class="ts">1:11.9</div></div>
+        </a><a class="card" href="screens/25_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">25</span><img loading="lazy" src="screens/25_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Assign Money — scrolled</div><div class="c">Wants group and remaining categories.</div><div class="ts">1:13.3</div></div>
+        </a><a class="card" href="screens/26_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">26</span><img loading="lazy" src="screens/26_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Auto-Assign by…</div><div class="c">Underfunded / Assigned Last Month / Spent Last Month / Average.</div><div class="ts">1:17.1</div></div>
+        </a><a class="card" href="screens/27_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">27</span><span class="tag">tap row</span><img loading="lazy" src="screens/27_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Assign amount — calculator keypad</div><div class="c">Tap a category’s amount on the budget → keypad slides up (with + − = calculator). Tabs: Auto-Assign / Move Money / Details.</div><div class="ts">1:31.1</div></div>
+        </a><a class="card" href="screens/28_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">28</span><span class="tag">keypad</span><img loading="lazy" src="screens/28_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Move Money</div><div class="c">Keypad → Move Money tab; From Ready to Assign → To a category, amount keypad.</div><div class="ts">0:02.9</div></div>
+        </a><a class="card" href="screens/29_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">29</span><span class="tag">keypad</span><img loading="lazy" src="screens/29_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Move Money — pick source</div><div class="c">Category picker: search, New Category, Selected + Inflow (Ready to Assign) and every group as radio rows.</div><div class="ts">0:05.5</div></div>
+        </a><a class="card" href="screens/30_assign.jpg" target="_blank">
+          <div class="ph"><span class="num">30</span><span class="tag">keypad</span><img loading="lazy" src="screens/30_assign.jpg" alt=""></div>
+          <div class="meta"><div class="t">Category picker — scrolled</div><div class="c">Wants group incl. “Stuff I forgot to plan for” and YNAB subscription.</div><div class="ts">0:06.5</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d9"></span><h2>Category Details &amp; Targets</h2><span class="sub">Tap a category’s amount → Details</span><span class="cnt">12</span></div>
+      <div class="row"><a class="card" href="screens/31_target.jpg" target="_blank">
+          <div class="ph"><span class="num">31</span><span class="tag">tap amount</span><img loading="lazy" src="screens/31_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Category Details</div><div class="c">Balance breakdown (From Jun, Assigned, Activity, Available), Create Target, Notes, Rename Category.</div><div class="ts">0:03.3</div></div>
+        </a><a class="card" href="screens/32_target.jpg" target="_blank">
+          <div class="ph"><span class="num">32</span><img loading="lazy" src="screens/32_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Target — Weekly</div><div class="c">“I need / Every Saturday / Next month I want to”, Save Target.</div><div class="ts">0:06.1</div></div>
+        </a><a class="card" href="screens/33_target.jpg" target="_blank">
+          <div class="ph"><span class="num">33</span><img loading="lazy" src="screens/33_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Weekly — day picker</div><div class="c">Choose the weekday the target refills.</div><div class="ts">0:08.4</div></div>
+        </a><a class="card" href="screens/34_target.jpg" target="_blank">
+          <div class="ph"><span class="num">34</span><img loading="lazy" src="screens/34_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Target amount keypad</div><div class="c">Amount entry for “I need”.</div><div class="ts">0:09.2</div></div>
+        </a><a class="card" href="screens/35_target.jpg" target="_blank">
+          <div class="ph"><span class="num">35</span><img loading="lazy" src="screens/35_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">“Next month” sheet</div><div class="c">Set aside another $X/week vs Refill up to $X/week — “Most people choose this”.</div><div class="ts">0:11.6</div></div>
+        </a><a class="card" href="screens/36_target.jpg" target="_blank">
+          <div class="ph"><span class="num">36</span><img loading="lazy" src="screens/36_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Target — Yearly</div><div class="c">“I need / By Aug 1, 2026 / Next year I want to”.</div><div class="ts">0:15.3</div></div>
+        </a><a class="card" href="screens/37_target.jpg" target="_blank">
+          <div class="ph"><span class="num">37</span><img loading="lazy" src="screens/37_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Target date calendar</div><div class="c">Month-grid picker for the target due date.</div><div class="ts">0:16.0</div></div>
+        </a><a class="card" href="screens/38_target.jpg" target="_blank">
+          <div class="ph"><span class="num">38</span><img loading="lazy" src="screens/38_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">“Next year” sheet</div><div class="c">Yearly version of set-aside vs refill.</div><div class="ts">0:17.8</div></div>
+        </a><a class="card" href="screens/39_target.jpg" target="_blank">
+          <div class="ph"><span class="num">39</span><img loading="lazy" src="screens/39_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Target — Custom</div><div class="c">Amount, “I want to: Set aside”, Due on, Repeat toggle (off).</div><div class="ts">0:19.7</div></div>
+        </a><a class="card" href="screens/40_target.jpg" target="_blank">
+          <div class="ph"><span class="num">40</span><img loading="lazy" src="screens/40_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">“I want to” sheet</div><div class="c">Set aside / Fill up to / Have a balance of — the three custom behaviors.</div><div class="ts">0:22.6</div></div>
+        </a><a class="card" href="screens/41_target.jpg" target="_blank">
+          <div class="ph"><span class="num">41</span><img loading="lazy" src="screens/41_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Custom — Repeat on</div><div class="c">Repeat enabled → “Every 1 Month” row appears.</div><div class="ts">0:27.5</div></div>
+        </a><a class="card" href="screens/42_target.jpg" target="_blank">
+          <div class="ph"><span class="num">42</span><img loading="lazy" src="screens/42_target.jpg" alt=""></div>
+          <div class="meta"><div class="t">Repeat frequency spinner</div><div class="c">Numeric + Month/Year wheel for the repeat interval.</div><div class="ts">0:28.5</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d3"></span><h2>Settings</h2><span class="sub">App, plan &amp; account</span><span class="cnt">8</span></div>
+      <div class="row"><a class="card" href="screens/43_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">43</span><span class="tag">⋮→Settings</span><img loading="lazy" src="screens/43_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Plans &amp; App</div><div class="c">Current plan, New/Open Plan, Make a Fresh Start.</div><div class="ts">1:01.4</div></div>
+        </a><a class="card" href="screens/44_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">44</span><img loading="lazy" src="screens/44_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">App &amp; Account</div><div class="c">Display Options, Notifications, App Lock, Share, Account.</div><div class="ts">1:03.3</div></div>
+        </a><a class="card" href="screens/45_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">45</span><img loading="lazy" src="screens/45_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Account &amp; Misc</div><div class="c">Manage Bank Connections, Log Out, Diagnostics, Privacy, Terms.</div><div class="ts">1:04.5</div></div>
+        </a><a class="card" href="screens/46_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">46</span><img loading="lazy" src="screens/46_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Plan Settings</div><div class="c">Plan name, currency, number/date format, Delete Plan.</div><div class="ts">0:07.7</div></div>
+        </a><a class="card" href="screens/47_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">47</span><img loading="lazy" src="screens/47_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">New Plan</div><div class="c">Name + currency (AUD) and formats for a fresh plan.</div><div class="ts">0:12.8</div></div>
+        </a><a class="card" href="screens/48_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">48</span><img loading="lazy" src="screens/48_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Make a Fresh Start</div><div class="c">Explainer of what carries over; archived copy kept; Continue.</div><div class="ts">0:18.1</div></div>
+        </a><a class="card" href="screens/49_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">49</span><img loading="lazy" src="screens/49_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Display Options</div><div class="c">Theme (Light/Dark/Match System) + Balance Style (color vs differentiate without color).</div><div class="ts">0:22.1</div></div>
+        </a><a class="card" href="screens/50_settings.jpg" target="_blank">
+          <div class="ph"><span class="num">50</span><img loading="lazy" src="screens/50_settings.jpg" alt=""></div>
+          <div class="meta"><div class="t">Dark theme applied</div><div class="c">The whole app re-skins instantly when Dark Theme is selected.</div><div class="ts">0:24.9</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d4"></span><h2>Spending</h2><span class="sub">Register &amp; transactions</span><span class="cnt">5</span></div>
+      <div class="row"><a class="card" href="screens/51_spending.jpg" target="_blank">
+          <div class="ph"><span class="num">51</span><span class="tag">tab</span><img loading="lazy" src="screens/51_spending.jpg" alt=""></div>
+          <div class="meta"><div class="t">Register</div><div class="c">Transactions with search + uncleared filter.</div><div class="ts">2:44.5</div></div>
+        </a><a class="card" href="screens/52_spending.jpg" target="_blank">
+          <div class="ph"><span class="num">52</span><img loading="lazy" src="screens/52_spending.jpg" alt=""></div>
+          <div class="meta"><div class="t">Search + keyboard</div><div class="c">Searching the register.</div><div class="ts">1:51.9</div></div>
+        </a><a class="card" href="screens/53_spending.jpg" target="_blank">
+          <div class="ph"><span class="num">53</span><img loading="lazy" src="screens/53_spending.jpg" alt=""></div>
+          <div class="meta"><div class="t">Transaction — Outflow</div><div class="c">Payee, category, account, date, photo, memo, cleared, flag.</div><div class="ts">1:56.3</div></div>
+        </a><a class="card" href="screens/54_spending.jpg" target="_blank">
+          <div class="ph"><span class="num">54</span><img loading="lazy" src="screens/54_spending.jpg" alt=""></div>
+          <div class="meta"><div class="t">Transaction — Inflow</div><div class="c">Inflow toggle turns the amount green.</div><div class="ts">1:57.9</div></div>
+        </a><a class="card" href="screens/55_spending.jpg" target="_blank">
+          <div class="ph"><span class="num">55</span><img loading="lazy" src="screens/55_spending.jpg" alt=""></div>
+          <div class="meta"><div class="t">Transaction — details &amp; delete</div><div class="c">Never Repeat and Delete Transaction.</div><div class="ts">2:06.8</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d5"></span><h2>Accounts</h2><span class="sub">Balances &amp; connections</span><span class="cnt">1</span></div>
+      <div class="row"><a class="card" href="screens/56_accounts.jpg" target="_blank">
+          <div class="ph"><span class="num">56</span><span class="tag">tab</span><img loading="lazy" src="screens/56_accounts.jpg" alt=""></div>
+          <div class="meta"><div class="t">Accounts</div><div class="c">Cash &amp; Kun balances, Add Account, Manage Bank Connections.</div><div class="ts">2:16.6</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d6"></span><h2>Reflect</h2><span class="sub">Reports &amp; insights</span><span class="cnt">7</span></div>
+      <div class="row"><a class="card" href="screens/57_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">57</span><span class="tag">tab</span><img loading="lazy" src="screens/57_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Overview</div><div class="c">Spending Breakdown, Income vs Spending, Net Worth.</div><div class="ts">2:19.5</div></div>
+        </a><a class="card" href="screens/58_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">58</span><img loading="lazy" src="screens/58_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Net Worth &amp; Age of Money</div><div class="c">Assets/Debts trend and Age of Money guidance.</div><div class="ts">2:22.9</div></div>
+        </a><a class="card" href="screens/59_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">59</span><img loading="lazy" src="screens/59_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Breakdown — by month</div><div class="c">Total spending and top categories.</div><div class="ts">2:26.4</div></div>
+        </a><a class="card" href="screens/60_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">60</span><img loading="lazy" src="screens/60_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Breakdown — month picker</div><div class="c">Pick the month/year for the breakdown.</div><div class="ts">2:27.7</div></div>
+        </a><a class="card" href="screens/61_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">61</span><img loading="lazy" src="screens/61_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Breakdown — presets</div><div class="c">Last 3/6/12 Months, Year to Date, Last Year, All Dates.</div><div class="ts">2:30.3</div></div>
+        </a><a class="card" href="screens/62_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">62</span><img loading="lazy" src="screens/62_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Breakdown — Last 3 Months</div><div class="c">Preset range applied (May–July 2026).</div><div class="ts">2:31.5</div></div>
+        </a><a class="card" href="screens/63_reflect.jpg" target="_blank">
+          <div class="ph"><span class="num">63</span><img loading="lazy" src="screens/63_reflect.jpg" alt=""></div>
+          <div class="meta"><div class="t">Breakdown — Filter</div><div class="c">Include/exclude category groups.</div><div class="ts">2:36.3</div></div>
+        </a></div>
+    </section><section class="sec">
+      <div class="sechead"><span class="dot d7"></span><h2>Home</h2><span class="sub">Dashboard &amp; goals</span><span class="cnt">2</span></div>
+      <div class="row"><a class="card" href="screens/64_home.jpg" target="_blank">
+          <div class="ph"><span class="num">64</span><span class="tag">tab</span><img loading="lazy" src="screens/64_home.jpg" alt=""></div>
+          <div class="meta"><div class="t">For You</div><div class="c">‘You’re all caught up’, tips, connect with support.</div><div class="ts">2:49.9</div></div>
+        </a><a class="card" href="screens/65_home.jpg" target="_blank">
+          <div class="ph"><span class="num">65</span><img loading="lazy" src="screens/65_home.jpg" alt=""></div>
+          <div class="meta"><div class="t">Greeting &amp; quick actions</div><div class="c">‘Well, hello there Kunwar’, Pinned, Current Goal.</div><div class="ts">2:52.2</div></div>
+        </a></div>
+    </section>
+</main>
+<div class="tree">
+  <h2>Decision map — what you tap, and what it shows</h2>
+  <p>Each arrow is a decision (a tap or gesture); each box is the screen it opens, linked to its numbered screenshot above. The bottom tab bar (Home · Plan · Spending · Accounts · Reflect) is always available. Scroll the box to see the whole tree.</p>
+  <div class="treebox"><img src="tree.png?v=5" alt="Decision map — each tap and the screen it opens" style="display:block;width:2712px;max-width:none"></div>
+</div>
+<footer>Full-res images live in <b>user-flow/screens/</b> (numbered to match). All 113 settled frames are in <b>user-flow/candidates/</b>. Verified from the recording: the Progress-Bars column toggle, the Ready-to-Assign → Assign-Money entry, and the tap-a-category → calculator keypad (screen 27).
+<div style="margin-top:8px;opacity:.7">Still missing (not yet captured): Cover (overspent) · transaction-editor pickers (payee / category / date / flag) · delete-transaction confirm · ⋮ Support.</div>
+</footer>
+</body></html>

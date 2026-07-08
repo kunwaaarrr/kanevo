@@ -1,0 +1,587 @@
+[
+ {
+  "n": 1,
+  "sec": "Plan / Budget",
+  "title": "Budget \u2014 default (Available)",
+  "cap": "Default view: one <b>Available to Spend</b> column with a progress bar under each category. This is with \u22ee menu \u2192 Progress Bars ON.",
+  "tag": "",
+  "img": "screens/01_plan.jpg",
+  "t": "0:01.1"
+ },
+ {
+  "n": 2,
+  "sec": "Plan / Budget",
+  "title": "Budget \u2014 Assigned &amp; Available",
+  "cap": "The SAME budget after \u22ee menu \u2192 <b>Progress Bars is turned OFF</b>: two columns (Assigned + Available), no bars. This is what you pressed to make the columns show.",
+  "tag": "\u22ee toggle",
+  "img": "screens/02_plan.jpg",
+  "t": "2:39.5"
+ },
+ {
+  "n": 3,
+  "sec": "Plan / Budget",
+  "title": "Views filter sheet",
+  "cap": "Top-bar Views icon: All / Underfunded / Overfunded / Money Available / Snoozed.",
+  "tag": "top bar",
+  "img": "screens/03_plan.jpg",
+  "t": "0:07.2"
+ },
+ {
+  "n": 4,
+  "sec": "Plan / Budget",
+  "title": "Month picker",
+  "cap": "Tapping \u201cJul 2026 \u25be\u201d opens the month/year picker.",
+  "tag": "top bar",
+  "img": "screens/04_plan.jpg",
+  "t": "0:03.1"
+ },
+ {
+  "n": 5,
+  "sec": "Plan / Budget",
+  "title": "Edit Plan (Cost to Be Me)",
+  "cap": "Set monthly income and per-category targets via Add Target \u2014 opens from the \u270e pencil icon in the top bar.",
+  "tag": "\u270e top bar",
+  "img": "screens/05_plan.jpg",
+  "t": "0:09.7"
+ },
+ {
+  "n": 6,
+  "sec": "Views \u2014 custom filters",
+  "title": "Filter applied \u2014 Underfunded",
+  "cap": "Budget shows only underfunded categories; \u201cViewing Underfunded\u201d banner with View All Categories to exit.",
+  "tag": "views",
+  "img": "screens/06_views.jpg",
+  "t": "0:05.1"
+ },
+ {
+  "n": 7,
+  "sec": "Views \u2014 custom filters",
+  "title": "Overfunded \u2014 empty state",
+  "cap": "No overfunded targets; \u201cUm, why is this view always empty?\u201d help link and View All.",
+  "tag": "views",
+  "img": "screens/07_views.jpg",
+  "t": "0:07.4"
+ },
+ {
+  "n": 8,
+  "sec": "Views \u2014 custom filters",
+  "title": "Filter applied \u2014 Money Available",
+  "cap": "\u201cViewing Money Available\u201d banner over the filtered budget.",
+  "tag": "views",
+  "img": "screens/08_views.jpg",
+  "t": "0:10.0"
+ },
+ {
+  "n": 9,
+  "sec": "Views \u2014 custom filters",
+  "title": "Snoozed \u2014 empty state",
+  "cap": "No snoozed targets this month.",
+  "tag": "views",
+  "img": "screens/09_views.jpg",
+  "t": "0:13.0"
+ },
+ {
+  "n": 10,
+  "sec": "Views \u2014 custom filters",
+  "title": "Manage Views",
+  "cap": "Views sheet \u2192 Edit; lists the four stock views.",
+  "tag": "views",
+  "img": "screens/10_views.jpg",
+  "t": "0:17.7"
+ },
+ {
+  "n": 11,
+  "sec": "Views \u2014 custom filters",
+  "title": "New View \u2014 name it",
+  "cap": "Views sheet \u2192 New; name field (\u201cKeep \u2019em short &amp; sweet!\u201d) with keyboard.",
+  "tag": "views",
+  "img": "screens/11_views.jpg",
+  "t": "0:21.3"
+ },
+ {
+  "n": 12,
+  "sec": "Views \u2014 custom filters",
+  "title": "New View \u2014 pick categories",
+  "cap": "Checklist of every category group to include in the custom view.",
+  "tag": "views",
+  "img": "screens/12_views.jpg",
+  "t": "0:24.7"
+ },
+ {
+  "n": 13,
+  "sec": "The \u22ee overflow menu",
+  "title": "Overflow menu \u2014 full",
+  "cap": "Every item top-to-bottom. <b>Progress Bars</b> toggles the Assigned/Available columns; Refresh (sync) and Support (help) act in place; the rest open the screens below.",
+  "tag": "\u22ee menu",
+  "img": "screens/13_the.jpg",
+  "t": "0:11.5"
+ },
+ {
+  "n": 14,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Recent Moves \u2014 All",
+  "cap": "Money-move history, All tab.",
+  "tag": "\u22ee menu",
+  "img": "screens/14_the.jpg",
+  "t": "0:15.0"
+ },
+ {
+  "n": 15,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Recent Moves \u2014 Moved",
+  "cap": "Moved tab (No Money Moves yet).",
+  "tag": "\u22ee menu",
+  "img": "screens/15_the.jpg",
+  "t": "0:16.3"
+ },
+ {
+  "n": 16,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Recent Moves \u2014 Assigned",
+  "cap": "Assigned tab \u2014 where each dollar went.",
+  "tag": "\u22ee menu",
+  "img": "screens/16_the.jpg",
+  "t": "0:17.3"
+ },
+ {
+  "n": 17,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 After Undo, menu shows Redo",
+  "cap": "Once you undo, the menu\u2019s second item becomes Redo.",
+  "tag": "\u22ee menu",
+  "img": "screens/17_the.jpg",
+  "t": "0:22.9"
+ },
+ {
+  "n": 18,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Undo \u2014 bottom popup",
+  "cap": "Undo pops a bottom pill: Phone &amp; Internet reverted to $0.00.",
+  "tag": "popup",
+  "img": "screens/18_the.jpg",
+  "t": "0:22.5"
+ },
+ {
+  "n": 19,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Redo \u2014 bottom popup",
+  "cap": "Redo pops the green pill: Phone &amp; Internet re-applied at $20.00.",
+  "tag": "popup",
+  "img": "screens/19_the.jpg",
+  "t": "0:21.3"
+ },
+ {
+  "n": 20,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Open Plan",
+  "cap": "Switch plans / plans shared with you.",
+  "tag": "\u22ee menu",
+  "img": "screens/20_the.jpg",
+  "t": "0:28.8"
+ },
+ {
+  "n": 21,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Collapse/Expand",
+  "cap": "Submenu: Collapse All / Expand All Groups.",
+  "tag": "\u22ee menu",
+  "img": "screens/21_the.jpg",
+  "t": "0:39.1"
+ },
+ {
+  "n": 22,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Collapse result",
+  "cap": "Groups collapsed to headers only.",
+  "tag": "\u22ee menu",
+  "img": "screens/22_the.jpg",
+  "t": "0:41.1"
+ },
+ {
+  "n": 23,
+  "sec": "The \u22ee overflow menu",
+  "title": "\u2192 Hide Amounts to Share",
+  "cap": "Privacy mode \u2014 amounts masked.",
+  "tag": "\u22ee menu",
+  "img": "screens/23_the.jpg",
+  "t": "0:48.7"
+ },
+ {
+  "n": 24,
+  "sec": "Assign Money",
+  "title": "Assign Money (helper)",
+  "cap": "Reached by tapping the green <b>Ready to Assign \u25b8</b> bar. Auto-assign helper; underfunded highlighted.",
+  "tag": "tap bar",
+  "img": "screens/24_assign.jpg",
+  "t": "1:11.9"
+ },
+ {
+  "n": 25,
+  "sec": "Assign Money",
+  "title": "Assign Money \u2014 scrolled",
+  "cap": "Wants group and remaining categories.",
+  "tag": "",
+  "img": "screens/25_assign.jpg",
+  "t": "1:13.3"
+ },
+ {
+  "n": 26,
+  "sec": "Assign Money",
+  "title": "Auto-Assign by\u2026",
+  "cap": "Underfunded / Assigned Last Month / Spent Last Month / Average.",
+  "tag": "",
+  "img": "screens/26_assign.jpg",
+  "t": "1:17.1"
+ },
+ {
+  "n": 27,
+  "sec": "Assign Money",
+  "title": "Assign amount \u2014 calculator keypad",
+  "cap": "Tap a category\u2019s amount on the budget \u2192 keypad slides up (with + \u2212 = calculator). Tabs: Auto-Assign / Move Money / Details.",
+  "tag": "tap row",
+  "img": "screens/27_assign.jpg",
+  "t": "1:31.1"
+ },
+ {
+  "n": 28,
+  "sec": "Assign Money",
+  "title": "Move Money",
+  "cap": "Keypad \u2192 Move Money tab; From Ready to Assign \u2192 To a category, amount keypad.",
+  "tag": "keypad",
+  "img": "screens/28_assign.jpg",
+  "t": "0:02.9"
+ },
+ {
+  "n": 29,
+  "sec": "Assign Money",
+  "title": "Move Money \u2014 pick source",
+  "cap": "Category picker: search, New Category, Selected + Inflow (Ready to Assign) and every group as radio rows.",
+  "tag": "keypad",
+  "img": "screens/29_assign.jpg",
+  "t": "0:05.5"
+ },
+ {
+  "n": 30,
+  "sec": "Assign Money",
+  "title": "Category picker \u2014 scrolled",
+  "cap": "Wants group incl. \u201cStuff I forgot to plan for\u201d and YNAB subscription.",
+  "tag": "keypad",
+  "img": "screens/30_assign.jpg",
+  "t": "0:06.5"
+ },
+ {
+  "n": 31,
+  "sec": "Category Details & Targets",
+  "title": "Category Details",
+  "cap": "Balance breakdown (From Jun, Assigned, Activity, Available), Create Target, Notes, Rename Category.",
+  "tag": "tap amount",
+  "img": "screens/31_target.jpg",
+  "t": "0:03.3"
+ },
+ {
+  "n": 32,
+  "sec": "Category Details & Targets",
+  "title": "Target \u2014 Weekly",
+  "cap": "\u201cI need / Every Saturday / Next month I want to\u201d, Save Target.",
+  "tag": "",
+  "img": "screens/32_target.jpg",
+  "t": "0:06.1"
+ },
+ {
+  "n": 33,
+  "sec": "Category Details & Targets",
+  "title": "Weekly \u2014 day picker",
+  "cap": "Choose the weekday the target refills.",
+  "tag": "",
+  "img": "screens/33_target.jpg",
+  "t": "0:08.4"
+ },
+ {
+  "n": 34,
+  "sec": "Category Details & Targets",
+  "title": "Target amount keypad",
+  "cap": "Amount entry for \u201cI need\u201d.",
+  "tag": "",
+  "img": "screens/34_target.jpg",
+  "t": "0:09.2"
+ },
+ {
+  "n": 35,
+  "sec": "Category Details & Targets",
+  "title": "\u201cNext month\u201d sheet",
+  "cap": "Set aside another $X/week vs Refill up to $X/week \u2014 \u201cMost people choose this\u201d.",
+  "tag": "",
+  "img": "screens/35_target.jpg",
+  "t": "0:11.6"
+ },
+ {
+  "n": 36,
+  "sec": "Category Details & Targets",
+  "title": "Target \u2014 Yearly",
+  "cap": "\u201cI need / By Aug 1, 2026 / Next year I want to\u201d.",
+  "tag": "",
+  "img": "screens/36_target.jpg",
+  "t": "0:15.3"
+ },
+ {
+  "n": 37,
+  "sec": "Category Details & Targets",
+  "title": "Target date calendar",
+  "cap": "Month-grid picker for the target due date.",
+  "tag": "",
+  "img": "screens/37_target.jpg",
+  "t": "0:16.0"
+ },
+ {
+  "n": 38,
+  "sec": "Category Details & Targets",
+  "title": "\u201cNext year\u201d sheet",
+  "cap": "Yearly version of set-aside vs refill.",
+  "tag": "",
+  "img": "screens/38_target.jpg",
+  "t": "0:17.8"
+ },
+ {
+  "n": 39,
+  "sec": "Category Details & Targets",
+  "title": "Target \u2014 Custom",
+  "cap": "Amount, \u201cI want to: Set aside\u201d, Due on, Repeat toggle (off).",
+  "tag": "",
+  "img": "screens/39_target.jpg",
+  "t": "0:19.7"
+ },
+ {
+  "n": 40,
+  "sec": "Category Details & Targets",
+  "title": "\u201cI want to\u201d sheet",
+  "cap": "Set aside / Fill up to / Have a balance of \u2014 the three custom behaviors.",
+  "tag": "",
+  "img": "screens/40_target.jpg",
+  "t": "0:22.6"
+ },
+ {
+  "n": 41,
+  "sec": "Category Details & Targets",
+  "title": "Custom \u2014 Repeat on",
+  "cap": "Repeat enabled \u2192 \u201cEvery 1 Month\u201d row appears.",
+  "tag": "",
+  "img": "screens/41_target.jpg",
+  "t": "0:27.5"
+ },
+ {
+  "n": 42,
+  "sec": "Category Details & Targets",
+  "title": "Repeat frequency spinner",
+  "cap": "Numeric + Month/Year wheel for the repeat interval.",
+  "tag": "",
+  "img": "screens/42_target.jpg",
+  "t": "0:28.5"
+ },
+ {
+  "n": 43,
+  "sec": "Settings",
+  "title": "Plans &amp; App",
+  "cap": "Current plan, New/Open Plan, Make a Fresh Start.",
+  "tag": "\u22ee\u2192Settings",
+  "img": "screens/43_settings.jpg",
+  "t": "1:01.4"
+ },
+ {
+  "n": 44,
+  "sec": "Settings",
+  "title": "App &amp; Account",
+  "cap": "Display Options, Notifications, App Lock, Share, Account.",
+  "tag": "",
+  "img": "screens/44_settings.jpg",
+  "t": "1:03.3"
+ },
+ {
+  "n": 45,
+  "sec": "Settings",
+  "title": "Account &amp; Misc",
+  "cap": "Manage Bank Connections, Log Out, Diagnostics, Privacy, Terms.",
+  "tag": "",
+  "img": "screens/45_settings.jpg",
+  "t": "1:04.5"
+ },
+ {
+  "n": 46,
+  "sec": "Settings",
+  "title": "Plan Settings",
+  "cap": "Plan name, currency, number/date format, Delete Plan.",
+  "tag": "",
+  "img": "screens/46_settings.jpg",
+  "t": "0:07.7"
+ },
+ {
+  "n": 47,
+  "sec": "Settings",
+  "title": "New Plan",
+  "cap": "Name + currency (AUD) and formats for a fresh plan.",
+  "tag": "",
+  "img": "screens/47_settings.jpg",
+  "t": "0:12.8"
+ },
+ {
+  "n": 48,
+  "sec": "Settings",
+  "title": "Make a Fresh Start",
+  "cap": "Explainer of what carries over; archived copy kept; Continue.",
+  "tag": "",
+  "img": "screens/48_settings.jpg",
+  "t": "0:18.1"
+ },
+ {
+  "n": 49,
+  "sec": "Settings",
+  "title": "Display Options",
+  "cap": "Theme (Light/Dark/Match System) + Balance Style (color vs differentiate without color).",
+  "tag": "",
+  "img": "screens/49_settings.jpg",
+  "t": "0:22.1"
+ },
+ {
+  "n": 50,
+  "sec": "Settings",
+  "title": "Dark theme applied",
+  "cap": "The whole app re-skins instantly when Dark Theme is selected.",
+  "tag": "",
+  "img": "screens/50_settings.jpg",
+  "t": "0:24.9"
+ },
+ {
+  "n": 51,
+  "sec": "Spending",
+  "title": "Register",
+  "cap": "Transactions with search + uncleared filter.",
+  "tag": "tab",
+  "img": "screens/51_spending.jpg",
+  "t": "2:44.5"
+ },
+ {
+  "n": 52,
+  "sec": "Spending",
+  "title": "Search + keyboard",
+  "cap": "Searching the register.",
+  "tag": "",
+  "img": "screens/52_spending.jpg",
+  "t": "1:51.9"
+ },
+ {
+  "n": 53,
+  "sec": "Spending",
+  "title": "Transaction \u2014 Outflow",
+  "cap": "Payee, category, account, date, photo, memo, cleared, flag.",
+  "tag": "",
+  "img": "screens/53_spending.jpg",
+  "t": "1:56.3"
+ },
+ {
+  "n": 54,
+  "sec": "Spending",
+  "title": "Transaction \u2014 Inflow",
+  "cap": "Inflow toggle turns the amount green.",
+  "tag": "",
+  "img": "screens/54_spending.jpg",
+  "t": "1:57.9"
+ },
+ {
+  "n": 55,
+  "sec": "Spending",
+  "title": "Transaction \u2014 details &amp; delete",
+  "cap": "Never Repeat and Delete Transaction.",
+  "tag": "",
+  "img": "screens/55_spending.jpg",
+  "t": "2:06.8"
+ },
+ {
+  "n": 56,
+  "sec": "Accounts",
+  "title": "Accounts",
+  "cap": "Cash &amp; Kun balances, Add Account, Manage Bank Connections.",
+  "tag": "tab",
+  "img": "screens/56_accounts.jpg",
+  "t": "2:16.6"
+ },
+ {
+  "n": 57,
+  "sec": "Reflect",
+  "title": "Overview",
+  "cap": "Spending Breakdown, Income vs Spending, Net Worth.",
+  "tag": "tab",
+  "img": "screens/57_reflect.jpg",
+  "t": "2:19.5"
+ },
+ {
+  "n": 58,
+  "sec": "Reflect",
+  "title": "Net Worth &amp; Age of Money",
+  "cap": "Assets/Debts trend and Age of Money guidance.",
+  "tag": "",
+  "img": "screens/58_reflect.jpg",
+  "t": "2:22.9"
+ },
+ {
+  "n": 59,
+  "sec": "Reflect",
+  "title": "Breakdown \u2014 by month",
+  "cap": "Total spending and top categories.",
+  "tag": "",
+  "img": "screens/59_reflect.jpg",
+  "t": "2:26.4"
+ },
+ {
+  "n": 60,
+  "sec": "Reflect",
+  "title": "Breakdown \u2014 month picker",
+  "cap": "Pick the month/year for the breakdown.",
+  "tag": "",
+  "img": "screens/60_reflect.jpg",
+  "t": "2:27.7"
+ },
+ {
+  "n": 61,
+  "sec": "Reflect",
+  "title": "Breakdown \u2014 presets",
+  "cap": "Last 3/6/12 Months, Year to Date, Last Year, All Dates.",
+  "tag": "",
+  "img": "screens/61_reflect.jpg",
+  "t": "2:30.3"
+ },
+ {
+  "n": 62,
+  "sec": "Reflect",
+  "title": "Breakdown \u2014 Last 3 Months",
+  "cap": "Preset range applied (May\u2013July 2026).",
+  "tag": "",
+  "img": "screens/62_reflect.jpg",
+  "t": "2:31.5"
+ },
+ {
+  "n": 63,
+  "sec": "Reflect",
+  "title": "Breakdown \u2014 Filter",
+  "cap": "Include/exclude category groups.",
+  "tag": "",
+  "img": "screens/63_reflect.jpg",
+  "t": "2:36.3"
+ },
+ {
+  "n": 64,
+  "sec": "Home",
+  "title": "For You",
+  "cap": "\u2018You\u2019re all caught up\u2019, tips, connect with support.",
+  "tag": "tab",
+  "img": "screens/64_home.jpg",
+  "t": "2:49.9"
+ },
+ {
+  "n": 65,
+  "sec": "Home",
+  "title": "Greeting &amp; quick actions",
+  "cap": "\u2018Well, hello there Kunwar\u2019, Pinned, Current Goal.",
+  "tag": "",
+  "img": "screens/65_home.jpg",
+  "t": "2:52.2"
+ }
+]
