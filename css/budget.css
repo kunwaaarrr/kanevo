@@ -270,8 +270,59 @@
 .template-list, .fv-cat-list { max-height: 280px; overflow-y: auto; margin-bottom: 14px; }
 .template-item, .fv-cat-item { display: flex; align-items: center; gap: 8px; padding: 6px 2px; font-size: 13px; }
 
+/* ================= cover overspending banner (desktop + mobile) ================= */
+.cover-banner {
+  display: flex; align-items: center; gap: 10px;
+  margin: 10px 20px 0; padding: 8px 14px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+}
+.cover-count {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--pill-neg-bg); color: var(--pill-neg-text);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+}
+.cover-text { font-size: 14px; font-weight: 500; color: var(--text); }
+.cover-btn { margin-left: auto; }
+
+/* ================= bottom sheets (mobile) ================= */
+.sheet-handle {
+  width: 40px; height: 4px; border-radius: 999px; background: var(--line);
+  margin: -4px auto 12px; flex-shrink: 0;
+}
+.ss-sheet { display: flex; flex-direction: column; gap: 0; }
+.sheet-title { font-size: 19px; font-weight: 700; margin-bottom: 12px; }
+.sheet-section-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-2); margin: 14px 0 6px;
+}
+.sheet-card { background: var(--bg-alt); border-radius: 10px; padding: 12px 14px; }
+.sheet-card .insp-row { font-size: 15px; }
+.sheet-card .form-row:last-child { margin-bottom: 0; }
+.sheet-target-empty { text-align: center; }
+.sheet-target-q { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.sheet-target-empty .muted { font-size: 13px; margin-bottom: 12px; }
+.sheet-create-target { width: 100%; }
+.sheet-target-summary { font-size: 15px; font-weight: 600; }
+.sheet-bar {
+  position: static; right: auto; height: 8px; margin: 10px 0 6px; width: 100%;
+}
+.sheet-target-status { font-size: 13px; color: var(--text-2); }
+.sheet-target-status.underfunded { color: var(--warning-text); }
+.sheet-target-status.overspent { color: var(--red); }
+.sheet-target-status.funded { color: var(--green); }
+.sheet-target-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.sheet-note {
+  width: 100%; min-height: 64px; resize: vertical; padding: 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 14px;
+}
+.sheet-move-btn { width: 100%; margin-top: 16px; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+.sheet-actions .btn { flex: 1; }
+.tgt-tabs { margin: 4px 0 12px; }
+
 /* ================= mobile ================= */
 @media (max-width: 767px) {
+  .cover-banner { margin: 8px 12px 0; }
   .budget-head { padding: 10px 12px; gap: 8px; }
   .budget-head-top { flex-wrap: wrap; justify-content: center; }
   .head-spacer { display: none; }

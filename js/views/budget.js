@@ -57,6 +57,21 @@ function fundBarClass(c) {
   return c.available > 0 ? 'funded' : 'underfunded';
 }
 
+function isMobile() { return window.innerWidth < 768; }
+function overspentCats(md) { return md.groups.flatMap(g => g.categories).filter(c => c.available < 0); }
+
+// ---------- Cover overspending banner (desktop + mobile) ----------
+function coverBanner(md) {
+  const over = overspentCats(md);
+  if (!over.length) return '';
+  const n = over.length;
+  return h`<div class="cover-banner">
+    <span class="cover-count">${String(n)}</span>
+    <span class="cover-text">${n} overspent categor${n === 1 ? 'y' : 'ies'}</span>
+    <button class="btn subtle sm cover-btn" data-act="cover">Cover</button>
+  </div>`;
+}
+
 function catRow(c, groupHidden) {
   const selected = c.id === selectedId;
   const editing = c.id === editingCatId;
@@ -471,6 +486,7 @@ export function render(root, { month }) {
 
   root.innerHTML = h`<div class="budget-view density-${density}">
     ${[header(md)]}
+    ${[coverBanner(md)]}
     ${[filterChips()]}
     ${[toolbar()]}
     <div class="budget-body">
@@ -535,8 +551,16 @@ function wireEvents(root, md) {
         break;
       case 'open-cat':
         e.stopPropagation();
-        openCategoryPopover(root, act, id, md);
+        if (isMobile()) openCategoryDetailsSheet(id);
+        else openCategoryPopover(root, act, id, md);
         break;
+      case 'cover': {
+        e.stopPropagation();
+        const over = overspentCats(md);
+        if (over.length === 1) openMovePopover(root, act, over[0].id, md);
+        else if (over.length) openCoverPicker(root, act, over, md);
+        break;
+      }
       case 'open-move':
         e.stopPropagation();
         openMovePopover(root, act, id, md);
@@ -736,6 +760,7 @@ function wireEvents(root, md) {
   root.querySelectorAll('tr.cat-row').forEach(tr => {
     tr.addEventListener('click', e => {
       if (e.target.closest('[data-act]') || e.target.closest('.row-chk')) return;
+      if (isMobile()) { openCategoryDetailsSheet(tr.dataset.catId); return; }
       selectedId = selectedId === tr.dataset.catId ? null : tr.dataset.catId;
       render(root, { month: curMonth });
     });
@@ -864,8 +889,8 @@ function openMovePopover(root, anchorEl, catId, md) {
 
   let pop;
   if (isMobile) {
-    pop = openModal(body);
-    pop.classList.add('bottom-sheet');
+    pop = openModal(`<div class="sheet-handle"></div>${body}`);
+    pop.classList.add('bottom-sheet', 'ss-sheet');
   } else {
     const rect = anchorEl.getBoundingClientRect();
     pop = document.createElement('div');
@@ -1040,4 +1065,221 @@ function showDropIndicator(tr, clientY) {
 }
 function hideDropIndicator(tr) {
   tr.classList.remove('drop-above', 'drop-below');
+}
+
+// ================= mobile bottom sheets =================
+// Category Details sheet + inline Target editor. Produces the SAME target shapes
+// (via store.setTarget) as the desktop inspector — see set-target-cadence / saveTargetFromInspector.
+let sheetCatId = null;
+let sheetMode = 'details';   // 'details' | 'target'
+let sheetTarget = null;      // draft target while editing (discarded on Cancel)
+
+function openCategoryDetailsSheet(catId) {
+  sheetCatId = catId; sheetMode = 'details'; sheetTarget = null;
+  const sheet = openModal('');
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  renderCategorySheet(sheet);
+}
+
+function renderCategorySheet(sheet) {
+  const body = sheetMode === 'target' ? categorySheetTarget() : categorySheetDetails();
+  sheet.innerHTML = `<div class="sheet-handle"></div>${body}`;
+  wireCategorySheet(sheet);
+}
+
+function targetSummaryText(t) {
+  const amt = fmtExact(t.amount);
+  if (t.type === 'SAVINGS_BALANCE') return `Have ${amt} by ${t.targetDate || '—'}`;
+  const cad = t.cadence === 'weekly' ? 'per week' : t.cadence === 'yearly' ? 'per year' : 'per month';
+  return `${t.refill ? 'Refill up to' : 'Set aside'} ${amt} ${cad}`;
+}
+
+function targetBlock(cat) {
+  const t = cat.target;
+  if (!t) {
+    return h`<div class="sheet-card sheet-target-empty">
+      <div class="sheet-target-q">How much do you need for ${cat.name}?</div>
+      <p class="muted">Set a target so this category tells you when it's on track over time.</p>
+      <button class="btn subtle sheet-create-target" data-act="create-target">Create Target</button>
+    </div>`;
+  }
+  const needed = neededFor(cat, curMonth);
+  const pct = cat.goal ? cat.goal.fundedPct : 0;
+  const status = cat.goal ? cat.goal.status : 'funded';
+  const statusText = status === 'funded' ? 'Fully funded'
+    : status === 'overspent' ? 'Overspent'
+    : `${fmt(needed)} more needed this month`;
+  return h`<div class="sheet-card">
+    <div class="sheet-target-summary">${targetSummaryText(t)}</div>
+    <div class="target-bar sheet-bar"><div class="target-bar-fill ${fundBarClass(cat)}" style="width:${Math.max(0, Math.min(100, pct))}%"></div></div>
+    <div class="sheet-target-status ${status}">${statusText}</div>
+    <div class="sheet-target-actions">
+      <button class="btn secondary sm" data-act="edit-target">Edit Target</button>
+      <button class="link-btn danger-text" data-act="delete-target">Delete Target</button>
+    </div>
+  </div>`;
+}
+
+function categorySheetDetails() {
+  const md = store.monthData(curMonth);
+  const cat = md.groups.flatMap(g => g.categories).find(c => c.id === sheetCatId);
+  const scat = store.state.categories.find(c => c.id === sheetCatId);
+  if (!cat) return '';
+  const prevMonth = addMonths(curMonth, -1);
+  const prevAvail = store.monthData(prevMonth).groups.flatMap(g => g.categories).find(c => c.id === sheetCatId)?.available ?? 0;
+  const leftOver = Math.max(prevAvail, 0);
+  const monthWord = monthLabel(curMonth).split(' ')[0];
+  return h`
+    <h2 class="sheet-title">${cat.name}</h2>
+    <div class="sheet-section-label">Balance</div>
+    <div class="sheet-card">
+      <div class="insp-row"><span>Left Over from Last Month</span><span>${fmt(leftOver)}</span></div>
+      <div class="insp-row"><span>Assigned in ${monthWord}</span><span>${fmt(cat.assigned)}</span></div>
+      <div class="insp-row"><span>Activity</span><span>${fmt(cat.activity)}</span></div>
+      <div class="insp-row insp-total"><span>Available</span><span class="pill ${cat.pillClass}">${fmt(cat.available)}</span></div>
+    </div>
+    <div class="sheet-section-label">Target</div>
+    ${[targetBlock(cat)]}
+    <div class="sheet-section-label">Notes</div>
+    <textarea class="sheet-note" id="sheet-note" placeholder="Enter a note…">${scat?.note || ''}</textarea>
+    <button class="btn secondary sheet-move-btn" data-act="sheet-move">Move Money</button>
+  `;
+}
+
+// tab -> target shape, mirroring desktop set-target-cadence (clean shapes, no stray fields)
+function applyCadence(prev, id, month) {
+  const t = { type: 'NEED', amount: prev.amount || 0 };
+  if (id === 'weekly') { t.cadence = 'weekly'; t.weekday = prev.weekday ?? 1; }
+  else if (id === 'monthly') { t.cadence = 'monthly'; t.dayOfMonth = prev.dayOfMonth ?? 1; }
+  else if (id === 'yearly') { t.cadence = 'yearly'; t.targetDate = prev.targetDate || null; }
+  else { t.type = 'SAVINGS_BALANCE'; t.targetDate = prev.targetDate || month; }
+  if (prev.refill && id !== 'custom') t.refill = prev.refill;
+  if (prev.snoozed) t.snoozed = prev.snoozed;
+  return t;
+}
+
+function categorySheetTarget() {
+  const cat = store.monthData(curMonth).groups.flatMap(g => g.categories).find(c => c.id === sheetCatId);
+  const t = sheetTarget;
+  const cadence = t.type === 'SAVINGS_BALANCE' ? 'custom' : (t.cadence || 'monthly');
+  const segs = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly'], ['custom', 'Custom']];
+  let everyField;
+  if (cadence === 'weekly') everyField = h`<div class="form-row"><label for="tgt-every">Every</label>
+    <select id="tgt-every">${WEEKDAYS.map((wd, i) => `<option value="${i}" ${(t.weekday ?? 1) === i ? 'selected' : ''}>${wd}</option>`).join('')}</select></div>`;
+  else if (cadence === 'monthly') everyField = h`<div class="form-row"><label for="tgt-every">Every</label>
+    <select id="tgt-every">${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${((t.dayOfMonth || 1) === i + 1) ? 'selected' : ''}>Day ${i + 1}</option>`).join('')}</select></div>`;
+  else everyField = h`<div class="form-row"><label for="tgt-every">${cadence === 'custom' ? 'By' : 'Every'}</label>
+    <input id="tgt-every" type="month" value="${t.targetDate || ''}"></div>`;
+  const refillField = cadence !== 'custom' ? h`<div class="form-row"><label for="tgt-refill">Next month I want to</label>
+    <select id="tgt-refill">
+      <option value="need" ${!t.refill ? 'selected' : ''}>Set aside another ${fmtExact(t.amount)}</option>
+      <option value="refill" ${t.refill ? 'selected' : ''}>Refill up to ${fmtExact(t.amount)}</option>
+    </select></div>` : '';
+  return h`
+    <h2 class="sheet-title">${cat.name}</h2>
+    <div class="segmented tgt-tabs">
+      ${segs.map(([k, label]) => h`<button class="seg-btn ${cadence === k ? 'active' : ''}" data-act="tgt-tab" data-id="${k}">${label}</button>`).join('')}
+    </div>
+    <div class="sheet-card">
+      <div class="form-row"><label for="tgt-amount">I need</label>
+        <input id="tgt-amount" type="text" inputmode="decimal" value="${fmtExact(t.amount).replace('$', '')}"></div>
+      ${everyField}
+      ${refillField}
+    </div>
+    <div class="sheet-actions">
+      <button class="btn secondary" data-act="cancel-target">Cancel</button>
+      <button class="btn" data-act="save-target">Save Target</button>
+    </div>
+  `;
+}
+
+// read live editor fields back into the draft (survives tab switches + Save)
+function captureEditor(sheet) {
+  const t = sheetTarget;
+  const amt = sheet.querySelector('#tgt-amount');
+  if (amt) t.amount = parseAmount(amt.value);
+  const every = sheet.querySelector('#tgt-every');
+  if (every) {
+    const cadence = t.type === 'SAVINGS_BALANCE' ? 'custom' : t.cadence;
+    if (cadence === 'weekly') t.weekday = +every.value;
+    else if (cadence === 'monthly') t.dayOfMonth = +every.value;
+    else t.targetDate = every.value || null;
+  }
+  const refill = sheet.querySelector('#tgt-refill');
+  if (refill) t.refill = refill.value === 'refill';
+}
+
+function wireCategorySheet(sheet) {
+  const note = sheet.querySelector('#sheet-note');
+  if (note) note.addEventListener('change', () => store.updateCategory(sheetCatId, { note: note.value }));
+
+  sheet.onclick = e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'create-target':
+        sheetTarget = { type: 'NEED', amount: 0, cadence: 'monthly', dayOfMonth: 1 };
+        sheetMode = 'target'; renderCategorySheet(sheet);
+        break;
+      case 'edit-target': {
+        const scat = store.state.categories.find(c => c.id === sheetCatId);
+        sheetTarget = { ...(scat.target || { type: 'NEED', amount: 0, cadence: 'monthly', dayOfMonth: 1 }) };
+        sheetMode = 'target'; renderCategorySheet(sheet);
+        break;
+      }
+      case 'delete-target':
+        if (confirm('Delete this target?')) { store.setTarget(sheetCatId, null); renderCategorySheet(sheet); }
+        break;
+      case 'sheet-move':
+        openMovePopover(null, null, sheetCatId, store.monthData(curMonth));
+        break;
+      case 'tgt-tab':
+        captureEditor(sheet);
+        sheetTarget = applyCadence(sheetTarget, act.dataset.id, curMonth);
+        renderCategorySheet(sheet);
+        break;
+      case 'save-target':
+        captureEditor(sheet);
+        store.setTarget(sheetCatId, { ...sheetTarget });
+        sheetMode = 'details'; renderCategorySheet(sheet);
+        toast('Target saved');
+        break;
+      case 'cancel-target':
+        sheetMode = 'details'; renderCategorySheet(sheet);
+        break;
+    }
+  };
+}
+
+// ---------- cover: pick which overspent category to cover (multiple) ----------
+function openCoverPicker(root, anchorEl, over, md) {
+  const rows = over.map(c => h`<button class="mm-row" data-cover-id="${c.id}">
+    <span class="mm-row-name">${c.name}</span>
+    <span class="pill ${c.pillClass}">${fmt(c.available)}</span>
+  </button>`).join('');
+  const body = h`<div class="move-money-body">
+    <h2>Cover overspending in:</h2>
+    <div class="mm-list">${rows}</div>
+  </div>`;
+  let pop, mobile = isMobile();
+  if (mobile) {
+    pop = openModal(`<div class="sheet-handle"></div>${body}`);
+    pop.classList.add('bottom-sheet', 'ss-sheet');
+  } else {
+    document.querySelectorAll('.popover.move-money-popover').forEach(p => p.remove());
+    const rect = anchorEl.getBoundingClientRect();
+    pop = document.createElement('div');
+    pop.className = 'popover move-money-popover';
+    pop.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+    pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    pop.innerHTML = body;
+    document.body.appendChild(pop);
+    setTimeout(() => document.addEventListener('click', outsideCloser(pop), { once: true }));
+  }
+  pop.querySelector('.mm-list').onclick = e => {
+    const row = e.target.closest('[data-cover-id]');
+    if (!row) return;
+    if (!mobile) pop.remove();   // mobile: openMovePopover's openModal replaces this sheet
+    openMovePopover(root, anchorEl, row.dataset.coverId, store.monthData(curMonth));
+  };
 }
