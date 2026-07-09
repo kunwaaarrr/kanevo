@@ -13,6 +13,8 @@ function download(filename, text) {
 
 export function render(root, params) {
   const s = store.state.settings;
+  const theme = s.theme || 'light';
+  const balance = s.balanceStyle || 'default';
   root.innerHTML = h`<div class="view-head"><div class="view-title">Settings</div></div>
     <div class="settings-body">
 
@@ -63,6 +65,41 @@ export function render(root, params) {
       </section>
 
       <section class="settings-card">
+        <h3>Display Options</h3>
+        <div class="disp-group">
+          <div class="disp-label">Theme</div>
+          <label class="disp-radio"><input type="radio" name="disp-theme" value="light" ${theme === 'light' ? 'checked' : ''}>Light Theme</label>
+          <label class="disp-radio"><input type="radio" name="disp-theme" value="dark" ${theme === 'dark' ? 'checked' : ''}>Dark Theme</label>
+          <label class="disp-radio"><input type="radio" name="disp-theme" value="system" ${theme === 'system' ? 'checked' : ''}>Match System</label>
+        </div>
+        <div class="disp-group">
+          <div class="disp-label">Balance Style</div>
+          <label class="disp-radio disp-radio-preview">
+            <input type="radio" name="disp-balance" value="default" ${balance === 'default' ? 'checked' : ''}>
+            <span class="disp-radio-body">
+              <span class="disp-radio-title">Default</span>
+              <span class="disp-preview" data-balance="default">
+                <span class="pill overspent">-$10.00</span>
+                <span class="pill underfunded">$10.00</span>
+                <span class="pill pos">$10.00</span>
+              </span>
+            </span>
+          </label>
+          <label class="disp-radio disp-radio-preview">
+            <input type="radio" name="disp-balance" value="mono" ${balance === 'mono' ? 'checked' : ''}>
+            <span class="disp-radio-body">
+              <span class="disp-radio-title">Differentiate Without Color</span>
+              <span class="disp-preview" data-balance="mono">
+                <span class="pill overspent">-$10.00</span>
+                <span class="pill underfunded">$10.00</span>
+                <span class="pill pos">$10.00</span>
+              </span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-card">
         <h3>Data</h3>
         <div class="data-actions">
           <button id="set-export" class="btn secondary">Export budget (JSON)</button>
@@ -74,6 +111,7 @@ export function render(root, params) {
       <section class="settings-card">
         <h3>About</h3>
         <p class="muted">Sapient Spend: a local-first budgeting app. Works offline (PWA). Your data never leaves this device.</p>
+        <a class="link-btn" href="https://github.com/kunwaaarrr/sapient-spend" target="_blank" rel="noopener" style="margin-top:12px">⭐ Leave a review</a>
       </section>
 
     </div>`;
@@ -81,6 +119,13 @@ export function render(root, params) {
   root.querySelector('#set-budget-name').onchange = e => store.updateSettings({ budgetName: e.target.value });
   root.querySelector('#set-currency').onchange = e => store.updateSettings({ currencySymbol: e.target.value });
   root.querySelector('#set-hide').onchange = e => store.updateSettings({ hideAmounts: e.target.checked });
+
+  // Display Options — updateSettings notifies subscribers, so app.js re-applies the
+  // html[data-theme]/[data-balance] attributes and the whole app re-skins instantly.
+  root.querySelectorAll('input[name="disp-theme"]').forEach(r =>
+    r.onchange = e => store.updateSettings({ theme: e.target.value }));
+  root.querySelectorAll('input[name="disp-balance"]').forEach(r =>
+    r.onchange = e => store.updateSettings({ balanceStyle: e.target.value }));
 
   root.querySelector('#set-export').onclick = () => {
     download(`sapientspend-backup-${new Date().toISOString().slice(0, 10)}.json`, store.exportJSON());

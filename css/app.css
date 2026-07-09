@@ -253,3 +253,102 @@ html, body { overflow-x: clip; }
 @media (min-width: 768px) {
   #toast-root { bottom: 24px; }
 }
+
+/* ================= dark theme =================
+   Sapient's own dark palette: a near-black blue-tinted page, dark-navy elevated
+   surfaces, brand blurple kept recognizable (nudged brighter for contrast on dark).
+   Light theme is untouched — every dark rule is gated on [data-theme="dark"]. */
+[data-theme="dark"] {
+  --blue: #6b71ff;          /* brighter blurple reads better on dark */
+  --blue-dark: #565cf0;
+  --blue-light: #2a2f5c;    /* selected row / subtle-button tint */
+  --link: #98a0ff;
+  --green: #7fc24a;
+  --green-dark: #6aa63c;
+  --rta-bg: #26421d;        /* deep-green Ready-to-Assign card (light text) */
+  --pill-pos-bg: #74b93c;  --pill-pos-text: #10200a;
+  --pill-warn-bg: #e2ad38; --pill-warn-text: #241c04;
+  --pill-neg-bg: #cf4a42;  --pill-neg-text: #ffffff;
+  --pill-zero-bg: #2a2e3d; --pill-zero-text: #9a9eac;
+  --red: #f2726f;
+  --red-dark: #d95b57;
+  --orange: #f6c91d;
+  --warning-text: #e2ad38;
+  --text: #e8e9ee;
+  --text-2: #b7b9c4;
+  --text-dim: #9195a3;
+  --text-faint: #6f7382;
+  --line: #2e3345;
+  --line-subtle: rgba(255,255,255,.09);
+  --bg: #12141c;
+  --bg-alt: #1b1e2b;
+  --track: #262a3a;
+  --chip-bg: rgba(255,255,255,.08);
+  --chip-active-bg: #2f3566;
+  --shadow: 0 10px 34px rgba(0,0,0,.55);
+  /* --navy* (sidebar) intentionally unchanged — it's dark navy in both themes */
+}
+/* hardcoded light literals that don't come from a var — each outranks its source
+   rule by one class (the [data-theme] hook), so source order is irrelevant */
+[data-theme="dark"] .btn.subtle { background: #2a2f5c; color: #b9bdff; }
+[data-theme="dark"] .btn.subtle:hover { background: #343a73; }
+[data-theme="dark"] .icon-btn.active { color: #b9bdff; }
+[data-theme="dark"] .report-switch-item.active { color: #b9bdff; }
+[data-theme="dark"] .cat-row .pill.underfunded:hover { background: #f0c34a; }
+[data-theme="dark"] .cat-row .pill.overspent:hover { background: #d5564e; }
+[data-theme="dark"] .cat-row .pill.zero:hover { background: #33384a; }
+/* segmented-control active pill: light theme uses --bg (white) over the darker
+   --track; in dark that inverts, so give the active pill a lighter raised surface */
+[data-theme="dark"] .seg-btn.active,
+[data-theme="dark"] .segment-btn.active { background: #33384a; box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+[data-theme="dark"] .txe-close:hover,
+[data-theme="dark"] .txe-close:active { background: rgba(255,255,255,.08); }
+[data-theme="dark"] .class-progress-track { background: rgba(255,255,255,.1); }
+
+/* ================= balance style: mono (Differentiate Without Color) =================
+   Available pills + money coloring stop leaning on red/green hue. Negatives are
+   still unmistakable via a bordered ring + bold weight (colorblind-safe). */
+[data-balance="mono"] .pill.pos,
+[data-balance="mono"] .pill.underfunded,
+[data-balance="mono"] .pill.overspent,
+[data-balance="mono"] .pill.zero { background: var(--pill-zero-bg); color: var(--pill-zero-text); }
+[data-balance="mono"] .pill.overspent {
+  color: var(--text); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--text);
+}
+[data-balance="mono"] .pos-text { color: var(--text); }
+[data-balance="mono"] .neg-text {
+  color: var(--text); font-weight: 700; text-decoration: underline; text-underline-offset: 2px;
+}
+[data-balance="mono"] .acct-bal.neg { color: var(--navy-text); text-decoration: underline; text-underline-offset: 2px; }
+[data-balance="mono"] .rta-card.neg { background: var(--track); box-shadow: inset 0 0 0 2px var(--text); }
+
+/* ================= Display Options (settings) ================= */
+.disp-group { margin-bottom: 20px; }
+.disp-group:last-child { margin-bottom: 0; }
+.disp-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 8px;
+}
+.settings-card .disp-radio {
+  display: flex; align-items: center; gap: 12px; padding: 9px 4px; margin-bottom: 0;
+  font-size: 16px; font-weight: 500; color: var(--text); cursor: pointer;
+}
+.settings-card .disp-radio.disp-radio-preview { align-items: flex-start; }
+.settings-card .disp-radio input[type="radio"] {
+  width: 18px; height: 18px; flex-shrink: 0; margin: 0; accent-color: var(--blue); cursor: pointer;
+}
+.disp-radio-body { display: flex; flex-direction: column; gap: 8px; }
+.disp-radio-title { font-weight: 500; }
+.disp-preview { display: flex; gap: 10px; flex-wrap: wrap; }
+.disp-preview .pill { cursor: default; min-width: 68px; }
+/* Previews always show their own style regardless of the app-wide setting: the
+   .disp-preview class adds specificity so these beat the global [data-balance] rules. */
+.disp-preview[data-balance="default"] .pill.pos { background: var(--pill-pos-bg); color: var(--pill-pos-text); }
+.disp-preview[data-balance="default"] .pill.underfunded { background: var(--pill-warn-bg); color: var(--pill-warn-text); }
+.disp-preview[data-balance="default"] .pill.overspent { background: var(--pill-neg-bg); color: var(--pill-neg-text); box-shadow: none; font-weight: 500; }
+.disp-preview[data-balance="mono"] .pill.pos,
+.disp-preview[data-balance="mono"] .pill.underfunded,
+.disp-preview[data-balance="mono"] .pill.overspent { background: var(--pill-zero-bg); color: var(--pill-zero-text); }
+.disp-preview[data-balance="mono"] .pill.overspent {
+  color: var(--text); font-weight: 700; box-shadow: inset 0 0 0 1.5px var(--text);
+}

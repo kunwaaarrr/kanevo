@@ -34,6 +34,25 @@ export function toast(msg, { undoable = false } = {}) {
   toastTimer = setTimeout(() => (toastRoot.innerHTML = ''), 4500);
 }
 
+// ---------- display options (theme + balance style) ----------
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function resolveTheme(t) {
+  if (t === 'system') return darkMQ.matches ? 'dark' : 'light';
+  return t === 'dark' ? 'dark' : 'light';
+}
+export function applyDisplaySettings() {
+  const s = store.state.settings;
+  const theme = resolveTheme(s.theme || 'light');
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.balance = s.balanceStyle || 'default';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme === 'dark' ? '#12141c' : '#1c1f58';
+}
+darkMQ.addEventListener('change', () => {
+  if ((store.state.settings.theme || 'light') === 'system') applyDisplaySettings();
+});
+applyDisplaySettings(); // before first paint, so the shell doesn't flash the wrong theme
+
 // ---------- router ----------
 const viewEl = document.getElementById('view');
 export function navigate(hash) { location.hash = hash; }
@@ -43,6 +62,7 @@ function currentRoute() {
 }
 function renderView() {
   const r = currentRoute();
+  applyDisplaySettings();
   setHideAmounts(store.state.settings.hideAmounts);
   const table = {
     budget:   () => budgetView.render(viewEl, { month: r.params[0] || thisMonth() }),
