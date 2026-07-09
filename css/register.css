@@ -279,6 +279,16 @@
 .mobile-clr-sep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; }
 .mobile-clr { display: inline-flex; align-items: center; }
 
+/* compact rows (mobile "Compact rows" option) — ~30% shorter cards */
+.reg-mobile-list.compact .mobile-date-head { padding: 6px 12px 2px; font-size: 10px; }
+.reg-mobile-list.compact .mobile-row { padding: 6px 12px; }
+.reg-mobile-list.compact .mobile-payee { font-size: 13px; }
+.reg-mobile-list.compact .mobile-sub { font-size: 10px; margin-top: 0; }
+.reg-mobile-list.compact .mobile-amount { font-size: 13px; }
+
+/* mobile ⋮ view-options trigger (top right of the header, reuses .view-menu/.view-menu-wrap) */
+.view-menu-trigger-mobile { font-size: 20px; line-height: 1; padding: 6px 10px; }
+
 /* ================= mobile breakpoint ================= */
 @media (max-width: 767px) {
   .reg-head { padding: 10px 12px; }
@@ -286,6 +296,8 @@
   .reg-balances { width: 100%; justify-content: space-between; gap: 8px; }
   .reg-head-actions { width: 100%; justify-content: flex-end; }
   .reg-toolbar { padding: 10px 12px; }
+  /* freed up by moving the View trigger into the header ⋮ menu — give these more room to breathe */
+  .reg-toolbar .link-btn { font-size: 15px; padding: 8px 4px; gap: 6px; }
   .reg-search-wrap { width: 100%; }
   .reg-search { width: 100%; }
   /* mobile scheduled: compact folded card (desktop keeps the .sched-row grid untouched) */

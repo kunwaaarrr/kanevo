@@ -35,9 +35,10 @@ let repeatChoice = 'none';
 let selectedIds = new Set();
 let sortDir = 'desc'; // date sort
 let viewMenuOpen = false;
-let showMemoCol = true;
-let showReconciled = true;
-let compactRows = false;
+// ponytail: same plain-localStorage pattern as the sidebar prefs in app.js (not the budget store).
+let showMemoCol = localStorage.getItem('ss-reg-show-memo') !== '0';
+let showReconciled = localStorage.getItem('ss-reg-show-reconciled') !== '0';
+let compactRows = localStorage.getItem('ss-reg-compact-rows') === '1';
 
 function isMobile() { return window.innerWidth < 768; }
 
@@ -94,6 +95,10 @@ export function render(root, { accountId }) {
       <div class="reg-head-actions">
         ${account ? `<button class="icon-btn" id="edit-account-btn" title="Edit account">✏️</button>` : ''}
         ${account ? `<button class="btn" id="reconcile-btn">Reconcile</button>` : ''}
+        ${isMobile() ? `<div class="view-menu-wrap view-menu-wrap-mobile">
+          <button class="icon-btn view-menu-trigger-mobile" id="view-menu-btn" title="View options">⋮</button>
+          ${viewMenuOpen ? renderViewMenu(true) : ''}
+        </div>` : ''}
       </div>
     </div>
 
@@ -114,10 +119,10 @@ export function render(root, { accountId }) {
       <button class="link-btn" id="undo-btn" ${store.canUndo() ? '' : 'disabled'}><span>↺</span><span>Undo</span></button>
       <button class="link-btn" id="redo-btn" disabled><span>↻</span><span>Redo</span></button>
       <div class="reg-toolbar-spacer"></div>
-      <div class="view-menu-wrap">
+      ${!isMobile() ? `<div class="view-menu-wrap">
         <button class="link-btn" id="view-menu-btn"><span>View</span><span class="caret">▾</span></button>
-        ${viewMenuOpen ? renderViewMenu() : ''}
-      </div>
+        ${viewMenuOpen ? renderViewMenu(false) : ''}
+      </div>` : ''}
       <div class="reg-search-wrap">
         <span class="reg-search-ico">🔍</span>
         <input class="reg-search" id="reg-search" type="search" placeholder="Search ${esc(account ? account.name : 'All Accounts')}" value="${esc(search)}">
@@ -194,9 +199,9 @@ function applyFilter(txs) {
 }
 
 // ---------- view menu ----------
-function renderViewMenu() {
+function renderViewMenu(mobile) {
   return h`<div class="view-menu">
-    <label class="view-menu-item"><input type="checkbox" id="vm-memo" ${showMemoCol ? 'checked' : ''}> Show Memo column</label>
+    <label class="view-menu-item"><input type="checkbox" id="vm-memo" ${showMemoCol ? 'checked' : ''}> Show ${mobile ? 'memo' : 'Memo column'}</label>
     <label class="view-menu-item"><input type="checkbox" id="vm-reconciled" ${showReconciled ? 'checked' : ''}> Show Reconciled</label>
     <label class="view-menu-item"><input type="checkbox" id="vm-compact" ${compactRows ? 'checked' : ''}> Compact rows</label>
   </div>`;
@@ -457,11 +462,11 @@ function wireToolbar(root, accountId, account) {
   const viewBtn = root.querySelector('#view-menu-btn');
   viewBtn.onclick = e => { e.stopPropagation(); viewMenuOpen = !viewMenuOpen; render(root, { accountId }); };
   const vmMemo = root.querySelector('#vm-memo');
-  if (vmMemo) vmMemo.onchange = () => { showMemoCol = vmMemo.checked; render(root, { accountId }); };
+  if (vmMemo) vmMemo.onchange = () => { showMemoCol = vmMemo.checked; localStorage.setItem('ss-reg-show-memo', showMemoCol ? '1' : '0'); render(root, { accountId }); };
   const vmReconciled = root.querySelector('#vm-reconciled');
-  if (vmReconciled) vmReconciled.onchange = () => { showReconciled = vmReconciled.checked; render(root, { accountId }); };
+  if (vmReconciled) vmReconciled.onchange = () => { showReconciled = vmReconciled.checked; localStorage.setItem('ss-reg-show-reconciled', showReconciled ? '1' : '0'); render(root, { accountId }); };
   const vmCompact = root.querySelector('#vm-compact');
-  if (vmCompact) vmCompact.onchange = () => { compactRows = vmCompact.checked; render(root, { accountId }); };
+  if (vmCompact) vmCompact.onchange = () => { compactRows = vmCompact.checked; localStorage.setItem('ss-reg-compact-rows', compactRows ? '1' : '0'); render(root, { accountId }); };
 }
 
 function openLinkAccountModal(accountId) {
@@ -1149,7 +1154,7 @@ function renderMobileList(txs, accountId) {
     if (t.date !== lastDate) { groups.push({ date: t.date, items: [] }); lastDate = t.date; }
     groups.at(-1).items.push(t);
   }
-  return h`<div class="reg-mobile-list">${groups.map(g => h`
+  return h`<div class="reg-mobile-list ${compactRows ? 'compact' : ''}">${groups.map(g => h`
     <div class="mobile-date-group">
       <div class="mobile-date-head">${fmtDate(g.date)}</div>
       ${g.items.map(t => renderMobileRow(t)).join('')}
@@ -1164,7 +1169,7 @@ function renderMobileRow(t) {
     <div class="mobile-row-main">
       <div class="mobile-row-left">
         <div class="mobile-payee">${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}</div>
-        <div class="mobile-sub muted">${[cat, t.memo].filter(Boolean).join(' · ')}</div>
+        <div class="mobile-sub muted">${[cat, showMemoCol ? t.memo : null].filter(Boolean).join(' · ')}</div>
       </div>
       <div class="mobile-row-right">
         <div class="mobile-amount ${t.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(t.amount)}</div>
