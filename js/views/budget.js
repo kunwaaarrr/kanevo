@@ -295,7 +295,7 @@ function toolbar() {
 
 function recentMovesPopover() {
   const moves = store.recentMoves();
-  const catName = id => id ? (store.state.categories.find(c => c.id === id)?.name || '—') : 'Ready to Assign';
+  const catName = id => id ? (store.state.categories.find(c => c.id === id)?.name || 'None') : 'Ready to Assign';
   const rows = moves.slice(0, 40).map(m => {
     const from = m.type === 'move' ? catName(m.fromCatId) : 'Ready to Assign';
     const to = m.type === 'move' ? catName(m.toCatId) : catName(m.toCatId);
@@ -303,7 +303,7 @@ function recentMovesPopover() {
   }).join('');
   return h`<div class="popover recent-popover" hidden>
     <h3>Recent Moves</h3>
-    ${moves.length ? rows : `<p class="muted">No money moves in the last 34 days — assign or move money and it'll show up here.</p>`}
+    ${moves.length ? rows : `<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`}
   </div>`;
 }
 
@@ -703,7 +703,7 @@ function wireEvents(root, md) {
         render(root, { month: curMonth });
         break;
       case 'new-fv':
-        openNewFocusedViewModal(md);
+        openNewFocusedViewModal(root, md);
         break;
       case 'clear-focused-view':
         activeFocusedViewId = null;
@@ -832,7 +832,7 @@ function openCategoryPopover(root, anchorEl, catId, md) {
     </div>`;
   document.body.appendChild(pop);
   const input = pop.querySelector('.pop-rename-input');
-  input.focus(); input.select();
+  input.focus({ preventScroll: true }); input.select(); // popover can start partly off-screen pre-clamp; a normal focus() would scroll the page to it
   input.onkeydown = e => {
     if (e.key === 'Enter') { store.updateCategory(catId, { name: input.value }); pop.remove(); }
     if (e.key === 'Escape') pop.remove();
@@ -980,7 +980,7 @@ function openTemplateModal() {
   };
 }
 
-function openNewFocusedViewModal(md) {
+function openNewFocusedViewModal(root, md) {
   const cats = md.groups.flatMap(g => g.categories.map(c => ({ ...c, groupName: g.name })));
   const body = h`<h2>New Focused View</h2>
     <div class="form-row">
@@ -1003,9 +1003,12 @@ function openNewFocusedViewModal(md) {
     const name = modal.querySelector('#fv-name').value.trim();
     const ids = [...modal.querySelectorAll('[data-fv-cat]:checked')].map(cb => cb.dataset.fvCat);
     if (!name || !ids.length) return;
+    // store.saveFocusedView already re-renders once (store.subscribe fires synchronously before
+    // it returns), so that render still sees the old activeFocusedViewId — render again below to apply it.
     const id = store.saveFocusedView(name, ids); // returns the new view's id
     activeFocusedViewId = id ?? null;
     closeModal();
+    render(root, { month: curMonth });
   };
 }
 
@@ -1089,7 +1092,7 @@ function renderCategorySheet(sheet) {
 
 function targetSummaryText(t) {
   const amt = fmtExact(t.amount);
-  if (t.type === 'SAVINGS_BALANCE') return `Have ${amt} by ${t.targetDate || '—'}`;
+  if (t.type === 'SAVINGS_BALANCE') return `Have ${amt} by ${t.targetDate || 'no date set'}`;
   const cad = t.cadence === 'weekly' ? 'per week' : t.cadence === 'yearly' ? 'per year' : 'per month';
   return `${t.refill ? 'Refill up to' : 'Set aside'} ${amt} ${cad}`;
 }

@@ -86,7 +86,9 @@ input[type="checkbox"]:focus-visible { outline: 2px solid var(--blue); outline-o
 /* ================= layout ================= */
 #layout { display: flex; height: 100vh; height: 100dvh; }
 #view { flex: 1; overflow-y: auto; overflow-x: hidden; background: var(--bg); outline: none; }
-html, body { overflow-x: hidden; } /* popovers must never widen the page into a horizontal scroll */
+/* clip (not hidden) on both: html is the actual scrolling element in standards mode, and unlike
+   hidden, clip blocks even a focus()-triggered scrollIntoView — no popover can ever widen the page */
+html, body { overflow-x: clip; }
 
 /* ================= sidebar (resizable via drag handle, collapsible) ================= */
 #sidebar {
@@ -192,6 +194,9 @@ html, body { overflow-x: hidden; } /* popovers must never widen the page into a 
 .btn.subtle { background: var(--blue-light); color: var(--blue-dark); } /* AA on the tint */
 .btn.subtle:hover { background: #d4d5ff; }
 .btn.sm { height: 26px; padding: 3px 12px; font-size: 13px; }
+/* .file-btn is a <label>, not a <button> — loans.css's ".settings-card label" (font-size 12/weight 700)
+   otherwise outranks plain .btn (same specificity tier as "label" + a class beats one class alone) */
+.btn.file-btn { font-size: 16px; font-weight: 500; }
 .link-btn { color: var(--link); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
 .link-btn:hover { color: var(--blue-dark); }
 .link-btn:disabled { color: var(--text-faint); cursor: default; }

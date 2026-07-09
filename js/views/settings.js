@@ -47,17 +47,17 @@ export function render(root, params) {
       <section class="settings-card">
         <h3>The Four Rules</h3>
         <ol class="rules-list">
-          <li><strong>Give Every Dollar a Job</strong> — assign every dollar you have to a category before you spend it.</li>
-          <li><strong>Embrace Your True Expenses</strong> — break big irregular bills into small monthly savings now.</li>
-          <li><strong>Roll With the Punches</strong> — overspend a category? Cover it by moving money from another, then move on.</li>
-          <li><strong>Age Your Money</strong> — spend money you earned a while ago, not last week's paycheck, and you'll build a buffer.</li>
+          <li><strong>Give Every Dollar a Job:</strong> assign every dollar you have to a category before you spend it.</li>
+          <li><strong>Embrace Your True Expenses:</strong> break big irregular bills into small monthly savings now.</li>
+          <li><strong>Roll With the Punches:</strong> overspend a category? Cover it by moving money from another, then move on.</li>
+          <li><strong>Age Your Money:</strong> spend money you earned a while ago, not last week's paycheck, and you'll build a buffer.</li>
         </ol>
       </section>
 
       <section class="settings-card">
         <h3>Bank Syncing</h3>
         <div class="sync-card muted">
-          <p>Basiq bank sync — coming soon. All data stays on this device.</p>
+          <p>Basiq bank sync: coming soon. All data stays on this device.</p>
           <button class="btn secondary" disabled>Connect bank</button>
         </div>
       </section>
@@ -73,7 +73,7 @@ export function render(root, params) {
 
       <section class="settings-card">
         <h3>About</h3>
-        <p class="muted">Sapient Spend — a local-first budgeting app. Works offline (PWA). Your data never leaves this device.</p>
+        <p class="muted">Sapient Spend: a local-first budgeting app. Works offline (PWA). Your data never leaves this device.</p>
       </section>
 
     </div>`;

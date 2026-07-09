@@ -613,13 +613,13 @@ function ieTable(data) {
       <thead><tr><th class="ie-name">&nbsp;</th>${cols.map(c => `<th class="num">${c}</th>`).join('')}</tr></thead>
       <tbody>
         <tr class="ie-section-head ie-income-head" data-toggle-section="income">
-          <td colspan="${cols.length + 1}"><span class="ie-caret">${incomeExpanded ? '▾' : '▸'}</span>Income</td>
+          <td class="ie-name"><span class="ie-caret">${incomeExpanded ? '▾' : '▸'}</span>Income</td><td colspan="${cols.length}"></td>
         </tr>
         ${incomeRows}
         <tr class="ie-total-row ie-tinted"><td class="ie-name">Total All Income Sources</td>${rowVals(totalIncomeVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
         <tr class="ie-total-row"><td class="ie-name">Total Income</td>${rowVals(totalIncomeVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
         <tr class="ie-section-head ie-expense-head" data-toggle-section="expense">
-          <td colspan="${cols.length + 1}"><span class="ie-caret">${expenseExpanded ? '▾' : '▸'}</span>Expense</td>
+          <td class="ie-name"><span class="ie-caret">${expenseExpanded ? '▾' : '▸'}</span>Expense</td><td colspan="${cols.length}"></td>
         </tr>
         ${expenseGroupBlocks}
         <tr class="ie-total-row ie-tinted"><td class="ie-name">Total Expenses</td>${rowVals(totalExpenseVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
@@ -651,7 +651,7 @@ function ageOfMoneyReport(root) {
     <div class="card aom-explainer-card">
       <div class="explainer-head">Understanding Age of Money</div>
       <div class="explainer-divider"></div>
-      <p>Age of Money looks at the most recent 10 times you spent cash and asks how many days that money had been sitting in your accounts before it went out the door. A high number means you're spending dollars you earned a while ago rather than living off whatever just landed — a cushion, not a coincidence.</p>
+      <p>Age of Money looks at the most recent 10 times you spent cash and asks how many days that money had been sitting in your accounts before it went out the door. A high number means you're spending dollars you earned a while ago rather than living off whatever just landed: a cushion, not a coincidence.</p>
       <p>YNAB's own rule of thumb is to push this past 30 days. Once you're there, this month's bills are covered by money you already have, so a slow paycheck or a surprise expense stops being an emergency and starts being a Tuesday.</p>
     </div>
   </div>`;
@@ -663,7 +663,7 @@ function ageOfMoneyReport(root) {
 
 function aomEmptyCard() {
   return h`<div class="aom-empty-inner">
-    <div class="aom-empty-headline">Still building up a track record — check back soon.</div>
+    <div class="aom-empty-headline">Still building up a track record. Check back soon.</div>
     <p class="muted">Age of Money needs at least 10 spending transactions on your cash accounts before it can measure anything. Log a few more purchases and this card will fill in with your number.</p>
   </div>`;
 }

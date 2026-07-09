@@ -86,7 +86,7 @@ export function render(root, params) {
     root.innerHTML = h`<div class="forecast-view">
       ${[head(null)]}
       <div class="fc-empty">
-        <p class="muted">Not enough transaction history yet — the forecast needs at least a full month behind you to spot a pattern. Keep tracking and check back once a month has closed out.</p>
+        <p class="muted">Not enough transaction history yet. The forecast needs at least a full month behind you to spot a pattern. Keep tracking and check back once a month has closed out.</p>
       </div>
     </div>`;
     wireHead(root);
@@ -115,7 +115,7 @@ function head(fc) {
     <div class="fc-head-top">
       <div>
         <span class="view-title">Forecast</span>
-        <div class="muted fc-subtitle">Projected from your last 3 months of income and spending — adjust any row to test a what-if.</div>
+        <div class="muted fc-subtitle">Projected from your last 3 months of income and spending. Adjust any row to test a what-if.</div>
       </div>
     </div>
     <div class="fc-toolbar">
@@ -134,7 +134,7 @@ function head(fc) {
 function eventBanner(fc) {
   if (!fc.events.length) return '';
   return h`<div class="fc-events">
-    ${fc.events.map(ev => h`<div class="fc-event"><span class="fc-event-dot">●</span> <strong>${ev.month}</strong> — ${ev.label}</div>`).join('')}
+    ${fc.events.map(ev => h`<div class="fc-event"><span class="fc-event-dot">●</span> <strong>${ev.month}:</strong> ${ev.label}</div>`).join('')}
   </div>`;
 }
 
@@ -188,7 +188,7 @@ function loanRows(loan, fc) {
   const payoffIdx = loan.payoffMonth ? fc.months.indexOf(loan.payoffMonth) : -1;
   const balCells = loan.balances.map((bal, i) => {
     if (payoffIdx >= 0 && i === payoffIdx) return `<td class="num"><span class="fc-paid-badge">PAID OFF ✓</span></td>`;
-    if (payoffIdx >= 0 && i > payoffIdx) return `<td class="num muted">—</td>`;
+    if (payoffIdx >= 0 && i > payoffIdx) return `<td class="num muted">N/A</td>`;
     return numCell(bal);
   }).join('');
   return h`<tr class="fc-row fc-loan-row">

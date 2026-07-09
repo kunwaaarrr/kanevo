@@ -73,7 +73,7 @@ function targetsSection(data, split) {
   targets.savings = income - targets.need - targets.want;
   return h`<section class="fifty-section">
     <h2 class="section-title">Your targets</h2>
-    <p class="muted section-hint">A quick "what should I aim for" split, no history required — edit the income below to try a different number.</p>
+    <p class="muted section-hint">A quick "what should I aim for" split, no history required. Edit the income below to try a different number.</p>
     <div class="calc-income-row">
       <label for="calc-income-input">Monthly income (after tax)</label>
       <input id="calc-income-input" class="calc-income-input" type="text" value="${fmtExact(income).replace('$', '')}">
@@ -159,7 +159,7 @@ function comparisonSection(data, split) {
     <div class="donut-row">
       <div class="donut-wrap">${donutSvg(data)}</div>
       <p class="muted unalloc-note">
-        Leftover unspent income (${fmt(Math.max(0, data.unallocated))}) counts toward savings too —
+        Leftover unspent income (${fmt(Math.max(0, data.unallocated))}) counts toward savings too:
         all in, that puts effective savings at ${fmt(data.effectiveSavings)}.
       </p>
     </div>
