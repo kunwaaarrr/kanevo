@@ -300,10 +300,10 @@ function openScheduledEditModal(s) {
       modal.querySelector('#sc-cancel').onclick = closeModal;
       modal.querySelector('#sc-save').onclick = () => {
         const name = modal.querySelector('#sc-payee').value.trim();
-        const payee = name ? store.findOrCreatePayee(name) : null;
+        const payeeId = name ? store.findOrCreatePayee(name) : null; // returns the id string
         store.updateScheduled(s.id, {
           accountId: modal.querySelector('#sc-account').value,
-          payeeId: payee ? payee.id : null,
+          payeeId,
           memo: modal.querySelector('#sc-memo').value,
           amount: parseAmount(modal.querySelector('#sc-amount').value),
           nextDate: modal.querySelector('#sc-date').value,
@@ -1027,11 +1027,11 @@ function saveEdit(root, id, accountId, { addAnother }) {
   const st = editState;
   const doAfter = () => {
     if (repeatChoice !== 'none' && st.payeeText.trim()) {
-      const payee = store.findOrCreatePayee(st.payeeText.trim());
+      const payeeId = store.findOrCreatePayee(st.payeeText.trim()); // returns the id string
       const amount = st.outflow ? -parseAmount(st.outflow) : parseAmount(st.inflow);
       store.addScheduled({
         frequency: repeatChoice, nextDate: advanceDate(st.date, repeatChoice),
-        accountId: st.accountId || accountId, payeeId: payee.id, categoryId: st.categoryId, memo: st.memo, amount, flag: st.flag,
+        accountId: st.accountId || accountId, payeeId, categoryId: st.categoryId, memo: st.memo, amount, flag: st.flag,
       });
     }
     repeatChoice = 'none';
@@ -1053,10 +1053,10 @@ function saveEdit(root, id, accountId, { addAnother }) {
     doAfter();
     return;
   }
-  const payee = st.payeeText.trim() ? store.findOrCreatePayee(st.payeeText.trim()) : null;
+  const payeeId = st.payeeText.trim() ? store.findOrCreatePayee(st.payeeText.trim()) : null; // returns the id string
   const amount = st.outflow ? -parseAmount(st.outflow) : parseAmount(st.inflow);
   const tx = {
-    accountId: st.accountId || accountId, date: st.date, payeeId: payee ? payee.id : null,
+    accountId: st.accountId || accountId, date: st.date, payeeId,
     categoryId: st.subtransactions ? null : st.categoryId, memo: st.memo, amount,
     cleared: st.cleared ? 'cleared' : 'uncleared', approved: true, flag: st.flag,
     attachments: st.attachments, subtransactions: st.subtransactions,
