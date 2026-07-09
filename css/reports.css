@@ -188,11 +188,16 @@
 .ie-table th, .ie-table td { padding: 8px 14px; white-space: nowrap; }
 .ie-table td.num, .ie-table th.num { text-align: right; }
 .ie-table td.money { font-variant-numeric: tabular-nums; }
-.ie-table thead th { position: sticky; top: 0; background: var(--bg-alt); font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; z-index: 1; }
+/* z-index ladder: thead (scrolls under nothing) > section-head (sticky-left) > plain sticky-left name cells,
+   so the corner never lets a lower layer's text paint through as the table scrolls both ways */
+.ie-table thead th { position: sticky; top: 0; background: var(--bg-alt); font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; z-index: 3; }
 .ie-name { position: sticky; left: 0; background: var(--bg); font-weight: 500; z-index: 1; }
-.ie-table thead th.ie-name { background: var(--bg-alt); z-index: 2; }
+.ie-table thead th.ie-name { background: var(--bg-alt); z-index: 4; }
 .ie-section-head { cursor: pointer; }
-.ie-section-head td { font-size: 16px; font-weight: 700; padding: 10px 14px; position: static; }
+/* position:sticky silently no-ops on a colspan'd td in this engine, so the label lives in its own
+   plain (non-colspan) .ie-name cell — a lone colspan filler soaks up the rest of the row's width */
+.ie-section-head td { font-size: 16px; font-weight: 700; padding: 10px 14px; }
+.ie-section-head .ie-name { z-index: 2; }
 .ie-income-head td { color: var(--green); }
 .ie-expense-head td { color: var(--red); }
 .ie-group-row { cursor: pointer; font-weight: 700; }

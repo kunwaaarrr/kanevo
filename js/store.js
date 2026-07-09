@@ -672,18 +672,19 @@ function matchCandidates(accountId) {
   return out;
 }
 
+const FREQ_MONTHS = { monthly: 1, every2months: 2, quarterly: 3, twiceayear: 6, yearly: 12 };
+
 function advanceDate(iso, freq) {
   const [y, m, d] = iso.split('-').map(Number);
   if (freq === 'weekly') return isoAdd(iso, 7);
   if (freq === 'fortnightly') return isoAdd(iso, 14);
-  if (freq === 'monthly') {
-    const nd = new Date(y, m, 1); // next month, day 1
-    const clamped = Math.min(d, daysInMonth(nd.getFullYear(), nd.getMonth()));
-    return `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(clamped).padStart(2, '0')}`;
-  }
-  if (freq === 'yearly') {
-    const clamped = Math.min(d, daysInMonth(y + 1, m - 1));
-    return `${y + 1}-${String(m).padStart(2, '0')}-${String(clamped).padStart(2, '0')}`;
+  const months = FREQ_MONTHS[freq];
+  if (months) {
+    const total = (m - 1) + months; // zero-indexed month count from year y
+    const ny = y + Math.floor(total / 12);
+    const nmZero = total % 12;
+    const clamped = Math.min(d, daysInMonth(ny, nmZero));
+    return `${ny}-${String(nmZero + 1).padStart(2, '0')}-${String(clamped).padStart(2, '0')}`;
   }
   return iso;
 }

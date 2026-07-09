@@ -4,7 +4,12 @@ import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMon
 import { simulateBankFeed } from '../seed.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
-const FREQ_LABEL = { weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly', yearly: 'Yearly' };
+const FREQ_LABEL = {
+  weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly',
+  every2months: 'Every 2 Months', quarterly: 'Every 3 Months', twiceayear: 'Every 6 Months',
+  yearly: 'Yearly',
+};
+const FREQ_MONTHS = { monthly: 1, every2months: 2, quarterly: 3, twiceayear: 6, yearly: 12 };
 const TYPE_LABEL = {
   checking: 'Checking', savings: 'Savings', cash: 'Cash', creditCard: 'Credit Card',
   mortgage: 'Mortgage', autoLoan: 'Auto Loan', studentLoan: 'Student Loan', personalLoan: 'Personal Loan',
@@ -222,24 +227,55 @@ function wireBulkBar(root, accountId) {
 }
 
 // ---------- scheduled section ----------
+// 16px stroke icons for the mobile card's edit/delete — ICONS (util.js) has no pencil/trash, so inline them.
+const SCHED_ICO_EDIT = '<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19.5 3 20.5l1-4L16.5 3.5z"/></svg>';
+const SCHED_ICO_DEL = '<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l.9 12.1a1 1 0 0 0 1 .9h7.2a1 1 0 0 0 1-.9L18 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>';
+
+// Desktop keeps the existing 7-column grid row; mobile gets a compact folded card. Both keep the
+// outer .sched-row + data-id and the .sched-enter/.sched-edit/.sched-del classes wireScheduled() binds.
+function renderSchedRow(s, accountId) {
+  const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
+  const acc = store.state.accounts.find(a => a.id === s.accountId);
+  return h`<div class="sched-row" data-id="${s.id}">
+    <span class="sched-freq">${FREQ_LABEL[s.frequency] || s.frequency}</span>
+    <span class="sched-date">${fmtDate(s.nextDate)}</span>
+    ${!accountId ? `<span class="sched-acct">${acc ? acc.name : ''}</span>` : ''}
+    <span class="sched-payee">${payee ? payee.name : '(no payee)'}</span>
+    <span class="sched-memo muted">${s.memo || ''}</span>
+    <span class="sched-amount ${s.amount > 0 ? 'pos-text' : ''}">${fmt(s.amount)}</span>
+    <span class="sched-actions">
+      <button class="icon-btn sched-enter" title="Enter now">✔️ Enter Now</button>
+      <button class="icon-btn sched-edit" title="Edit">✏️</button>
+      <button class="icon-btn sched-del" title="Delete">🗑️</button>
+    </span>
+  </div>`;
+}
+
+function renderSchedCard(s, accountId) {
+  const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
+  const acc = store.state.accounts.find(a => a.id === s.accountId);
+  const meta = [FREQ_LABEL[s.frequency] || s.frequency, fmtDate(s.nextDate), !accountId && acc ? acc.name : null, s.memo]
+    .filter(Boolean).join(' · ');
+  return h`<div class="sched-row sched-card" data-id="${s.id}">
+    <div class="sched-card-top">
+      <div class="sched-card-info">
+        <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
+        <div class="sched-card-meta">${meta}</div>
+      </div>
+      <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
+    </div>
+    <div class="sched-card-actions">
+      <button class="btn sm sched-enter">Enter Now</button>
+      <span class="sched-card-spacer"></span>
+      <button class="icon-btn sched-edit" aria-label="Edit scheduled transaction">${SCHED_ICO_EDIT}</button>
+      <button class="icon-btn sched-del" aria-label="Delete scheduled transaction">${SCHED_ICO_DEL}</button>
+    </div>
+  </div>`;
+}
+
 function renderScheduledSection(scheduled, accountId) {
-  const rows = scheduled.map(s => {
-    const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
-    const acc = store.state.accounts.find(a => a.id === s.accountId);
-    return h`<div class="sched-row" data-id="${s.id}">
-      <span class="sched-freq">${FREQ_LABEL[s.frequency] || s.frequency}</span>
-      <span class="sched-date">${fmtDate(s.nextDate)}</span>
-      ${!accountId ? `<span class="sched-acct">${acc ? acc.name : ''}</span>` : ''}
-      <span class="sched-payee">${payee ? payee.name : '(no payee)'}</span>
-      <span class="sched-memo muted">${s.memo || ''}</span>
-      <span class="sched-amount ${s.amount > 0 ? 'pos-text' : ''}">${fmt(s.amount)}</span>
-      <span class="sched-actions">
-        <button class="icon-btn sched-enter" title="Enter now">✔️ Enter Now</button>
-        <button class="icon-btn sched-edit" title="Edit">✏️</button>
-        <button class="icon-btn sched-del" title="Delete">🗑️</button>
-      </span>
-    </div>`;
-  });
+  const mobile = isMobile();
+  const rows = scheduled.map(s => mobile ? renderSchedCard(s, accountId) : renderSchedRow(s, accountId));
   return h`<div class="sched-section">
     <button class="sched-head" id="sched-toggle">
       <span class="sched-caret">${scheduledOpen ? '▾' : '▸'}</span> Scheduled (${scheduled.length})
@@ -271,12 +307,18 @@ function wireScheduled(root, accountId) {
 }
 
 function advanceDate(dateStr, frequency) {
-  const d = new Date(dateStr + 'T00:00:00');
-  if (frequency === 'weekly') d.setDate(d.getDate() + 7);
-  else if (frequency === 'fortnightly') d.setDate(d.getDate() + 14);
-  else if (frequency === 'yearly') d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1);
-  return d.toISOString().slice(0, 10);
+  if (frequency === 'weekly' || frequency === 'fortnightly') {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + (frequency === 'weekly' ? 7 : 14));
+    return d.toISOString().slice(0, 10);
+  }
+  const months = FREQ_MONTHS[frequency] || 1; // default: monthly (matches prior fallback behavior)
+  const [y, m, day] = dateStr.split('-').map(Number);
+  const total = (m - 1) + months;
+  const ny = y + Math.floor(total / 12);
+  const nmZero = total % 12;
+  const clamped = Math.min(day, new Date(ny, nmZero + 1, 0).getDate());
+  return `${ny}-${String(nmZero + 1).padStart(2, '0')}-${String(clamped).padStart(2, '0')}`;
 }
 
 function openScheduledEditModal(s) {
@@ -363,7 +405,7 @@ function openReconcileModal(accountId) {
     <p>Is your current account balance <strong>${fmt(bal.cleared)}</strong>?</p>
     <div class="modal-actions">
       <button class="btn secondary" id="rec-no">No</button>
-      <button class="btn" id="rec-yes">Yes — Finish Reconciliation</button>
+      <button class="btn" id="rec-yes">Yes, Finish Reconciliation</button>
     </div>
     <div class="form-row" id="rec-no-block" hidden style="margin-top:14px">
       <label>Enter your current balance</label>
@@ -424,7 +466,7 @@ function wireToolbar(root, accountId, account) {
 
 function openLinkAccountModal(accountId) {
   openModal(h`<h2>Link Account</h2>
-    <p class="muted" style="margin-bottom:14px">Your own copy — direct bank syncing via Basiq is coming soon. Until then, simulate a bank feed to see how imported transactions and matching work.</p>
+    <p class="muted" style="margin-bottom:14px">Your own copy. Direct bank syncing via Basiq is coming soon. Until then, simulate a bank feed to see how imported transactions and matching work.</p>
     <div class="modal-actions">
       <button class="btn secondary" id="la-cancel">Cancel</button>
       <button class="btn" id="la-simulate">Simulate bank feed</button>
@@ -560,7 +602,7 @@ function categoryOptionsHtml(selectedId, isInflow, month) {
     for (const c of cats) {
       const mc = mdGroup?.categories.find(x => x.id === c.id);
       const avail = mc ? fmt(mc.available) : '';
-      opts.push(`<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${esc(c.name)} — ${avail}</option>`);
+      opts.push(`<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${esc(c.name)} (${avail})</option>`);
     }
     opts.push('</optgroup>');
   }
@@ -692,6 +734,9 @@ function renderDatePopover(dateStr) {
         <option value="weekly" ${repeatChoice === 'weekly' ? 'selected' : ''}>Weekly</option>
         <option value="fortnightly" ${repeatChoice === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
         <option value="monthly" ${repeatChoice === 'monthly' ? 'selected' : ''}>Monthly</option>
+        <option value="every2months" ${repeatChoice === 'every2months' ? 'selected' : ''}>Every 2 Months</option>
+        <option value="quarterly" ${repeatChoice === 'quarterly' ? 'selected' : ''}>Every 3 Months</option>
+        <option value="twiceayear" ${repeatChoice === 'twiceayear' ? 'selected' : ''}>Every 6 Months</option>
         <option value="yearly" ${repeatChoice === 'yearly' ? 'selected' : ''}>Yearly</option>
       </select>
     </div>
@@ -1123,6 +1168,7 @@ function renderMobileRow(t) {
       </div>
       <div class="mobile-row-right">
         <div class="mobile-amount ${t.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(t.amount)}</div>
+        <span class="mobile-clr-sep"></span>
         <div class="mobile-clr">${clearedIcon(t)}</div>
       </div>
     </div>
@@ -1225,6 +1271,9 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
           <option value="weekly" ${recurring === 'weekly' ? 'selected' : ''}>Weekly</option>
           <option value="fortnightly" ${recurring === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
           <option value="monthly" ${recurring === 'monthly' ? 'selected' : ''}>Monthly</option>
+          <option value="every2months" ${recurring === 'every2months' ? 'selected' : ''}>Every 2 Months</option>
+          <option value="quarterly" ${recurring === 'quarterly' ? 'selected' : ''}>Every 3 Months</option>
+          <option value="twiceayear" ${recurring === 'twiceayear' ? 'selected' : ''}>Every 6 Months</option>
           <option value="yearly" ${recurring === 'yearly' ? 'selected' : ''}>Yearly</option>
         </select>
       </span>
@@ -1494,7 +1543,7 @@ export function openAddAccountModal() {
     <div class="form-row"><label>Type</label>
       <select id="aa-type">${Object.entries(TYPE_GROUPS).map(([g, opts]) =>
         `<optgroup label="${g}">${opts.map(([v, l]) => `<option value="${v}" ${v === type ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`).join('')}</select>
-      <div class="muted note-hint">Bank syncing via Basiq coming soon — accounts are local for now.</div>
+      <div class="muted note-hint">Bank syncing via Basiq coming soon. Accounts are local for now.</div>
     </div>
     <div class="form-row"><label>Current Balance</label><input id="aa-balance" type="text" placeholder="$0.00"></div>
     ${LOAN_TYPES.has(type) ? `

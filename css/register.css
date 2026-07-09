@@ -272,9 +272,12 @@
 .mobile-row-main { display: flex; justify-content: space-between; gap: 10px; }
 .mobile-payee { font-weight: 700; font-size: 14px; }
 .mobile-sub { font-size: 12px; margin-top: 2px; }
-.mobile-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+/* amount + cleared icon share one line; a thin hairline separates them (keeps the card short) */
+.mobile-row-right { display: flex; flex-direction: row; align-items: center; gap: 8px; }
 .mobile-amount { font-weight: 700; color: var(--red); }
 .mobile-amount.pos-text { color: var(--green); }
+.mobile-clr-sep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; }
+.mobile-clr { display: inline-flex; align-items: center; }
 
 /* ================= mobile breakpoint ================= */
 @media (max-width: 767px) {
@@ -285,8 +288,37 @@
   .reg-toolbar { padding: 10px 12px; }
   .reg-search-wrap { width: 100%; }
   .reg-search { width: 100%; }
-  .sched-row { grid-template-columns: 1fr; gap: 4px; }
-  .sched-actions { justify-content: flex-start; }
+  /* mobile scheduled: compact folded card (desktop keeps the .sched-row grid untouched) */
+  .sched-card {
+    /* align-items: stretch beats the desktop .sched-row grid rule's align-items: center,
+       which otherwise makes column-flex children size to max-content and overflow the card */
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; color: var(--text-dim);
+  }
+  .sched-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .sched-card-info { flex: 1; min-width: 0; }
+  .sched-card-payee {
+    font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sched-card-meta {
+    margin-top: 2px; font-size: 12px; color: var(--text-dim); line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sched-card-amt {
+    font-size: 21px; font-weight: 800; line-height: 1.1; white-space: nowrap; flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .sched-card-actions { display: flex; align-items: center; gap: 6px; }
+  .sched-card-spacer { flex: 1; }
+  .sched-card .sched-enter { flex-shrink: 0; }
+  .sched-card .sched-edit, .sched-card .sched-del {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; padding: 0; border-radius: 8px; color: var(--text-faint);
+  }
+  .sched-card .sched-edit:hover, .sched-card .sched-del:hover,
+  .sched-card .sched-edit:active, .sched-card .sched-del:active { background: var(--bg); color: var(--text-dim); }
+  .sched-card .sched-del:active { color: var(--red); }
+  .sched-ico { width: 16px; height: 16px; }
 }
 @media (min-width: 768px) {
   .reg-mobile-list { display: none; }

@@ -34,6 +34,25 @@ export function toast(msg, { undoable = false } = {}) {
   toastTimer = setTimeout(() => (toastRoot.innerHTML = ''), 4500);
 }
 
+// ---------- display options (theme + balance style) ----------
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function resolveTheme(t) {
+  if (t === 'system') return darkMQ.matches ? 'dark' : 'light';
+  return t === 'dark' ? 'dark' : 'light';
+}
+export function applyDisplaySettings() {
+  const s = store.state.settings;
+  const theme = resolveTheme(s.theme || 'light');
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.balance = s.balanceStyle || 'default';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme === 'dark' ? '#12141c' : '#1c1f58';
+}
+darkMQ.addEventListener('change', () => {
+  if ((store.state.settings.theme || 'light') === 'system') applyDisplaySettings();
+});
+applyDisplaySettings(); // before first paint, so the shell doesn't flash the wrong theme
+
 // ---------- router ----------
 const viewEl = document.getElementById('view');
 export function navigate(hash) { location.hash = hash; }
@@ -43,6 +62,7 @@ function currentRoute() {
 }
 function renderView() {
   const r = currentRoute();
+  applyDisplaySettings();
   setHideAmounts(store.state.settings.hideAmounts);
   const table = {
     budget:   () => budgetView.render(viewEl, { month: r.params[0] || thisMonth() }),
@@ -102,7 +122,7 @@ function renderSidebar(route) {
 document.getElementById('add-account-btn').onclick = () => registerView.openAddAccountModal();
 document.getElementById('bank-connections-btn').onclick = () =>
   openModal(h`<h2>Bank Connections</h2>
-    <p class="muted" style="margin-bottom:14px">Direct bank syncing via Basiq is coming soon. Until then, use the Sync button in a register to simulate a bank feed, or enter transactions manually — everything stays on this device.</p>
+    <p class="muted" style="margin-bottom:14px">Direct bank syncing via Basiq is coming soon. Until then, use the Sync button in a register to simulate a bank feed, or enter transactions manually. Everything stays on this device.</p>
     <div class="modal-actions"><button class="btn" onclick="document.getElementById('modal-root').hidden=true">Got It!</button></div>`);
 
 // ---------- mobile tab bar ----------
@@ -122,6 +142,16 @@ document.getElementById('tabbar').onclick = e => {
 // ---------- keep popovers inside the viewport ----------
 // menus anchor to their trigger and can bleed past the phone's right edge; nudge them back
 function clampPopover(el) {
+  // popovers anchored via an inline left (appended straight to body, e.g. .cat-popover):
+  // rewrite the coordinate itself. A negative margin-left still leaves the pre-margin box
+  // in the page's scrollable overflow in some browsers, so it under-corrects.
+  if (el.style.left) {
+    const r = el.getBoundingClientRect();
+    if (!r.width) return;
+    const left = parseFloat(el.style.left) - Math.max(0, r.right - (innerWidth - 8));
+    el.style.left = Math.max(8, Math.round(left)) + 'px';
+    return;
+  }
   el.style.marginLeft = '';
   const r = el.getBoundingClientRect();
   if (!r.width) return;
@@ -136,7 +166,10 @@ new MutationObserver(muts => {
           .flatMap(n => [n, ...(n.querySelectorAll ? [...n.querySelectorAll('[class*="popover"],[class*="menu"]:not(nav)')] : [])])
       : [m.target];
     for (const el of candidates) {
-      if (el.nodeType === 1 && !el.hidden && /popover|menu/.test(el.className) && el.id !== 'sidebar-nav') clampPopover(el);
+      if (el.nodeType === 1 && !el.hidden && /popover|menu/.test(el.className) && el.id !== 'sidebar-nav') {
+        clampPopover(el);
+        requestAnimationFrame(() => clampPopover(el)); // re-run once layout (fonts, inline left) has settled
+      }
     }
   }
 }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });

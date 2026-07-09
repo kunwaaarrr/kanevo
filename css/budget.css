@@ -135,7 +135,8 @@
   letter-spacing: .6px; text-transform: uppercase; color: var(--text-2); padding: 0 14px; height: 40px; border-bottom: 1px solid var(--line); z-index: 5;
 }
 .budget-table thead th.chk-cell { padding: 0 0 0 14px; }
-.budget-table thead th:nth-child(2) { text-align: left; }
+/* CATEGORY label: 3rd header cell (after chevron + checkbox), left-aligned over the names */
+.budget-table thead th:nth-child(3) { text-align: left; }
 .budget-table td { padding: 0 14px; border-bottom: 1px solid var(--line-subtle); vertical-align: middle; }
 .budget-table td.num { text-align: right; }
 .chk-cell { width: 24px; padding: 0 4px 0 0 !important; }
@@ -146,7 +147,7 @@
 .group-name-cell { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; height: 40px; }
 .chevron-btn { font-size: 11px; width: 16px; color: var(--text-2); }
 .add-cat-btn {
-  opacity: 0; margin-left: auto; width: 20px; height: 20px; border-radius: 5px; background: var(--bg);
+  opacity: 0; width: 20px; height: 20px; border-radius: 5px; background: var(--bg);
   border: 1px solid var(--line); font-weight: 800; line-height: 1;
 }
 .add-cat-btn:hover { background: var(--blue); color: #fff; }
@@ -183,6 +184,7 @@
 .cat-row .pill.zero:hover { background: #ece7da; }
 
 .assigned-cell { cursor: text; font-size: 16px; }
+.assigned-cell:hover { background: var(--bg-alt); border-radius: 6px; }
 .assigned-val { font-size: 16px; }
 .assigned-input {
   width: 90px; text-align: right; padding: 4px 8px; border: 1.5px solid var(--blue); border-radius: 6px;
@@ -207,7 +209,7 @@
 .insp-title { font-size: 19px; font-weight: 700; }
 .insp-card { background: var(--bg); border-radius: 8px; padding: 16px; }
 .insp-card-head { display: flex; width: 100%; justify-content: space-between; font-size: 14px; font-weight: 700; text-align: left; }
-.insp-card-body { margin-top: 10px; }
+.insp-card-body { margin-top: 10px; position: relative; } /* anchors .income-popover; was absolute against the viewport */
 .insp-label { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--text-2); }
 .insp-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
 .insp-row.insp-total { font-weight: 700; }
@@ -269,6 +271,10 @@
 /* ================= templates / focused-view modal lists ================= */
 .template-list, .fv-cat-list { max-height: 280px; overflow-y: auto; margin-bottom: 14px; }
 .template-item, .fv-cat-item { display: flex; align-items: center; gap: 8px; padding: 6px 2px; font-size: 13px; }
+/* app.css's ".modal label { display:block }" and ".modal input { width:100% }" (meant for form rows)
+   otherwise outrank the rule above and stretch these checkboxes into full-width boxes */
+.modal .template-item, .modal .fv-cat-item { display: flex; }
+.modal .template-item input[type="checkbox"], .modal .fv-cat-item input[type="checkbox"] { width: 16px; height: 16px; padding: 0; flex-shrink: 0; }
 
 /* ================= cover overspending banner (desktop + mobile) ================= */
 .cover-banner {
@@ -360,8 +366,10 @@
   .cat-row { display: flex; flex-wrap: wrap; align-items: center; padding: 10px 12px 12px; column-gap: 14px; height: auto; }
   .cat-row td { border: none; padding: 0; }
   .cat-row td.chev-cell { display: none; }
-  .cat-row td.chk-cell { order: 0; }
-  .cat-row td.cat-name-cell { flex: 1 1 100%; order: 1; min-width: 0; padding-bottom: 12px; }
+  .cat-row td.chk-cell { order: 0; flex: 0 0 auto; }
+  /* flex:1 1 auto (not 100%) keeps the checkbox inline on the same line as the name; growing to fill
+     the rest of line 1 still forces assigned/activity/available onto their own line below */
+  .cat-row td.cat-name-cell { flex: 1 1 auto; order: 1; min-width: 0; padding-bottom: 12px; }
   .cat-name-btn { font-size: 15px; }
   .cat-row.selected .cat-name-btn { text-decoration: none; }  /* underline collides with the bar on two-line rows */
   .target-bar { bottom: 4px; right: 0; }
