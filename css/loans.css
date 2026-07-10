@@ -1,5 +1,5 @@
 /* ================= shared body ================= */
-.loans-body, .settings-body {
+.loans-body {
   padding: 20px; max-width: 900px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 20px;
 }
@@ -60,19 +60,47 @@
 
 .register-link { display: inline-block; font-weight: 600; color: var(--blue); }
 
-/* ================= settings ================= */
+/* ================= settings =================
+   Matches the app's mobile design language (Spending / Reflect): cream canvas,
+   big left-aligned screen title, white rounded cards with tappable rows and
+   single hairline separators. Same cards on desktop, centered at a comfy width. */
+.settings-overview { min-height: 100%; background: var(--app-cream); }
+.settings-inner { max-width: 680px; margin: 0 auto; padding: 0 0 40px; }
+.settings-overview-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 10px;
+}
+.settings-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 500; letter-spacing: -.25px; }
+.settings-cards { display: flex; flex-direction: column; gap: 14px; padding: 4px 14px; }
+
 .settings-card {
-  border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; background: var(--bg);
+  background: var(--bg); border-radius: 20px; box-shadow: 0 2px 8px rgba(20,30,70,.04);
+  padding: 6px 16px 10px;
 }
-.settings-card h3 { font-size: 14px; margin-bottom: 14px; }
-.settings-card .form-row { margin-bottom: 12px; }
-.settings-card .form-row:last-child { margin-bottom: 0; }
-.settings-card label { display: block; font-size: 12px; font-weight: 700; color: var(--text-dim); margin-bottom: 4px; }
-.settings-card input[type="text"] {
-  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
+.settings-card > h3 {
+  font-size: 13px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text-2); padding: 13px 0 3px;
 }
-.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.toggle-row label { margin-bottom: 0; }
+
+/* tappable/value rows: label left, value or control right, one hairline between */
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  min-height: 52px; padding: 8px 0; border-top: 1px solid var(--line-subtle);
+}
+.set-row > label:not(.switch) { font-size: 16px; font-weight: 500; color: var(--text); margin: 0; }
+.set-inline-input {
+  flex: 1; min-width: 0; max-width: 55%; text-align: right;
+  border: none; background: none; padding: 8px 4px; margin: -4px 0; border-radius: 8px;
+  font-size: 16px; color: var(--text);
+}
+.set-inline-input:focus { outline: none; background: var(--bg-alt); }
+#set-currency { max-width: 90px; }
+
+/* Display Options groups read as sub-sections inside the card, one hairline each */
+.settings-card .disp-group {
+  margin: 0; padding: 6px 0 4px; border-top: 1px solid var(--line-subtle);
+}
+.settings-card .disp-label { margin: 0; padding: 7px 0 2px; }
+.settings-card .disp-radio { min-height: 44px; padding: 8px 4px; }
 
 .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
 .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
@@ -98,7 +126,7 @@
 @media (max-width: 767px) {
   .loans-head { position: sticky; top: 0; z-index: 20; gap: 5px; padding: 8px 12px; background: var(--app-cream); border-bottom: 1px solid var(--line-subtle); }
   .loans-head .view-title { font-size: 19px; }
-  .loans-body, .settings-body { padding: 14px; gap: 14px; }
+  .loans-body { padding: 14px; gap: 14px; }
   .loan-grid { grid-template-columns: 1fr; }
   .loan-card, .extra-payment-card, .stat-card, .burndown-card { border: 0; border-radius: 20px; box-shadow: 0 2px 8px rgba(20,30,70,.04); }
   .loan-card { padding: 17px; }
