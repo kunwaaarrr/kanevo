@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { fmt, h, thisMonth, addMonths, monthLabel, monthsBetween } from '../util.js';
+import { fmt, h, thisMonth, addMonths, monthLabel, monthsBetween, ICONS } from '../util.js';
 
 const TABS = [
   { id: 'spending', label: 'Spending Breakdown' },
@@ -229,10 +229,10 @@ function reflectOverview(root) {
   const spendingWidth = Math.round((totalSpending / comparisonMax) * 100);
 
   root.innerHTML = h`<div class="reflect-overview">
-    <header class="reflect-overview-head">
-      <h1>Reflect</h1>
-      <div class="reflect-overview-menu-wrap">
-        <button id="reflect-overview-more" class="reflect-overview-more" aria-label="More Reflect options">⋮</button>
+    <header class="reflect-overview-head mobile-page-head">
+      <h1 class="mobile-page-title">Reflect</h1>
+      <div class="reflect-overview-menu-wrap mobile-page-actions">
+        <button id="reflect-overview-more" class="reflect-overview-more mobile-head-action" aria-label="More Reflect options">${ICONS.moreVertical}</button>
         <div id="reflect-overview-menu" class="reflect-overview-menu" hidden>
           <a href="#/reports/spending">Spending Breakdown</a>
           <a href="#/reports/trends">Spending Trends</a>
@@ -305,8 +305,8 @@ function mobileReportHeader(active, title) {
   return h`<header class="mobile-report-head">
     <a href="#/reports/overview" class="mobile-report-head-back" aria-label="Back to Reflect">‹</a>
     <h1>${title}</h1>
-    <button id="mobile-filter-open" class="mobile-report-head-button" aria-label="Open report filters">≡</button>
-    <button id="mobile-report-menu-toggle" class="mobile-report-head-button" aria-label="More report options">⋮</button>
+    <button id="mobile-filter-open" class="mobile-report-head-button mobile-head-action" aria-label="Open report filters">${ICONS.filter}</button>
+    <button id="mobile-report-menu-toggle" class="mobile-report-head-button mobile-head-action" aria-label="More report options">${ICONS.moreVertical}</button>
     <div class="mobile-report-menu" id="mobile-report-menu" ${state.mobileMenuOpen ? '' : 'hidden'}>
       ${TABS.map(item => h`<a class="${item.id === active ? 'active' : ''}" href="#/reports/${item.id}">${item.label}</a>`)}
       <button id="mobile-report-export-action">Export this report</button>

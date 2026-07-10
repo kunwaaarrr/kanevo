@@ -200,6 +200,38 @@ html, body { overflow-x: clip; }
 #mobile-transaction-btn.collapsed > span:last-child { max-width: 0; opacity: 0; margin-left: 0; }
 .reflect-tool-back { display: none; }
 
+/* Shared top chrome for every mobile surface. View styles only decide which
+   actions are present; sizing, alignment, icon family and search treatment live here. */
+.mobile-page-head {
+  min-height: 52px; padding: 10px 14px 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.mobile-page-title { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
+.mobile-page-actions { display: flex; align-items: center; gap: 8px; }
+.mobile-head-action {
+  width: 34px; height: 34px; flex: 0 0 34px; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--text);
+}
+.mobile-head-action:hover, .mobile-head-action:active { background: var(--track); }
+.mobile-head-action .ico { width: 22px; height: 22px; stroke-width: 1.8; }
+.mobile-search-shell {
+  position: relative; margin: 1px 14px 10px; padding: 0 38px 0 39px; height: 42px;
+  display: flex; align-items: center; border-radius: 14px; background: var(--bg);
+  box-shadow: 0 2px 8px rgba(20,30,70,.06);
+}
+.mobile-search-shell .mobile-search-icon {
+  position: absolute; left: 13px; top: 50%; width: 19px; height: 19px; transform: translateY(-50%);
+  display: inline-flex; color: var(--text-dim);
+}
+.mobile-search-shell .mobile-search-icon .ico { width: 19px; height: 19px; }
+.mobile-search-shell input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; }
+.mobile-search-shell input:focus { outline: 0; }
+.mobile-search-shell > button {
+  position: absolute; right: 7px; top: 50%; width: 30px; height: 30px; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; color: var(--text-dim);
+}
+.mobile-search-shell > button .ico { width: 17px; height: 17px; }
+
 /* ================= shared components ================= */
 .pill {
   display: inline-block; min-width: 51px; padding: 2px 7px; border-radius: 1000px;

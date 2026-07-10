@@ -381,14 +381,14 @@
 
   /* ---- top bar ---- */
   .budget-mobile { min-height: 100%; padding-bottom: 24px; background: var(--app-cream); }
-  .m-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px 8px; }
+  .m-head { padding: 10px 14px 8px; }
   .m-month-wrap { position: relative; }
-  .m-month { display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
+  .m-month { display: flex; align-items: center; gap: 8px; font-size: 23px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
   .m-month-chev { width: 23px; height: 23px; border-radius: 50%; background: var(--text); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; }
   .m-month-chev .ico { width: 13px; height: 13px; }
   .m-month-wrap .month-picker-popover { left: 0; transform: none; top: calc(100% + 8px); }
-  .m-head-actions { display: flex; align-items: center; gap: 16px; }
-  .m-icon { color: var(--text); display: inline-flex; }
+  .m-head-actions { gap: 8px; }
+  .m-icon { color: var(--text); }
   .m-icon .ico { width: 22px; height: 22px; }
   .m-icon.on { color: var(--blue); }
 

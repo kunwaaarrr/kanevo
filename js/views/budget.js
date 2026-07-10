@@ -1174,15 +1174,15 @@ function renderMobile(root, md) {
   }).join('');
 
   root.innerHTML = h`<div class="budget-view budget-mobile bars-${bars ? 'on' : 'off'}">
-    <div class="m-head">
+    <div class="m-head mobile-page-head">
       <div class="month-picker-wrap m-month-wrap">
         <button class="m-month" data-act="toggle-month-picker">${shortMonth(curMonth)}<span class="m-month-chev">${[M_ICONS.chevDown]}</span></button>
         ${monthPickerPopover(curMonth)}
       </div>
-      <div class="m-head-actions">
-        <button class="m-icon ${activeFilter !== 'all' || activeFocusedViewId ? 'on' : ''}" data-act="open-views" aria-label="Views">${[M_ICONS.views]}</button>
-        <button class="m-icon" data-act="open-edit-plan" aria-label="Edit plan">${[M_ICONS.pencil]}</button>
-        <button class="m-icon" data-act="open-overflow" aria-label="More">${[M_ICONS.dots]}</button>
+      <div class="m-head-actions mobile-page-actions">
+        <button class="m-icon mobile-head-action ${activeFilter !== 'all' || activeFocusedViewId ? 'on' : ''}" data-act="open-views" aria-label="Views">${ICONS.filter}</button>
+        <button class="m-icon mobile-head-action" data-act="open-edit-plan" aria-label="Edit plan">${ICONS.edit}</button>
+        <button class="m-icon mobile-head-action" data-act="open-overflow" aria-label="More">${ICONS.moreVertical}</button>
       </div>
     </div>
     ${[mRtaBanner(md.rta, md)]}

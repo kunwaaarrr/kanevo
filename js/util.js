@@ -78,4 +78,10 @@ export const ICONS = {
   more: I('<g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></g>'),
   fifty: I('<circle cx="12" cy="12" r="8.3"/><path d="M12 3.7V12l5.9 5.9M12 12H3.7"/>'),
   forecast: I('<path d="M3.5 20.5h17M4.5 16.5l4.5-4.5 3 3 5.5-5.5"/><path d="M14 9.5h3.5V13"/>'),
+  search: I('<circle cx="10.8" cy="10.8" r="7"/><path d="M20 20l-4.8-4.8"/>'),
+  moreVertical: I('<g fill="currentColor" stroke="none"><circle cx="12" cy="4.6" r="1.95"/><circle cx="12" cy="12" r="1.95"/><circle cx="12" cy="19.4" r="1.95"/></g>'),
+  close: I('<path d="M5 5l14 14M19 5 5 19"/>'),
+  filter: I('<circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/>'),
+  edit: I('<path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/>'),
+  add: I('<path d="M12 5v14M5 12h14"/>'),
 };

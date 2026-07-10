@@ -1,6 +1,6 @@
 import { store } from '../store.js';
 import { toast } from '../app.js';
-import { h } from '../util.js';
+import { h, thisMonth, ICONS } from '../util.js';
 
 function download(filename, text) {
   const blob = new Blob([text], { type: 'application/json' });
@@ -17,28 +17,28 @@ export function render(root, params) {
   const balance = s.balanceStyle || 'default';
   root.innerHTML = h`<div class="settings-overview">
     <div class="settings-inner">
-      <header class="settings-overview-head"><h1>Settings</h1></header>
+      <header class="settings-overview-head mobile-page-head">
+        <a class="settings-back mobile-head-action" href="#/budget/${thisMonth()}" aria-label="Back to Plan">‹</a>
+        <h1 class="mobile-page-title">Settings</h1>
+        <span class="settings-head-spacer" aria-hidden="true"></span>
+      </header>
       <div class="settings-cards">
 
-        <section class="reflect-link-card">
-          <h2>More views</h2>
-          <a href="#/fifty"><span><i aria-hidden="true">%</i><b>50/30/20</b><small>Compare your plan with a simple allocation guide</small></span><strong aria-hidden="true">›</strong></a>
-          <a href="#/forecast"><span><i aria-hidden="true">⌁</i><b>Forecast &amp; What-If</b><small>Project cash flow and test future changes</small></span><strong aria-hidden="true">›</strong></a>
-          <a href="#/loans"><span><i aria-hidden="true">↓</i><b>Loan Planner</b><small>Explore payoff timing and extra payments</small></span><strong aria-hidden="true">›</strong></a>
-        </section>
-
         <section class="settings-card">
-          <h3>Budget</h3>
-          <div class="set-row">
-            <label for="set-budget-name">Budget name</label>
+          <h2 class="settings-card-title">Budget &amp; privacy</h2>
+          <div class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">${ICONS.plan}</span>
+            <label class="settings-row-copy" for="set-budget-name"><strong>Budget name</strong><small>Name shown throughout your plan</small></label>
             <input id="set-budget-name" class="set-inline-input" type="text" value="${s.budgetName}">
           </div>
-          <div class="set-row">
-            <label for="set-currency">Currency symbol</label>
+          <div class="settings-row">
+            <span class="settings-row-icon settings-row-icon-text" aria-hidden="true">$</span>
+            <label class="settings-row-copy" for="set-currency"><strong>Currency</strong><small>Symbol used for every amount</small></label>
             <input id="set-currency" class="set-inline-input" type="text" maxlength="3" value="${s.currencySymbol}">
           </div>
-          <div class="set-row">
-            <label for="set-hide">Hide amounts (privacy mode)</label>
+          <div class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">${ICONS.eye}</span>
+            <label class="settings-row-copy" for="set-hide"><strong>Privacy mode</strong><small>Hide monetary amounts throughout the app</small></label>
             <label class="switch">
               <input id="set-hide" type="checkbox" ${s.hideAmounts ? 'checked' : ''}>
               <span class="switch-track"></span>
@@ -47,16 +47,19 @@ export function render(root, params) {
         </section>
 
         <section class="settings-card">
-          <h3>Display Options</h3>
-          <div class="disp-group">
-            <div class="disp-label">Theme</div>
-            <label class="disp-radio"><input type="radio" name="disp-theme" value="light" ${theme === 'light' ? 'checked' : ''}>Light Theme</label>
-            <label class="disp-radio"><input type="radio" name="disp-theme" value="dark" ${theme === 'dark' ? 'checked' : ''}>Dark Theme</label>
-            <label class="disp-radio"><input type="radio" name="disp-theme" value="system" ${theme === 'system' ? 'checked' : ''}>Match System</label>
+          <h2 class="settings-card-title">Appearance</h2>
+          <div class="settings-option-block">
+            <div class="settings-option-head"><span class="settings-row-icon" aria-hidden="true">${ICONS.settings}</span><span><strong>Theme</strong><small>Choose how Sapient Spend looks</small></span></div>
+            <div class="settings-segmented" role="radiogroup" aria-label="Theme">
+              <label><input type="radio" name="disp-theme" value="light" ${theme === 'light' ? 'checked' : ''}><span>Light</span></label>
+              <label><input type="radio" name="disp-theme" value="dark" ${theme === 'dark' ? 'checked' : ''}><span>Dark</span></label>
+              <label><input type="radio" name="disp-theme" value="system" ${theme === 'system' ? 'checked' : ''}><span>System</span></label>
+            </div>
           </div>
-          <div class="disp-group">
-            <div class="disp-label">Balance Style</div>
-            <label class="disp-radio disp-radio-preview">
+          <div class="settings-option-block">
+            <div class="settings-option-head"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">Aa</span><span><strong>Balance style</strong><small>How positive and negative amounts differ</small></span></div>
+            <div class="settings-choice-grid">
+            <label class="settings-choice">
               <input type="radio" name="disp-balance" value="default" ${balance === 'default' ? 'checked' : ''}>
               <span class="disp-radio-body">
                 <span class="disp-radio-title">Default</span>
@@ -67,10 +70,10 @@ export function render(root, params) {
                 </span>
               </span>
             </label>
-            <label class="disp-radio disp-radio-preview">
+            <label class="settings-choice">
               <input type="radio" name="disp-balance" value="mono" ${balance === 'mono' ? 'checked' : ''}>
               <span class="disp-radio-body">
-                <span class="disp-radio-title">Differentiate Without Color</span>
+                <span class="disp-radio-title">Without colour</span>
                 <span class="disp-preview" data-balance="mono">
                   <span class="pill overspent">-$10.00</span>
                   <span class="pill underfunded">$10.00</span>
@@ -78,40 +81,30 @@ export function render(root, params) {
                 </span>
               </span>
             </label>
+            </div>
           </div>
         </section>
 
         <section class="settings-card">
-          <h3>The Four Rules</h3>
-          <ol class="rules-list">
-            <li><strong>Give Every Dollar a Job:</strong> assign every dollar you have to a category before you spend it.</li>
-            <li><strong>Embrace Your True Expenses:</strong> break big irregular bills into small monthly savings now.</li>
-            <li><strong>Roll With the Punches:</strong> overspend a category? Cover it by moving money from another, then move on.</li>
-            <li><strong>Age Your Money:</strong> spend money you earned a while ago, not last week's paycheck, and you'll build a buffer.</li>
-          </ol>
-        </section>
-
-        <section class="settings-card">
-          <h3>Bank Syncing</h3>
-          <div class="sync-card muted">
-            <p>Basiq bank sync: coming soon. All data stays on this device.</p>
-            <button class="btn secondary" disabled>Connect bank</button>
+          <h2 class="settings-card-title">Connections</h2>
+          <div class="settings-row settings-row-disabled">
+            <span class="settings-row-icon" aria-hidden="true">${ICONS.accounts}</span>
+            <span class="settings-row-copy"><strong>Bank connections</strong><small>Secure automatic transaction syncing</small></span>
+            <span class="settings-status">Coming soon</span>
           </div>
         </section>
 
         <section class="settings-card">
-          <h3>Data</h3>
-          <div class="data-actions">
-            <button id="set-export" class="btn secondary">Export budget (JSON)</button>
-            <label class="btn secondary file-btn">Import budget<input id="set-import" type="file" accept="application/json" hidden></label>
-            <button id="set-reset" class="btn danger">Reset all data</button>
-          </div>
+          <h2 class="settings-card-title">Your data</h2>
+          <button id="set-export" class="settings-action-row"><span class="settings-row-icon" aria-hidden="true">↓</span><span class="settings-row-copy"><strong>Export backup</strong><small>Save a portable JSON copy</small></span><span class="settings-chevron" aria-hidden="true">›</span></button>
+          <label class="settings-action-row file-btn"><span class="settings-row-icon" aria-hidden="true">↑</span><span class="settings-row-copy"><strong>Import backup</strong><small>Restore a previously exported budget</small></span><span class="settings-chevron" aria-hidden="true">›</span><input id="set-import" type="file" accept="application/json" hidden></label>
+          <button id="set-reset" class="settings-action-row settings-danger-row"><span class="settings-row-icon" aria-hidden="true">×</span><span class="settings-row-copy"><strong>Reset all data</strong><small>Permanently erase this budget</small></span><span class="settings-chevron" aria-hidden="true">›</span></button>
         </section>
 
         <section class="settings-card">
-          <h3>About</h3>
-          <p class="muted">Sapient Spend: a local-first budgeting app. Works offline (PWA). Your data never leaves this device.</p>
-          <a class="link-btn" href="https://github.com/kunwaaarrr/sapient-spend" target="_blank" rel="noopener" style="margin-top:12px">⭐ Leave a review</a>
+          <h2 class="settings-card-title">About</h2>
+          <div class="settings-row settings-about-row"><span class="settings-app-mark" aria-hidden="true">S</span><span class="settings-row-copy"><strong>Sapient Spend</strong><small>Local-first, private, and available offline</small></span><span class="settings-version">v1</span></div>
+          <a class="settings-action-row" href="https://github.com/kunwaaarrr/sapient-spend" target="_blank" rel="noopener"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">★</span><span class="settings-row-copy"><strong>View the project</strong><small>Source code and feedback on GitHub</small></span><span class="settings-chevron" aria-hidden="true">›</span></a>
         </section>
 
       </div>

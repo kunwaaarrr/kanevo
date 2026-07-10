@@ -1,6 +1,6 @@
 import { store, INFLOW } from '../store.js';
 import { openModal, closeModal, toast, navigate } from '../app.js';
-import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMonths } from '../util.js';
+import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMonths, ICONS } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
@@ -17,9 +17,6 @@ const TYPE_LABEL = {
 };
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-// line-style magnifier to match the app's other inline icons (ICONS in util.js has no search glyph)
-const SEARCH_ICO = '<svg class="search-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7"/><path d="M20 20l-4.8-4.8"/></svg>';
-
 // ---------- module-local UI state (survives store re-renders) ----------
 let curAccountId; // account currently rendered (null = all)
 let search = '';
@@ -100,11 +97,11 @@ export function renderAccountsOverview(root) {
   }).join('');
 
   root.innerHTML = h`<div class="accounts-overview">
-    <header class="accounts-overview-head">
-      <h1>Accounts</h1>
-      <div class="accounts-head-actions">
-        <button id="accounts-add-top" class="accounts-head-icon" aria-label="Add account">＋</button>
-        <button id="accounts-more" class="accounts-head-icon accounts-head-more" aria-label="More account options">⋮</button>
+    <header class="accounts-overview-head mobile-page-head">
+      <h1 class="mobile-page-title">Accounts</h1>
+      <div class="accounts-head-actions mobile-page-actions">
+        <button id="accounts-add-top" class="accounts-head-icon mobile-head-action" aria-label="Add account">${ICONS.add}</button>
+        <button id="accounts-more" class="accounts-head-icon accounts-head-more mobile-head-action" aria-label="More account options">${ICONS.moreVertical}</button>
       </div>
     </header>
     ${introHidden ? '' : `<section class="accounts-intro">
@@ -189,16 +186,17 @@ export function renderSpendingOverview(root) {
   });
 
   root.innerHTML = h`<div class="spending-overview">
-    <header class="spending-overview-head">
-      <h1>Spending</h1>
-      <div class="spending-head-actions">
-        <button id="spending-search-toggle" class="spending-head-icon" aria-label="Search transactions">${SEARCH_ICO}</button>
-        <button id="spending-more" class="spending-head-icon" aria-label="More spending options">⋮</button>
+    <header class="spending-overview-head mobile-page-head">
+      <h1 class="mobile-page-title">Spending</h1>
+      <div class="spending-head-actions mobile-page-actions">
+        <button id="spending-search-toggle" class="spending-head-icon mobile-head-action" aria-label="Search transactions">${ICONS.search}</button>
+        <button id="spending-more" class="spending-head-icon mobile-head-action" aria-label="More spending options">${ICONS.moreVertical}</button>
       </div>
     </header>
-    ${spendingSearchOpen ? h`<div class="spending-search-row">
+    ${spendingSearchOpen ? h`<div class="spending-search-row mobile-search-shell">
+      <span class="mobile-search-icon" aria-hidden="true">${ICONS.search}</span>
       <input id="spending-search-input" type="search" placeholder="Search transactions" value="${spendingQuery}">
-      <button id="spending-search-close" aria-label="Close search">×</button>
+      <button id="spending-search-close" aria-label="Close search">${ICONS.close}</button>
     </div>` : ''}
     ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
       <span><i aria-hidden="true">↻</i> Upcoming scheduled</span>
@@ -365,7 +363,7 @@ export function render(root, { accountId }) {
         ${viewMenuOpen ? renderViewMenu(false) : ''}
       </div>` : ''}
       <div class="reg-search-wrap">
-        <span class="reg-search-ico">${SEARCH_ICO}</span>
+        <span class="reg-search-ico">${ICONS.search}</span>
         <input class="reg-search" id="reg-search" type="search" placeholder="Search ${esc(account ? account.name : 'All Accounts')}" value="${esc(search)}">
       </div>
     </div>
@@ -500,18 +498,20 @@ function renderSchedRow(s, accountId) {
 function renderSchedCard(s, accountId) {
   const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
   const acc = store.state.accounts.find(a => a.id === s.accountId);
-  const meta = [FREQ_LABEL[s.frequency] || s.frequency, fmtDate(s.nextDate), !accountId && acc ? acc.name : null, s.memo]
-    .filter(Boolean).join(' · ');
+  const frequency = FREQ_LABEL[s.frequency] || s.frequency;
+  const context = [!accountId && acc ? acc.name : null, s.memo].filter(Boolean).join(' · ');
   return h`<div class="sched-row sched-card" data-id="${s.id}">
     <div class="sched-card-top">
+      <span class="sched-card-icon" aria-hidden="true">↻</span>
       <div class="sched-card-info">
         <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
-        <div class="sched-card-meta">${meta}</div>
+        <div class="sched-card-schedule"><span>${frequency}</span><strong>Next ${fmtDate(s.nextDate)}</strong></div>
+        ${context ? `<div class="sched-card-meta">${context}</div>` : ''}
       </div>
       <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
     </div>
     <div class="sched-card-actions">
-      <button class="btn sm sched-enter">Enter Now</button>
+      <button class="sched-enter">Enter now <span aria-hidden="true">›</span></button>
       <span class="sched-card-spacer"></span>
       <button class="icon-btn sched-edit" aria-label="Edit scheduled transaction">${SCHED_ICO_EDIT}</button>
       <button class="icon-btn sched-del" aria-label="Delete scheduled transaction">${SCHED_ICO_DEL}</button>

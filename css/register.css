@@ -294,22 +294,20 @@
 /* ================= mobile Spending overview ================= */
 .spending-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
 .spending-overview-head {
-  display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 10px;
+  padding: 10px 14px 8px;
 }
-.spending-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 500; letter-spacing: -.25px; }
-.spending-head-actions { display: flex; align-items: center; gap: 12px; }
+.spending-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
+.spending-head-actions { gap: 8px; }
 .spending-head-icon {
-  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
   font-size: 27px; line-height: 1; color: var(--text);
 }
-#spending-search-toggle .search-ico { width: 19px; height: 19px; }
-.spending-search-row { display: flex; align-items: center; gap: 8px; padding: 2px 14px 10px; }
+.spending-head-icon .ico { width: 22px; height: 22px; }
+.spending-search-row { display: flex; align-items: center; }
 .spending-search-row input {
-  flex: 1; min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--line);
-  border-radius: 999px; background: var(--bg); font-size: 14px;
+  flex: 1; height: 100%; padding: 0; font-size: 14px;
 }
-.spending-search-row input:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
-.spending-search-row button { width: 32px; height: 32px; font-size: 24px; color: var(--text-dim); }
+.spending-search-row input:focus { outline: 0; }
+.spending-search-row button { color: var(--text-dim); }
 .spending-scheduled-link {
   width: calc(100% - 28px); min-height: 46px; margin: 7px 14px 9px; padding: 8px 14px;
   border-radius: 15px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -324,8 +322,8 @@
 .spending-scheduled-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 5px 2px 8px; }
 .spending-scheduled-head h2 { font-size: 15px; }
 .spending-scheduled-head span { font-size: 11px; color: var(--text-dim); }
-.spending-scheduled-list { display: flex; flex-direction: column; gap: 8px; }
-.spending-scheduled-list .sched-card { border-radius: 15px; border: 0; box-shadow: 0 2px 8px rgba(20,30,70,.06); }
+.spending-scheduled-list { display: flex; flex-direction: column; gap: 9px; }
+.spending-scheduled-list .sched-card { border-radius: 18px; border: 0; box-shadow: 0 2px 8px rgba(20,30,70,.05); }
 .spending-uncleared {
   width: calc(100% - 28px); margin: 13px 14px 17px; min-height: 48px; padding: 9px 16px;
   border-radius: 999px; background: var(--accounts-action-bg); display: flex; align-items: center;
@@ -371,17 +369,15 @@
 /* ================= mobile Accounts overview ================= */
 .accounts-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
 .accounts-overview-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 15px 10px;
+  padding: 10px 14px 8px;
 }
-.accounts-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 500; letter-spacing: -.25px; }
-.accounts-head-actions { display: flex; align-items: center; gap: 11px; }
+.accounts-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
+.accounts-head-actions { gap: 8px; }
 .accounts-head-icon {
-  width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
   font-size: 24px; line-height: 1; font-weight: 400;
 }
-.accounts-head-icon:first-child { font-size: 27px; padding-bottom: 2px; }
-.accounts-head-more { font-size: 25px; width: 24px; }
+.accounts-head-icon .ico { width: 22px; height: 22px; }
+.accounts-head-more { font-size: 25px; }
 
 .accounts-intro {
   position: relative; margin: 14px 14px 22px; padding: 17px 15px 15px;
@@ -454,28 +450,36 @@
   .sched-card {
     /* align-items: stretch beats the desktop .sched-row grid rule's align-items: center,
        which otherwise makes column-flex children size to max-content and overflow the card */
-    display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; color: var(--text-dim);
+    display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; color: var(--text);
   }
-  .sched-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .sched-card-top { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 13px 13px 11px; }
+  .sched-card-icon {
+    width: 34px; height: 34px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--chip-active-bg); color: var(--blue); font-size: 18px; font-weight: 700;
+  }
   .sched-card-info { flex: 1; min-width: 0; }
   .sched-card-payee {
-    font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.25;
+    font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .sched-card-schedule { margin-top: 5px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .sched-card-schedule > span { padding: 3px 7px; border-radius: 999px; background: var(--chip-active-bg); color: var(--blue-dark); font-size: 10px; font-weight: 700; }
+  .sched-card-schedule > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-size: 11px; font-weight: 600; }
   .sched-card-meta {
-    margin-top: 2px; font-size: 12px; color: var(--text-dim); line-height: 1.3;
+    margin-top: 5px; font-size: 11px; color: var(--text-dim); line-height: 1.3;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sched-card-amt {
-    font-size: 21px; font-weight: 800; line-height: 1.1; white-space: nowrap; flex-shrink: 0;
+    padding-top: 1px; font-size: 16px; font-weight: 750; line-height: 1.15; white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-  .sched-card-actions { display: flex; align-items: center; gap: 6px; }
+  .sched-card-actions { min-height: 43px; padding: 5px 8px 5px 13px; border-top: 1px solid var(--line-subtle); display: flex; align-items: center; gap: 5px; }
   .sched-card-spacer { flex: 1; }
-  .sched-card .sched-enter { flex-shrink: 0; }
+  .sched-card .sched-enter { min-height: 32px; display: inline-flex; align-items: center; gap: 5px; color: var(--link); font-size: 12px; font-weight: 750; }
+  .sched-card .sched-enter span { font-size: 19px; line-height: 1; font-weight: 400; }
   .sched-card .sched-edit, .sched-card .sched-del {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; padding: 0; border-radius: 8px; color: var(--text-faint);
+    width: 30px; height: 30px; padding: 0; border-radius: 9px; color: var(--text-faint);
   }
   .sched-card .sched-edit:hover, .sched-card .sched-del:hover,
   .sched-card .sched-edit:active, .sched-card .sched-del:active { background: var(--bg); color: var(--text-dim); }
