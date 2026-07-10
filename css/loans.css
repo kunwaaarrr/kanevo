@@ -96,8 +96,12 @@
 
 /* ================= mobile ================= */
 @media (max-width: 767px) {
+  .loans-head { position: sticky; top: 0; z-index: 20; gap: 5px; padding: 8px 12px; background: var(--app-cream); border-bottom: 1px solid var(--line-subtle); }
+  .loans-head .view-title { font-size: 19px; }
   .loans-body, .settings-body { padding: 14px; gap: 14px; }
   .loan-grid { grid-template-columns: 1fr; }
+  .loan-card, .extra-payment-card, .stat-card, .burndown-card { border: 0; border-radius: 20px; box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+  .loan-card { padding: 17px; }
   .loan-stats-grid { grid-template-columns: 1fr; }
   .savings-card { grid-column: auto; }
   .extra-controls { flex-wrap: wrap; }
@@ -105,5 +109,3 @@
   .data-actions { flex-direction: column; align-items: stretch; }
   .data-actions .btn { text-align: center; justify-content: center; }
 }
-
-.settings-quick-links { display: flex; gap: 10px; flex-wrap: wrap; }

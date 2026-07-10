@@ -22,6 +22,8 @@ const state = {
   highlight: null, // spending: id of highlighted slice/legend row
   expandedGroups: new Set(), // income-expense
   openPopover: null, // 'date' | 'accounts' | 'categories' | null
+  mobileFiltersOpen: false,
+  mobileMenuOpen: false,
 };
 
 function applyPreset(preset) {
@@ -167,9 +169,16 @@ function tabBar(active) {
   return h`<div class="report-tabs">
     ${TABS.map(t => h`<a class="report-tab ${t.id === active ? 'active' : ''}" href="#/reports/${t.id}">${t.label}</a>`)}
     <div class="report-switcher-wrap">
+      <a class="mobile-report-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>
       <button type="button" class="report-switcher" id="report-switcher">${current.label} <span class="switcher-caret">▾</span></button>
+      <button type="button" class="mobile-report-filter" id="mobile-report-filter" aria-label="Jump to report filters">≡</button>
+      <button type="button" class="mobile-report-more" id="mobile-report-more" aria-label="More report options">⋮</button>
       <div class="report-switch-menu" id="report-switch-menu" hidden>
         ${TABS.map(t => h`<a class="report-switch-item ${t.id === active ? 'active' : ''}" href="#/reports/${t.id}">${t.label}</a>`)}
+      </div>
+      <div class="mobile-report-actions-menu" id="mobile-report-actions-menu" hidden>
+        <a href="#/reports/overview">Reflect overview</a>
+        <button type="button" id="mobile-report-export">Export this report</button>
       </div>
     </div>
   </div>`;
@@ -179,7 +188,13 @@ function wireReportSwitcher(root) {
   const menu = root.querySelector('#report-switch-menu');
   if (!btn) return;
   btn.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
-  document.addEventListener('click', () => { menu.hidden = true; }, { once: true });
+  const filterBtn = root.querySelector('#mobile-report-filter');
+  const moreBtn = root.querySelector('#mobile-report-more');
+  const actionsMenu = root.querySelector('#mobile-report-actions-menu');
+  filterBtn.onclick = () => root.querySelector('.filter-row')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  moreBtn.onclick = e => { e.stopPropagation(); actionsMenu.hidden = !actionsMenu.hidden; };
+  root.querySelector('#mobile-report-export').onclick = () => root.querySelector('#export-btn')?.click();
+  document.addEventListener('click', () => { menu.hidden = true; actionsMenu.hidden = true; }, { once: true });
 }
 
 function pageHead(title) {
@@ -191,6 +206,209 @@ function pageHead(title) {
 
 function emptyState(msg) {
   return h`<div class="empty-state"><p>${msg}</p></div>`;
+}
+
+// ============================================================
+// MOBILE REFLECT OVERVIEW
+// ============================================================
+function reflectOverview(root) {
+  const month = thisMonth();
+  const raw = store.spendingBreakdown({ fromMonth: month, toMonth: month, groupBy: 'category' });
+  const totalSpending = raw.reduce((sum, item) => sum + item.amount, 0);
+  const topCategories = raw.slice(0, 4);
+  const income = store.state.transactions.reduce((sum, transaction) => {
+    if (transaction.date.slice(0, 7) !== month || transaction.amount <= 0) return sum;
+    const account = store.state.accounts.find(item => item.id === transaction.accountId);
+    return account?.onBudget ? sum + transaction.amount : sum;
+  }, 0);
+  const netSeries = store.netWorthSeries();
+  const latestNet = netSeries.length ? netSeries[netSeries.length - 1].netWorth : 0;
+  const age = store.ageOfMoney();
+  const comparisonMax = Math.max(1, income, totalSpending);
+  const incomeWidth = Math.round((income / comparisonMax) * 100);
+  const spendingWidth = Math.round((totalSpending / comparisonMax) * 100);
+
+  root.innerHTML = h`<div class="reflect-overview">
+    <header class="reflect-overview-head">
+      <h1>Reflect</h1>
+      <div class="reflect-overview-menu-wrap">
+        <button id="reflect-overview-more" class="reflect-overview-more" aria-label="More Reflect options">⋮</button>
+        <div id="reflect-overview-menu" class="reflect-overview-menu" hidden>
+          <a href="#/reports/spending">Spending Breakdown</a>
+          <a href="#/reports/trends">Spending Trends</a>
+          <a href="#/reports/net-worth">Net Worth</a>
+          <a href="#/reports/income-expense">Income v Expense</a>
+          <a href="#/reports/age-of-money">Age of Money</a>
+          <a href="#/fifty">50/30/20</a>
+          <a href="#/forecast">Forecast &amp; What-If</a>
+          <a href="#/loans">Loan Planner</a>
+        </div>
+      </div>
+    </header>
+    <main class="reflect-overview-cards">
+      <a class="reflect-summary-card reflect-spending-summary" href="#/reports/spending">
+        <div class="reflect-card-link-head"><strong><span aria-hidden="true">◔</span> Spending Breakdown</strong><span aria-hidden="true">›</span></div>
+        <div class="reflect-period">${monthLabel(month)}</div>
+        <div class="reflect-primary-amount">${fmt(totalSpending)}</div>
+        <div class="reflect-solid-bar"></div>
+        <div class="reflect-list-head"><span>Top Categories</span><span>Spent</span></div>
+        <div class="reflect-top-list">
+          ${topCategories.length ? topCategories.map((item, index) => h`<div><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></div>`).join('') : '<p class="muted">No spending this month yet.</p>'}
+        </div>
+      </a>
+      <a class="reflect-summary-card" href="#/reports/income-expense">
+        <div class="reflect-card-link-head"><strong><span aria-hidden="true">▥</span> Income vs Spending</strong><span aria-hidden="true">›</span></div>
+        <p class="reflect-insight">${income >= totalSpending ? 'You are spending less than you brought in.' : 'Spending is currently ahead of income.'}</p>
+        <div class="reflect-comparison-row"><span>Income</span><strong>${fmt(income)}</strong></div>
+        <div class="reflect-comparison-track"><span class="income" style="width:${incomeWidth}%"></span></div>
+        <div class="reflect-comparison-row"><span>Spending</span><strong>${fmt(totalSpending)}</strong></div>
+        <div class="reflect-comparison-track"><span class="spending" style="width:${spendingWidth}%"></span></div>
+      </a>
+      <div class="reflect-mini-grid">
+        <a class="reflect-summary-card reflect-mini-card" href="#/reports/net-worth">
+          <div class="reflect-card-link-head"><strong>Net Worth</strong><span aria-hidden="true">›</span></div>
+          <div class="reflect-mini-value ${latestNet < 0 ? 'neg-text' : 'pos-text'}">${fmt(latestNet)}</div>
+        </a>
+        <a class="reflect-summary-card reflect-mini-card" href="#/reports/age-of-money">
+          <div class="reflect-card-link-head"><strong>Age of Money</strong><span aria-hidden="true">›</span></div>
+          <div class="reflect-mini-value">${age} days</div>
+        </a>
+      </div>
+      <section class="reflect-link-card">
+        <h2>More reports</h2>
+        <a href="#/reports/trends"><span><i aria-hidden="true">↗</i><b>Spending Trends</b><small>See how spending changes month to month</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/reports/income-expense"><span><i aria-hidden="true">⇄</i><b>Income v Expense</b><small>Compare money in, money out, and what remains</small></span><strong aria-hidden="true">›</strong></a>
+      </section>
+      <section class="reflect-link-card reflect-tools-card">
+        <h2>Planning tools</h2>
+        <a href="#/fifty"><span><i aria-hidden="true">%</i><b>50/30/20</b><small>Compare your plan with a simple allocation guide</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/forecast"><span><i aria-hidden="true">⌁</i><b>Forecast &amp; What-If</b><small>Project cash flow and test future changes</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/loans"><span><i aria-hidden="true">↓</i><b>Loan Planner</b><small>Explore payoff timing and extra payments</small></span><strong aria-hidden="true">›</strong></a>
+      </section>
+    </main>
+  </div>`;
+
+  const button = root.querySelector('#reflect-overview-more');
+  const menu = root.querySelector('#reflect-overview-menu');
+  button.onclick = event => { event.stopPropagation(); menu.hidden = !menu.hidden; };
+  document.addEventListener('click', () => { menu.hidden = true; }, { once: true });
+}
+
+// ============================================================
+// MOBILE REPORT SYSTEM
+// Detailed reports use a phone-native composition rather than shrinking the
+// desktop cards and tables. The calculations and export contracts stay shared.
+// ============================================================
+function isMobileReport() { return innerWidth < 768; }
+
+function mobileReportHeader(active, title) {
+  return h`<header class="mobile-report-head">
+    <a href="#/reports/overview" class="mobile-report-head-back" aria-label="Back to Reflect">‹</a>
+    <h1>${title}</h1>
+    <button id="mobile-filter-open" class="mobile-report-head-button" aria-label="Open report filters">≡</button>
+    <button id="mobile-report-menu-toggle" class="mobile-report-head-button" aria-label="More report options">⋮</button>
+    <div class="mobile-report-menu" id="mobile-report-menu" ${state.mobileMenuOpen ? '' : 'hidden'}>
+      ${TABS.map(item => h`<a class="${item.id === active ? 'active' : ''}" href="#/reports/${item.id}">${item.label}</a>`)}
+      <button id="mobile-report-export-action">Export this report</button>
+    </div>
+  </header>`;
+}
+
+function mobileRangeBar(active) {
+  const range = state.from === state.to ? monthLabel(state.from) : `${monthLabel(state.from)} – ${monthLabel(state.to)}`;
+  const showCategories = active === 'spending' || active === 'trends';
+  const showAccounts = showCategories || active === 'net-worth';
+  const categoryLabel = state.categoryIds ? `${state.categoryIds.length} categories` : 'All categories';
+  const accountLabel = state.accountIds ? `${state.accountIds.length} accounts` : 'All accounts';
+  return h`<div class="mobile-report-range">
+    <button id="mobile-month-prev" aria-label="Previous period">‹</button>
+    <button id="mobile-range-open">${range}<span aria-hidden="true">⌄</span></button>
+    <button id="mobile-month-next" aria-label="Next period">›</button>
+  </div>
+  ${(showCategories || showAccounts) ? h`<div class="mobile-report-filter-summary">
+    ${showCategories ? `<button id="mobile-categories-open">${categoryLabel}</button>` : ''}
+    ${showAccounts ? `<button id="mobile-accounts-open">${accountLabel}</button>` : ''}
+  </div>` : ''}`;
+}
+
+function mobileFilterPanel(active) {
+  if (!state.mobileFiltersOpen) return '';
+  const showCategories = active === 'spending' || active === 'trends';
+  const showAccounts = showCategories || active === 'net-worth';
+  const categories = store.state.categories.filter(item => !item.hidden);
+  const accounts = store.state.accounts.filter(item => !item.closed);
+  return h`<div class="mobile-filter-panel">
+    <header><button id="mobile-filter-close" aria-label="Close filters">×</button><h2>Report filters</h2><button id="mobile-filter-save">Done</button></header>
+    <div class="mobile-filter-body">
+      <section class="mobile-filter-card">
+        <h3>Date range</h3>
+        ${PRESETS.map(preset => `<button class="mobile-preset-row ${preset === state.preset ? 'active' : ''}" data-mobile-preset="${preset}"><span>${preset}</span><i>${preset === state.preset ? '✓' : ''}</i></button>`).join('')}
+        <div class="mobile-custom-range">
+          <label>From<input type="month" id="mobile-from-month" value="${state.from}"></label>
+          <label>To<input type="month" id="mobile-to-month" value="${state.to}"></label>
+        </div>
+      </section>
+      ${showCategories ? mobileFilterChecklist('categories', 'Categories', categories, state.categoryIds) : ''}
+      ${showAccounts ? mobileFilterChecklist('accounts', 'Accounts', accounts, state.accountIds) : ''}
+    </div>
+  </div>`;
+}
+
+function mobileFilterChecklist(kind, label, items, selectedIds) {
+  const selected = selectedIds ? new Set(selectedIds) : null;
+  return h`<section class="mobile-filter-card">
+    <div class="mobile-filter-card-head"><h3>${label}</h3><button data-mobile-all="${kind}">${selected ? 'Select all' : 'Clear all'}</button></div>
+    ${items.map(item => h`<label class="mobile-filter-check"><input type="checkbox" data-mobile-check="${kind}" value="${item.id}" ${!selected || selected.has(item.id) ? 'checked' : ''}><span>${item.name}</span></label>`)}
+  </section>`;
+}
+
+function wireMobileReport(root, active, rerender, exportAction) {
+  const step = direction => {
+    const single = state.from === state.to;
+    state.from = addMonths(state.from, direction);
+    state.to = single ? state.from : addMonths(state.to, direction);
+    state.preset = 'Custom';
+    rerender();
+  };
+  root.querySelector('#mobile-month-prev').onclick = () => step(-1);
+  root.querySelector('#mobile-month-next').onclick = () => step(1);
+  const openFilters = () => { state.mobileFiltersOpen = true; state.mobileMenuOpen = false; rerender(); };
+  root.querySelector('#mobile-filter-open').onclick = openFilters;
+  root.querySelector('#mobile-range-open').onclick = openFilters;
+  root.querySelector('#mobile-categories-open')?.addEventListener('click', openFilters);
+  root.querySelector('#mobile-accounts-open')?.addEventListener('click', openFilters);
+  root.querySelector('#mobile-report-menu-toggle').onclick = event => {
+    event.stopPropagation(); state.mobileMenuOpen = !state.mobileMenuOpen; rerender();
+  };
+  root.querySelector('#mobile-report-export-action')?.addEventListener('click', exportAction);
+  root.querySelector('#mobile-filter-close')?.addEventListener('click', () => { state.mobileFiltersOpen = false; rerender(); });
+  root.querySelector('#mobile-filter-save')?.addEventListener('click', () => { state.mobileFiltersOpen = false; rerender(); });
+  root.querySelectorAll('[data-mobile-preset]').forEach(button => {
+    button.onclick = () => { applyPreset(button.dataset.mobilePreset); rerender(); };
+  });
+  root.querySelector('#mobile-from-month')?.addEventListener('change', event => { state.from = event.target.value; state.preset = 'Custom'; rerender(); });
+  root.querySelector('#mobile-to-month')?.addEventListener('change', event => { state.to = event.target.value; state.preset = 'Custom'; rerender(); });
+  root.querySelectorAll('[data-mobile-all]').forEach(button => {
+    button.onclick = () => { const kind = button.dataset.mobileAll; setFilterList(kind, kind === 'accounts' ? (state.accountIds ? null : []) : (state.categoryIds ? null : [])); rerender(); };
+  });
+  root.querySelectorAll('[data-mobile-check]').forEach(checkbox => {
+    checkbox.onchange = () => {
+      const kind = checkbox.dataset.mobileCheck;
+      const all = (kind === 'accounts' ? store.state.accounts.filter(item => !item.closed) : store.state.categories.filter(item => !item.hidden)).map(item => item.id);
+      const current = (kind === 'accounts' ? state.accountIds : state.categoryIds) || all.slice();
+      const next = checkbox.checked ? [...new Set([...current, checkbox.value])] : current.filter(id => id !== checkbox.value);
+      setFilterList(kind, next.length === all.length ? null : next);
+      rerender();
+    };
+  });
+}
+
+function mobileProgressRows(items) {
+  const max = Math.max(1, ...items.map(item => item.amount));
+  return items.map((item, index) => h`<div class="mobile-data-row">
+    <span class="mobile-data-row-top"><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></span>
+    <span class="mobile-data-track"><span style="width:${Math.max(3, Math.round((item.amount / max) * 100))}%;background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></span></span>
+  </div>`).join('');
 }
 
 // ============================================================
@@ -211,6 +429,11 @@ function spendingReport(root) {
     slices = [...top, { id: '__other__', name: 'Everything Else', amount: restAmt }];
   }
   slices = slices.map((s, i) => ({ ...s, color: `var(${CHART_COLORS[i % CHART_COLORS.length]})`, pct: total ? (s.amount / total) * 100 : 0 }));
+
+  if (isMobileReport()) {
+    renderMobileSpendingReport(root, slices, total, GROUPBYS);
+    return;
+  }
 
   root.innerHTML = h`${tabBar('spending')}
   ${pageHead('Spending Breakdown')}
@@ -242,6 +465,7 @@ function spendingReport(root) {
     </div>
   </div>`;
 
+  wireReportSwitcher(root);
   bindFilterRow(root, () => spendingReport(root));
   root.querySelector('#export-btn').onclick = () => downloadCsv(`spending-breakdown-${state.from}_${state.to}.csv`,
     [['Name', 'Amount'], ...slices.map(s => [s.name, (s.amount / 100).toFixed(2)]), ['Total', (total / 100).toFixed(2)]]);
@@ -252,6 +476,33 @@ function spendingReport(root) {
   root.querySelectorAll('[data-arc]').forEach(el => {
     el.onclick = () => { state.highlight = state.highlight === el.dataset.arc ? null : el.dataset.arc; spendingReport(root); };
   });
+}
+
+function renderMobileSpendingReport(root, slices, total, groupBys) {
+  const exportAction = () => downloadCsv(`spending-breakdown-${state.from}_${state.to}.csv`,
+    [['Name', 'Amount'], ...slices.map(item => [item.name, (item.amount / 100).toFixed(2)]), ['Total', (total / 100).toFixed(2)]]);
+  root.innerHTML = h`<div class="mobile-report-page">
+    ${mobileReportHeader('spending', 'Spending Breakdown')}
+    ${mobileRangeBar('spending')}
+    <main class="mobile-report-content">
+      <section class="mobile-hero-card">
+        <span class="mobile-eyebrow">Total spending</span>
+        <strong class="mobile-hero-value">${fmt(total)}</strong>
+        <span class="mobile-hero-period">${state.from === state.to ? monthLabel(state.from) : `${monthLabel(state.from)} – ${monthLabel(state.to)}`}</span>
+        <span class="mobile-hero-bar"></span>
+      </section>
+      <div class="mobile-report-segmented">
+        ${groupBys.map(group => `<button class="${group.id === state.groupBy ? 'active' : ''}" data-gb="${group.id}">${group.label}</button>`).join('')}
+      </div>
+      <section class="mobile-list-section">
+        <div class="mobile-section-title"><h2>${groupBys.find(group => group.id === state.groupBy).label}</h2><span>${slices.length} shown</span></div>
+        <div class="mobile-data-card">${slices.length ? mobileProgressRows(slices) : emptyState('No spending to show yet')}</div>
+      </section>
+    </main>
+    ${mobileFilterPanel('spending')}
+  </div>`;
+  wireMobileReport(root, 'spending', () => spendingReport(root), exportAction);
+  root.querySelectorAll('[data-gb]').forEach(button => button.onclick = () => { state.groupBy = button.dataset.gb; spendingReport(root); });
 }
 
 function donutSvg(slices, total) {
@@ -300,6 +551,11 @@ function trendsReport(root) {
   const total = byMonth.reduce((s, m) => s + m.amount, 0);
   const avg = Math.round(total / (byMonth.length || 1));
 
+  if (isMobileReport()) {
+    renderMobileTrendsReport(root, byMonth, total, avg);
+    return;
+  }
+
   root.innerHTML = h`${tabBar('trends')}
   ${pageHead('Spending Trends')}
   <div class="report-body">
@@ -328,11 +584,42 @@ function trendsReport(root) {
     </div>` : ''}
   </div>`;
 
+  wireReportSwitcher(root);
   bindFilterRow(root, () => trendsReport(root));
   root.querySelector('#export-btn').onclick = () => downloadCsv(`spending-trends-${state.from}_${state.to}.csv`,
     [['Month', 'Total Spending', 'Compared to Average %'],
      ...byMonth.map(m => [monthLabel(m.month), (m.amount / 100).toFixed(2), avg ? (((m.amount - avg) / avg) * 100).toFixed(1) : '0.0']),
      ['Average', (avg / 100).toFixed(2), '']]);
+}
+
+function renderMobileTrendsReport(root, byMonth, total, avg) {
+  const exportAction = () => downloadCsv(`spending-trends-${state.from}_${state.to}.csv`,
+    [['Month', 'Total Spending', 'Compared to Average %'], ...byMonth.map(item => [monthLabel(item.month), (item.amount / 100).toFixed(2), avg ? (((item.amount - avg) / avg) * 100).toFixed(1) : '0.0'])]);
+  const max = Math.max(1, ...byMonth.map(item => item.amount));
+  root.innerHTML = h`<div class="mobile-report-page">
+    ${mobileReportHeader('trends', 'Spending Trends')}
+    ${mobileRangeBar('trends')}
+    <main class="mobile-report-content">
+      <section class="mobile-hero-card">
+        <span class="mobile-eyebrow">Average per month</span>
+        <strong class="mobile-hero-value">${fmt(avg)}</strong>
+        <span class="mobile-hero-period">${fmt(total)} total across ${byMonth.length} month${byMonth.length === 1 ? '' : 's'}</span>
+      </section>
+      <section class="mobile-chart-card">
+        <div class="mobile-section-title"><h2>Monthly spending</h2><span>Average shown as dotted line</span></div>
+        ${byMonth.length ? trendsSvg(byMonth, avg) : emptyState('No spending in this range.')}
+      </section>
+      <section class="mobile-list-section">
+        <div class="mobile-section-title"><h2>Month by month</h2></div>
+        <div class="mobile-data-card">${byMonth.map(item => {
+          const difference = avg ? ((item.amount - avg) / avg) * 100 : 0;
+          return h`<div class="mobile-month-row"><span><b>${monthLabel(item.month)}</b><i><em style="width:${Math.max(3, Math.round((item.amount / max) * 100))}%"></em></i></span><span><strong>${fmt(item.amount)}</strong><small class="${difference <= 0 ? 'pos-text' : 'neg-text'}">${difference >= 0 ? '+' : ''}${difference.toFixed(1)}%</small></span></div>`;
+        }).join('')}</div>
+      </section>
+    </main>
+    ${mobileFilterPanel('trends')}
+  </div>`;
+  wireMobileReport(root, 'trends', () => trendsReport(root), exportAction);
 }
 
 function trendsSvg(byMonth, avg) {
@@ -383,6 +670,11 @@ function netWorthReport(root) {
   const series = all.filter(p => p.month >= state.from && p.month <= state.to)
     .map(p => accSet ? netWorthForAccounts(p.month, accSet) : p);
 
+  if (isMobileReport()) {
+    renderMobileNetWorthReport(root, series);
+    return;
+  }
+
   root.innerHTML = h`${tabBar('net-worth')}
   ${pageHead('Net Worth')}
   <div class="report-body">
@@ -412,10 +704,39 @@ function netWorthReport(root) {
     </div>`}
   </div>`;
 
+  wireReportSwitcher(root);
   bindFilterRow(root, () => netWorthReport(root));
   root.querySelector('#export-btn').onclick = () => downloadCsv(`net-worth-${state.from}_${state.to}.csv`,
     [['Month', 'Assets', 'Debts', 'Net Worth'], ...series.map(p => [monthLabel(p.month), (p.assets / 100).toFixed(2), (p.liabilities / 100).toFixed(2), (p.netWorth / 100).toFixed(2)])]);
   if (series.length) bindNetWorthChart(root, series);
+}
+
+function renderMobileNetWorthReport(root, series) {
+  const exportAction = () => downloadCsv(`net-worth-${state.from}_${state.to}.csv`,
+    [['Month', 'Assets', 'Debts', 'Net Worth'], ...series.map(item => [monthLabel(item.month), (item.assets / 100).toFixed(2), (item.liabilities / 100).toFixed(2), (item.netWorth / 100).toFixed(2)])]);
+  const latest = series.at(-1);
+  const first = series[0];
+  const change = latest && first ? latest.netWorth - first.netWorth : 0;
+  root.innerHTML = h`<div class="mobile-report-page">
+    ${mobileReportHeader('net-worth', 'Net Worth')}
+    ${mobileRangeBar('net-worth')}
+    <main class="mobile-report-content">
+      ${latest ? h`<section class="mobile-hero-card mobile-net-hero">
+        <span class="mobile-eyebrow">Net worth</span>
+        <strong class="mobile-hero-value ${latest.netWorth < 0 ? 'neg-text' : ''}">${fmt(latest.netWorth)}</strong>
+        <div class="mobile-net-pairs"><span><small>Assets</small><b>${fmt(latest.assets)}</b></span><span><small>Debts</small><b class="neg-text">${fmt(latest.liabilities)}</b></span></div>
+        <div class="mobile-change-pill ${change >= 0 ? 'positive' : 'negative'}">${fmt(change, { sign: true })} over this period</div>
+      </section>
+      <section class="mobile-chart-card"><div class="mobile-section-title"><h2>Net worth history</h2></div>${netWorthSvg(series)}</section>
+      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Monthly history</h2></div><div class="mobile-data-card">${series.slice().reverse().map((item, index) => {
+        const previous = series[series.length - 2 - index];
+        const delta = previous ? item.netWorth - previous.netWorth : 0;
+        return h`<div class="mobile-history-row"><span><b>${monthLabel(item.month)}</b><small>Assets ${fmt(item.assets)} · Debts ${fmt(item.liabilities)}</small></span><span><strong>${fmt(item.netWorth)}</strong><small class="${delta >= 0 ? 'pos-text' : 'neg-text'}">${fmt(delta, { sign: true })}</small></span></div>`;
+      }).join('')}</div></section>` : emptyState('No net worth data in this range.')}
+    </main>
+    ${mobileFilterPanel('net-worth')}
+  </div>`;
+  wireMobileReport(root, 'net-worth', () => netWorthReport(root), exportAction);
 }
 
 // ponytail: account-filtered net worth recomputed from raw transactions here (store's netWorthSeries has no
@@ -530,6 +851,10 @@ function bindNetWorthChart(root, series) {
 function incomeExpenseReport(root) {
   const data = store.incomeVsExpense({ fromMonth: state.from, toMonth: state.to });
   const hasData = data.months && data.months.length;
+  if (isMobileReport()) {
+    renderMobileIncomeExpenseReport(root, data, hasData);
+    return;
+  }
   root.innerHTML = h`${tabBar('income-expense')}
   ${pageHead('Income v Expense')}
   <div class="report-body">
@@ -538,6 +863,7 @@ function incomeExpenseReport(root) {
       ${!hasData ? emptyState('No income or expense data in this range.') : ieTable(data)}
     </div>
   </div>`;
+  wireReportSwitcher(root);
   bindFilterRow(root, () => incomeExpenseReport(root));
   root.querySelector('#export-btn').onclick = () => downloadCsv(`income-vs-expense-${state.from}_${state.to}.csv`, ieCsvRows(data));
   if (hasData) {
@@ -556,6 +882,33 @@ function incomeExpenseReport(root) {
       };
     });
   }
+}
+
+function renderMobileIncomeExpenseReport(root, data, hasData) {
+  const incomeRows = data.income?.payeeRows || [];
+  const expenseRows = data.expense?.groupRows || [];
+  const income = incomeRows.reduce((sum, row) => sum + row.values.reduce((a, b) => a + b, 0), 0);
+  const expenses = expenseRows.reduce((sum, row) => sum + row.values.reduce((a, b) => a + b, 0), 0);
+  const net = income - expenses;
+  const comparisonMax = Math.max(1, income, expenses);
+  const exportAction = () => downloadCsv(`income-vs-expense-${state.from}_${state.to}.csv`, ieCsvRows(data));
+  root.innerHTML = h`<div class="mobile-report-page">
+    ${mobileReportHeader('income-expense', 'Income v Expense')}
+    ${mobileRangeBar('income-expense')}
+    <main class="mobile-report-content">
+      ${hasData ? h`<section class="mobile-hero-card mobile-income-hero">
+        <span class="mobile-eyebrow">Net income</span>
+        <strong class="mobile-hero-value ${net >= 0 ? 'pos-text' : 'neg-text'}">${fmt(net, { sign: true })}</strong>
+        <p>${net >= 0 ? 'You kept more than you spent in this period.' : 'Spending was higher than income in this period.'}</p>
+        <div class="mobile-compare-line"><span><b>Income</b><strong>${fmt(income)}</strong></span><i><em class="income" style="width:${Math.round((income / comparisonMax) * 100)}%"></em></i></div>
+        <div class="mobile-compare-line"><span><b>Expenses</b><strong>${fmt(expenses)}</strong></span><i><em class="expense" style="width:${Math.round((expenses / comparisonMax) * 100)}%"></em></i></div>
+      </section>
+      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Income sources</h2></div><div class="mobile-data-card">${incomeRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong class="pos-text">${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`).join('') || '<div class="mobile-simple-empty">No income in this period</div>'}</div></section>
+      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Expense groups</h2></div><div class="mobile-data-card">${expenseRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong>${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`).join('') || '<div class="mobile-simple-empty">No expenses in this period</div>'}</div></section>` : emptyState('No income or expense data in this range.')}
+    </main>
+    ${mobileFilterPanel('income-expense')}
+  </div>`;
+  wireMobileReport(root, 'income-expense', () => incomeExpenseReport(root), exportAction);
 }
 
 function rowVals(vals) {
@@ -637,6 +990,11 @@ function ageOfMoneyReport(root) {
   const series = all.filter(p => p.month >= state.from && p.month <= state.to);
   const current = store.ageOfMoney();
 
+  if (isMobileReport()) {
+    renderMobileAgeOfMoneyReport(root, series, current);
+    return;
+  }
+
   root.innerHTML = h`${tabBar('age-of-money')}
   ${pageHead('Age of Money')}
   <div class="report-body">
@@ -656,9 +1014,29 @@ function ageOfMoneyReport(root) {
     </div>
   </div>`;
 
+  wireReportSwitcher(root);
   bindFilterRow(root, () => ageOfMoneyReport(root));
   root.querySelector('#export-btn').onclick = () => downloadCsv(`age-of-money-${state.from}_${state.to}.csv`,
     [['Month', 'Age of Money (days)'], ...series.map(p => [monthLabel(p.month), p.aom == null ? '' : p.aom])]);
+}
+
+function renderMobileAgeOfMoneyReport(root, series, current) {
+  const exportAction = () => downloadCsv(`age-of-money-${state.from}_${state.to}.csv`,
+    [['Month', 'Age of Money (days)'], ...series.map(item => [monthLabel(item.month), item.aom == null ? '' : item.aom])]);
+  root.innerHTML = h`<div class="mobile-report-page">
+    ${mobileReportHeader('age-of-money', 'Age of Money')}
+    ${mobileRangeBar('age-of-money')}
+    <main class="mobile-report-content">
+      <section class="mobile-hero-card mobile-age-hero">
+        <span class="mobile-eyebrow">Your current cushion</span>
+        ${current == null ? h`<strong class="mobile-age-pending">Still learning</strong><p>Keep recording cash-account spending and this measure will appear once there is enough history.</p>` : h`<strong class="mobile-hero-value">${current} <small>days</small></strong><p>Your recent spending used money that had been available for about ${current} days.</p>`}
+      </section>
+      ${series.length ? `<section class="mobile-chart-card"><div class="mobile-section-title"><h2>Age over time</h2></div>${aomSvg(series)}</section>` : ''}
+      <section class="mobile-explainer-card"><span aria-hidden="true">◷</span><div><h2>What this means</h2><p>Age of Money looks at when recently spent cash first entered your accounts. A larger number generally means more breathing room between earning and spending.</p><p>Use it as a trend, not a score: consistent progress matters more than any single day.</p></div></section>
+    </main>
+    ${mobileFilterPanel('age-of-money')}
+  </div>`;
+  wireMobileReport(root, 'age-of-money', () => ageOfMoneyReport(root), exportAction);
 }
 
 function aomEmptyCard() {
@@ -703,6 +1081,7 @@ function aomSvg(series) {
 
 // ============================================================
 const TAB_FNS = {
+  overview: reflectOverview,
   spending: spendingReport,
   trends: trendsReport,
   'net-worth': netWorthReport,
@@ -714,5 +1093,4 @@ export function render(root, { report }) {
   state.report = report;
   root.className = 'reflect-view';
   (TAB_FNS[report] || spendingReport)(root);
-  wireReportSwitcher(root);
 }

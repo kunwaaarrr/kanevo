@@ -46,7 +46,7 @@ export function applyDisplaySettings() {
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.balance = s.balanceStyle || 'default';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = theme === 'dark' ? '#12141c' : '#1c1f58';
+  if (meta) meta.content = theme === 'dark' ? '#12141c' : '#f7f4ea';
 }
 darkMQ.addEventListener('change', () => {
   if ((store.state.settings.theme || 'light') === 'system') applyDisplaySettings();
@@ -66,7 +66,12 @@ function renderView() {
   setHideAmounts(store.state.settings.hideAmounts);
   const table = {
     budget:   () => budgetView.render(viewEl, { month: r.params[0] || thisMonth() }),
-    accounts: () => registerView.render(viewEl, { accountId: null }),
+    accounts: () => innerWidth < 768
+      ? registerView.renderAccountsOverview(viewEl)
+      : registerView.render(viewEl, { accountId: null }),
+    spending: () => innerWidth < 768
+      ? registerView.renderSpendingOverview(viewEl)
+      : registerView.render(viewEl, { accountId: null }),
     account:  () => registerView.render(viewEl, { accountId: r.params[0] }),
     reports:  () => reportsView.render(viewEl, { report: r.params[0] || 'spending' }),
     loans:    () => loansView.render(viewEl, { accountId: r.params[0] || null }),
@@ -86,11 +91,8 @@ function renderSidebar(route) {
   const month = route.name === 'budget' ? route.params[0] || thisMonth() : thisMonth();
   const items = [
     { hash: `#/budget/${month}`, ico: ICONS.plan, label: 'Plan', active: route.name === 'budget' },
-    { hash: '#/reports/spending', ico: ICONS.reflect, label: 'Reflect', active: route.name === 'reports' },
-    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' },
-    { hash: '#/fifty', ico: ICONS.fifty, label: '50/30/20', active: route.name === 'fifty' },
-    { hash: '#/forecast', ico: ICONS.forecast, label: 'Forecast', active: route.name === 'forecast' },
-    { hash: '#/loans', ico: ICONS.loans, label: 'Loan Planner', active: route.name === 'loans' },
+    { hash: '#/reports/overview', ico: ICONS.reflect, label: 'Reflect', active: ['reports', 'fifty', 'forecast', 'loans'].includes(route.name) },
+    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' },
     { hash: '#/settings', ico: ICONS.settings, label: 'Settings', active: route.name === 'settings' },
   ];
   nav.innerHTML = items.map(i =>
@@ -127,17 +129,27 @@ document.getElementById('bank-connections-btn').onclick = () =>
 
 // ---------- mobile tab bar ----------
 function renderTabbar(route) {
-  const map = { budget: 'budget', account: 'accounts', accounts: 'accounts', reports: 'reflect', loans: 'more', settings: 'more' };
+  const map = {
+    budget: 'plan',
+    account: 'spending', spending: 'spending', accounts: 'spending',
+    reports: 'reflect', fifty: 'reflect', forecast: 'reflect', loans: 'reflect',
+  };
   document.querySelectorAll('#tabbar button').forEach(b =>
     b.classList.toggle('active', map[route.name] === b.dataset.tab));
+  const transactionBtn = document.getElementById('mobile-transaction-btn');
+  transactionBtn.hidden = !['budget', 'spending', 'account'].includes(route.name);
 }
 document.getElementById('tabbar').onclick = e => {
   const btn = e.target.closest('button');
   if (!btn) return;
-  const go = { budget: `#/budget/${thisMonth()}`, accounts: '#/accounts', reflect: '#/reports/spending', more: '#/settings' };
-  if (btn.dataset.tab === 'add') registerView.openAddTransactionModal();
-  else navigate(go[btn.dataset.tab]);
+  const go = {
+    plan: `#/budget/${thisMonth()}`,
+    spending: '#/spending',
+    reflect: '#/reports/overview',
+  };
+  navigate(go[btn.dataset.tab]);
 };
+document.getElementById('mobile-transaction-btn').onclick = () => registerView.openAddTransactionModal();
 
 // ---------- keep popovers inside the viewport ----------
 // menus anchor to their trigger and can bleed past the phone's right edge; nudge them back

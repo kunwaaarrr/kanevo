@@ -11,7 +11,7 @@ let activeFocusedViewId = null;
 let curMonth;
 let activeFilter = 'all';       // all | underfunded | overfunded | available | snoozed
 let checkedCats = new Set();    // checkbox selection (Manually-assign + bulk highlight)
-let density = 'comfortable';    // comfortable | compact
+let density = 'compact';        // comfortable | compact — the supplied layout uses the tighter table rhythm
 let assignTab = 'auto';         // auto | manual, inside the Assign popover
 let summaryOpen = true, targetsOpen = true, autoAssignOpen = true, futureOpen = false; // inspector card disclosure
 
@@ -1239,24 +1239,66 @@ function openEditViewsSheet(root, md) {
 
 // ---------- Edit Plan sheet (pencil) ----------
 function openEditPlanSheet(root, md) {
-  const groups = md.groups.map(g => h`<div class="m-menu-row">
-    <span class="m-menu-label">${g.name}</span>
-    <button class="m-plan-add" data-act="plan-add-cat" data-id="${g.id}" aria-label="Add category">${[M_ICONS.plusCircle]}</button>
-  </div>`).join('');
-  const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Edit Plan</h2>
-    <button class="btn subtle m-plan-newgroup" data-act="plan-new-group">${[M_ICONS.plusCircle]} Add Category Group</button>
-    <div class="sheet-section-label">Category Groups</div>
-    <div class="m-menu">${groups}</div>`);
-  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  const monthWord = monthLabel(curMonth).split(' ')[0];
+  const totalTargets = md.groups.flatMap(g => g.categories)
+    .reduce((sum, category) => sum + (category.target ? neededFor(category, curMonth) + category.assigned : 0), 0);
+  const income = store.state.settings.expectedIncome;
+  const groups = md.groups.map(group => {
+    const categories = group.categories.map(category => {
+      const targetLabel = category.target ? fmt(category.target.amount) : 'Add Target';
+      return h`<button class="edit-plan-cat" data-act="plan-open-cat" data-id="${category.id}">
+        <span>${category.name}</span>
+        <span class="edit-plan-target ${category.target ? '' : 'empty'}">${targetLabel}</span>
+      </button>`;
+    }).join('');
+    return h`<section class="edit-plan-group">
+      <div class="edit-plan-group-head">
+        <h3>${group.name}</h3>
+        <div class="edit-plan-group-actions">
+          <button data-act="plan-add-cat" data-id="${group.id}" aria-label="Add category">${[M_ICONS.plusCircle]}</button>
+          <button data-act="plan-rename-group" data-id="${group.id}" aria-label="Rename category group">${[M_ICONS.dots]}</button>
+        </div>
+      </div>
+      <div class="edit-plan-card">${categories}</div>
+    </section>`;
+  }).join('');
+  const sheet = openModal(h`<div class="edit-plan-screen">
+    <div class="edit-plan-hero">
+      <div class="edit-plan-topbar">
+        <button class="edit-plan-back" data-act="plan-close" aria-label="Back">‹</button>
+        <h2>Edit Plan</h2>
+        <button class="edit-plan-dots" data-act="plan-new-group" aria-label="Add category group">${[M_ICONS.dots]}</button>
+      </div>
+      <div class="edit-plan-total">${fmt(totalTargets)}</div>
+      <div class="edit-plan-total-label">Cost to Be Me</div>
+      <div class="edit-plan-summary">
+        <div><span>${monthWord}'s Targets</span><strong>${fmt(totalTargets)}</strong></div>
+        <button data-act="plan-income"><span>Enter your monthly income</span><strong>${income == null ? fmt(0) : fmt(income)}</strong></button>
+      </div>
+    </div>
+    <div class="edit-plan-groups">${groups}</div>
+  </div>`);
+  sheet.classList.add('edit-plan-modal');
   sheet.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
-    if (act.dataset.act === 'plan-new-group') {
+    if (act.dataset.act === 'plan-close') closeModal();
+    else if (act.dataset.act === 'plan-new-group') {
       const name = prompt('New group name:');
       if (name && name.trim()) { store.addGroup(name.trim()); closeModal(); }
     } else if (act.dataset.act === 'plan-add-cat') {
       const name = prompt('New category name:');
       if (name && name.trim()) { store.addCategory(act.dataset.id, name.trim()); closeModal(); }
+    } else if (act.dataset.act === 'plan-rename-group') {
+      const group = md.groups.find(item => item.id === act.dataset.id);
+      const name = prompt('Category group name:', group?.name || '');
+      if (name && name.trim()) { store.renameGroup(act.dataset.id, name.trim()); closeModal(); }
+    } else if (act.dataset.act === 'plan-income') {
+      const val = prompt('Expected income this month:', income == null ? '' : fmtExact(income).replace('$', ''));
+      if (val != null) { store.updateSettings({ expectedIncome: parseAmount(val) }); closeModal(); }
+    } else if (act.dataset.act === 'plan-open-cat') {
+      closeModal();
+      openCategoryDetailsSheet(act.dataset.id);
     }
   };
 }

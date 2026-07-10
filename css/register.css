@@ -289,6 +289,154 @@
 /* mobile ⋮ view-options trigger (top right of the header, reuses .view-menu/.view-menu-wrap) */
 .view-menu-trigger-mobile { font-size: 20px; line-height: 1; padding: 6px 10px; }
 
+/* ================= mobile Spending overview ================= */
+.spending-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
+.spending-overview-head {
+  display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 10px;
+}
+.spending-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 500; letter-spacing: -.25px; }
+.spending-head-actions { display: flex; align-items: center; gap: 12px; }
+.spending-head-icon {
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 27px; line-height: 1; color: var(--text);
+}
+#spending-search-toggle { font-size: 30px; transform: rotate(-18deg); }
+.spending-search-row { display: flex; align-items: center; gap: 8px; padding: 2px 14px 10px; }
+.spending-search-row input {
+  flex: 1; min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--bg); font-size: 14px;
+}
+.spending-search-row input:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+.spending-search-row button { width: 32px; height: 32px; font-size: 24px; color: var(--text-dim); }
+.spending-scheduled-link {
+  width: calc(100% - 28px); min-height: 46px; margin: 7px 14px 9px; padding: 8px 14px;
+  border-radius: 15px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.06); color: var(--text); text-align: left;
+}
+.spending-scheduled-link > span { display: inline-flex; align-items: center; gap: 8px; }
+.spending-scheduled-link i { width: 27px; height: 27px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); color: var(--blue); font-size: 17px; font-style: normal; }
+.spending-scheduled-link strong { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--track); font-size: 12px; }
+.spending-scheduled-link b { font-size: 22px; line-height: 1; color: var(--text-faint); font-weight: 400; }
+.spending-scheduled-link.active { background: var(--chip-active-bg); }
+.spending-scheduled-panel { margin: 0 14px 14px; }
+.spending-scheduled-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 5px 2px 8px; }
+.spending-scheduled-head h2 { font-size: 15px; }
+.spending-scheduled-head span { font-size: 11px; color: var(--text-dim); }
+.spending-scheduled-list { display: flex; flex-direction: column; gap: 8px; }
+.spending-scheduled-list .sched-card { border-radius: 15px; border: 0; box-shadow: 0 2px 8px rgba(20,30,70,.06); }
+.spending-uncleared {
+  width: calc(100% - 28px); margin: 13px 14px 17px; min-height: 48px; padding: 9px 16px;
+  border-radius: 999px; background: var(--accounts-action-bg); display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; text-align: left; font-size: 15px;
+}
+.spending-uncleared strong {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px;
+  padding: 0 7px; margin: 0 3px; border-radius: 999px; background: var(--line); font-size: 13px;
+}
+.spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
+.spending-uncleared.active { background: var(--chip-active-bg); }
+.spending-feed { display: flex; flex-direction: column; gap: 16px; }
+.spending-date-group h2 { padding: 0 15px 7px; font-size: 14px; font-weight: 700; }
+.spending-date-card { overflow: hidden; background: var(--bg); border-top: 1px solid var(--line-subtle); border-bottom: 1px solid var(--line-subtle); }
+.spending-feed-row {
+  min-height: 64px; display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+  border-bottom: 1px solid var(--line-subtle); background: var(--bg); cursor: pointer;
+}
+.spending-feed-row:last-child { border-bottom: none; }
+.spending-feed-row:active { background: var(--bg-alt); }
+.spending-feed-row.needs-approval { box-shadow: inset 3px 0 0 var(--orange); }
+.spending-row-main { flex: 1; min-width: 0; }
+.spending-payee { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; }
+.spending-row-tags { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.spending-category {
+  display: inline-flex; max-width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: 9px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--track); font-size: 12px;
+}
+.spending-category.inflow { background: var(--accounts-glyph-bg); color: var(--green); }
+.spending-approval-badge { flex-shrink: 0; margin-top: 4px; font-size: 10px; font-weight: 700; color: var(--warning-text); }
+.spending-row-side { flex-shrink: 0; max-width: 42%; text-align: right; }
+.spending-amount-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.spending-amount { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.spending-clear-status {
+  width: 18px; height: 18px; flex: 0 0 18px; border: 1.5px solid var(--text-faint); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 10px; font-weight: 800;
+}
+.spending-clear-status.cleared { border-color: var(--green); background: var(--green); color: var(--on-brand); }
+.spending-clear-status.reconciled { border-color: var(--navy); background: var(--navy); color: var(--on-brand); }
+.spending-account { margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-dim); }
+.spending-empty { padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+/* ================= mobile Accounts overview ================= */
+.accounts-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
+.accounts-overview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 15px 10px;
+}
+.accounts-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 500; letter-spacing: -.25px; }
+.accounts-head-actions { display: flex; align-items: center; gap: 11px; }
+.accounts-head-icon {
+  width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 24px; line-height: 1; font-weight: 400;
+}
+.accounts-head-icon:first-child { font-size: 27px; padding-bottom: 2px; }
+.accounts-head-more { font-size: 25px; width: 24px; }
+
+.accounts-intro {
+  position: relative; margin: 14px 14px 22px; padding: 17px 15px 15px;
+  border-radius: 18px; background: var(--accounts-intro-bg); box-shadow: 0 4px 0 var(--accounts-intro-depth);
+  text-align: center; color: var(--text);
+}
+.accounts-intro-close {
+  position: absolute; right: 10px; top: 7px; width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--blue);
+  font-size: 29px; font-weight: 300;
+}
+.accounts-intro-icon {
+  width: 42px; height: 42px; margin: 0 auto 5px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accounts-intro-icon-bg); color: var(--blue); font-size: 20px;
+}
+.accounts-intro h2 { font-size: 19px; font-weight: 750; margin-bottom: 5px; }
+.accounts-intro p { max-width: 300px; margin: 0 auto 12px; font-size: 13px; line-height: 1.28; }
+.accounts-intro-action {
+  width: 100%; min-height: 38px; padding: 7px 12px; border-radius: 999px;
+  background: var(--blue); color: #fff; font-size: 13px; font-weight: 700;
+}
+
+.accounts-groups { display: flex; flex-direction: column; gap: 17px; padding: 0 14px; }
+.accounts-group-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding: 0 13px 6px; font-size: 14px;
+}
+.accounts-group-head h2 { font-size: 14px; font-weight: 700; }
+.accounts-card { border-radius: 19px; overflow: hidden; background: var(--bg); }
+.accounts-row {
+  width: 100%; min-height: 55px; display: flex; align-items: center; gap: 10px;
+  padding: 7px 13px; text-align: left; border-bottom: 1px solid var(--line-subtle); background: var(--bg);
+}
+.accounts-row:last-child { border-bottom: none; }
+.accounts-row:active { background: var(--bg-alt); }
+.accounts-glyph {
+  width: 35px; height: 35px; flex-shrink: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accounts-glyph-bg); color: var(--green); border: 1px solid var(--accounts-glyph-line);
+  font-size: 16px; font-weight: 700;
+}
+.accounts-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.accounts-row-balance { flex-shrink: 0; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.accounts-overview-actions { display: flex; flex-direction: column; gap: 8px; padding: 16px 14px 0; }
+.accounts-wide-action {
+  min-height: 44px; width: 100%; border-radius: 999px; background: var(--accounts-action-bg);
+  color: var(--blue); font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.accounts-wide-action span { font-size: 18px; }
+.accounts-modal-menu { display: flex; flex-direction: column; margin: 0 -8px -4px; }
+.accounts-modal-row { text-align: left; padding: 13px 8px; border-bottom: 1px solid var(--line-subtle); font-size: 16px; }
+.accounts-modal-row:last-child { border-bottom: none; }
+.accounts-modal-row:hover { background: var(--bg-alt); }
+
 /* ================= mobile breakpoint ================= */
 @media (max-width: 767px) {
   .reg-head { padding: 10px 12px; }

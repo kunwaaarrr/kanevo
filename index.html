@@ -32,13 +32,12 @@
   <main id="view" tabindex="-1"></main>
 </div>
 <button id="sidebar-expand" title="Expand sidebar">▶</button>
-<nav id="tabbar">
-  <button data-tab="budget"><span class="tab-ico" data-ico="plan"></span>Budget</button>
-  <button data-tab="accounts"><span class="tab-ico" data-ico="accounts"></span>Accounts</button>
-  <button data-tab="add" id="tab-add"><span class="tab-add-circle">＋</span></button>
-  <button data-tab="reflect"><span class="tab-ico" data-ico="reflect"></span>Reflect</button>
-  <button data-tab="more"><span class="tab-ico" data-ico="more"></span>More</button>
+<nav id="tabbar" aria-label="Primary navigation">
+  <button data-tab="plan"><span class="tab-active-shape"><span class="tab-ico" data-ico="plan"></span></span><span class="tab-label">Plan</span></button>
+  <button data-tab="spending"><span class="tab-active-shape"><span class="tab-ico" data-ico="spending"></span></span><span class="tab-label">Spending</span></button>
+  <button data-tab="reflect"><span class="tab-active-shape"><span class="tab-ico" data-ico="reflect"></span></span><span class="tab-label">Reflect</span></button>
 </nav>
+<button id="mobile-transaction-btn" hidden><span aria-hidden="true">＋</span><span>Transaction</span></button>
 <div id="modal-root" hidden></div>
 <div id="toast-root"></div>
 <script type="module" src="js/app.js"></script>

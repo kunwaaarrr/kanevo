@@ -102,11 +102,17 @@
 
 /* ================= mobile ================= */
 @media (max-width: 767px) {
-  .fc-head { padding: 10px 12px; }
+  .forecast-view { min-height: 100%; background: var(--app-cream); }
+  .fc-head { position: sticky; top: 0; z-index: 20; padding: 8px 12px 11px; background: var(--app-cream); border-bottom: 1px solid var(--line-subtle); }
+  .fc-head-top { gap: 5px; }
+  .fc-head-top .view-title { font-size: 19px; }
+  .fc-subtitle { font-size: 11px; line-height: 1.35; }
   .fc-toolbar { gap: 10px; }
+  .fc-horizon { width: 100%; }
+  .fc-horizon .seg-btn { flex: 1; text-align: center; }
   .fc-summary { margin-left: 0; gap: 14px; }
   .fc-events { padding: 8px 12px 0; }
-  .fc-grid-wrap { margin: 10px 12px 16px; }
+  .fc-grid-wrap { margin: 10px 12px 16px; border: 0; border-radius: 20px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
 
   .fc-first-col {
     min-width: 140px; max-width: 140px;

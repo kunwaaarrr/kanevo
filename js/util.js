@@ -68,6 +68,7 @@ export function uid() {
 const I = (inner, extra = '') => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`;
 export const ICONS = {
   plan: I('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M9.5 9.5v10"/>'),
+  spending: I('<rect x="3.5" y="6.2" width="17" height="11.6" rx="2"/><path d="M3.5 10h17M7.2 14h3.2"/>'),
   reflect: I('<path d="M4.5 20h15M7.5 16.5v-6M12 16.5V6.5M16.5 16.5v-3.5"/>'),
   accounts: I('<path d="M12 3.8 20 8.8H4l8-5z"/><path d="M5.5 12v5.5M10 12v5.5M14 12v5.5M18.5 12v5.5M3.8 20.5h16.4"/>'),
   loans: I('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 7h7"/><g fill="currentColor" stroke="none"><circle cx="8.7" cy="11" r=".95"/><circle cx="12" cy="11" r=".95"/><circle cx="15.3" cy="11" r=".95"/><circle cx="8.7" cy="14.5" r=".95"/><circle cx="12" cy="14.5" r=".95"/><circle cx="15.3" cy="14.5" r=".95"/><circle cx="8.7" cy="18" r=".95"/><circle cx="12" cy="18" r=".95"/></g>'),

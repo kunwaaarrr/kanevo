@@ -3,8 +3,8 @@
   "short_name": "SapientSpend",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1c1f58",
-  "theme_color": "#1c1f58",
+  "background_color": "#f7f4ea",
+  "theme_color": "#f7f4ea",
   "icons": [{
     "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231B2B57'/><text x='50' y='68' font-size='52' text-anchor='middle'>💸</text></svg>",
     "sizes": "192x192 512x512",

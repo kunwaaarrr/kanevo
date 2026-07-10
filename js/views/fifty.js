@@ -25,12 +25,13 @@ function currentSplit() {
 // ---------- header: month nav + income source toggle ----------
 function header() {
   return h`<div class="view-head fifty-head">
+    ${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>' : ''}
+    <span class="view-title">50/30/20</span>
     <div class="month-group">
       <a class="month-nav-btn" href="#/fifty/${addMonths(curMonth, -1)}">‹</a>
       <span class="month-label">${monthLabel(curMonth)}</span>
       <a class="month-nav-btn" href="#/fifty/${addMonths(curMonth, 1)}">›</a>
     </div>
-    <span class="view-title">50/30/20</span>
     <div class="head-spacer"></div>
     <div class="segmented income-source-seg">
       <button class="seg-btn ${incomeSource === 'income' ? 'active' : ''}" data-act="income-src" data-id="income">This Month</button>

@@ -38,14 +38,23 @@
   --line-subtle: rgba(0,0,0,.102);
   --bg: #fff;
   --bg-alt: #f8f6f2;          /* cream — inspector, Reflect body, group rows */
+  --app-cream: #f7f4ea;       /* mobile app canvas / supplied reference */
   --track: #f3eee2;           /* progress-bar track / segmented-control track */
   --chip-bg: rgba(199,196,189,.24);
   --chip-active-bg: #d4d5ff;
   --shadow: 0 8px 30px rgba(20, 30, 70, .18);
+  --sheet-shadow: 0 6px 16px rgba(26,27,46,.15);
+  --on-brand: #fff;
+  --accounts-intro-bg: #d8d9ff;
+  --accounts-intro-depth: #aeb2ff;
+  --accounts-intro-icon-bg: rgba(84,91,254,.16);
+  --accounts-glyph-bg: #e5f3d8;
+  --accounts-glyph-line: rgba(80,131,22,.24);
+  --accounts-action-bg: #ece9df;
 
   --font: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --sidebar-w: 240px; /* real app default; user-resizable via the drag handle */
-  --tabbar-h: 58px;
+  --tabbar-h: 70px;
   --radius: 8px;
 }
 
@@ -62,6 +71,7 @@ body {
 button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 /* ================= custom checkbox (universal) ================= */
 input[type="checkbox"] {
@@ -154,20 +164,33 @@ html, body { overflow-x: clip; }
 /* ================= mobile tab bar ================= */
 #tabbar {
   display: none; position: fixed; bottom: 0; left: 0; right: 0; height: var(--tabbar-h);
-  background: var(--bg); border-top: 1px solid var(--line); z-index: 40;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--app-cream); border-top: 1px solid rgba(25,24,24,.08); z-index: 40;
+  padding: 5px 8px max(7px, env(safe-area-inset-bottom));
 }
 #tabbar button {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; font-size: 10px; color: var(--text-dim); font-weight: 600;
+  gap: 1px; min-width: 0; color: var(--text-2); font-weight: 500;
 }
-#tabbar button.active { color: var(--blue); }
+.tab-active-shape {
+  width: 52px; height: 34px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+}
+#tabbar button.active { color: var(--text); font-weight: 700; }
+#tabbar button.active .tab-active-shape { background: var(--chip-active-bg); color: var(--navy); }
 .tab-ico { font-size: 18px; }
-.tab-add-circle {
-  width: 44px; height: 44px; border-radius: 50%; background: var(--blue); color: #fff;
-  font-size: 26px; line-height: 44px; text-align: center; margin-top: -18px;
-  box-shadow: 0 4px 12px rgba(59, 94, 218, .45);
+.tab-ico .ico { width: 21px; height: 21px; stroke-width: 2; }
+.tab-label { font-size: 10px; line-height: 1.15; white-space: nowrap; }
+
+#mobile-transaction-btn {
+  display: none; position: fixed; right: 16px; bottom: calc(var(--tabbar-h) + 14px); z-index: 39;
+  height: 46px; padding: 0 18px; border-radius: 13px; background: var(--blue); color: #fff;
+  align-items: center; gap: 9px; box-shadow: 0 7px 18px rgba(60,66,200,.32);
+  font-size: 15px; font-weight: 700;
 }
+#mobile-transaction-btn > span:first-child { font-size: 22px; font-weight: 400; line-height: 1; }
+#mobile-transaction-btn:active { background: var(--blue-dark); transform: translateY(1px); }
+#mobile-transaction-btn[hidden] { display: none !important; }
+.reflect-tool-back { display: none; }
 
 /* ================= shared components ================= */
 .pill {
@@ -244,9 +267,14 @@ html, body { overflow-x: clip; }
 
 /* ================= mobile ================= */
 @media (max-width: 767px) {
+  .reflect-tool-back {
+    width: 28px; height: 34px; display: inline-flex; align-items: center; justify-content: flex-start;
+    flex: 0 0 28px; color: var(--text); font-size: 31px; line-height: 1;
+  }
   #sidebar { display: none; }
   #tabbar { display: flex; }
-  #view { padding-bottom: calc(var(--tabbar-h) + 20px); }
+  #view { padding-bottom: calc(var(--tabbar-h) + 12px); background: var(--app-cream); }
+  #mobile-transaction-btn { display: flex; }
   .view-head { padding: 10px 12px; }
   #toast-root { bottom: calc(var(--tabbar-h) + 14px); }
 }
@@ -282,10 +310,18 @@ html, body { overflow-x: clip; }
   --line-subtle: rgba(255,255,255,.09);
   --bg: #12141c;
   --bg-alt: #1b1e2b;
+  --app-cream: #171923;
   --track: #262a3a;
   --chip-bg: rgba(255,255,255,.08);
   --chip-active-bg: #2f3566;
   --shadow: 0 10px 34px rgba(0,0,0,.55);
+  --sheet-shadow: 0 8px 20px rgba(0,0,0,.35);
+  --accounts-intro-bg: #2b3064;
+  --accounts-intro-depth: #20254f;
+  --accounts-intro-icon-bg: rgba(152,160,255,.16);
+  --accounts-glyph-bg: #24351d;
+  --accounts-glyph-line: rgba(127,194,74,.24);
+  --accounts-action-bg: #262a3a;
   /* --navy* (sidebar) intentionally unchanged — it's dark navy in both themes */
 }
 /* hardcoded light literals that don't come from a var — each outranks its source

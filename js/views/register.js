@@ -68,6 +68,245 @@ function transferPayeeLabel(tx) {
   return `Transfer: ${other ? other.name : '?'}`;
 }
 
+// ---------- mobile Accounts overview ----------
+// Desktop keeps the dense All Accounts register. On phones, Accounts is a
+// navigation surface of its own, matching the supplied mobile flow.
+export function renderAccountsOverview(root) {
+  const groups = [
+    { label: 'Cash', filter: a => a.onBudget && !a.closed && a.type !== 'creditCard' },
+    { label: 'Credit', filter: a => a.onBudget && !a.closed && a.type === 'creditCard' },
+    { label: 'Loans', filter: a => !a.onBudget && !a.closed && a.loanInfo },
+    { label: 'Tracking', filter: a => !a.onBudget && !a.closed && !a.loanInfo },
+  ];
+  const introHidden = localStorage.getItem('ss-accounts-intro-dismissed') === '1';
+  const groupHtml = groups.map(group => {
+    const accounts = store.state.accounts.filter(group.filter).sort((a, b) => a.sortOrder - b.sortOrder);
+    if (!accounts.length) return '';
+    const total = accounts.reduce((sum, account) => sum + store.accountBalances(account.id).working, 0);
+    const rows = accounts.map(account => {
+      const balance = store.accountBalances(account.id).working;
+      return h`<button class="accounts-row" data-account-id="${account.id}">
+        <span class="accounts-glyph" aria-hidden="true">${accountGlyph(account)}</span>
+        <span class="accounts-row-name">${account.name}</span>
+        <span class="accounts-row-balance ${balance < 0 ? 'neg-text' : 'pos-text'}">${fmt(balance)}</span>
+      </button>`;
+    }).join('');
+    return h`<section class="accounts-group">
+      <div class="accounts-group-head"><h2>${group.label}</h2><span class="${total < 0 ? 'neg-text' : ''}">${fmt(total)}</span></div>
+      <div class="accounts-card">${rows}</div>
+    </section>`;
+  }).join('');
+
+  root.innerHTML = h`<div class="accounts-overview">
+    <header class="accounts-overview-head">
+      <h1>Accounts</h1>
+      <div class="accounts-head-actions">
+        <button id="accounts-add-top" class="accounts-head-icon" aria-label="Add account">＋</button>
+        <button id="accounts-more" class="accounts-head-icon accounts-head-more" aria-label="More account options">⋮</button>
+      </div>
+    </header>
+    ${introHidden ? '' : `<section class="accounts-intro">
+      <button id="accounts-intro-close" class="accounts-intro-close" aria-label="Dismiss">×</button>
+      <div class="accounts-intro-icon" aria-hidden="true">◉</div>
+      <h2>Private by design</h2>
+      <p>Your balances and transactions stay on this device until you choose otherwise.</p>
+      <button id="accounts-intro-action" class="accounts-intro-action">See how local data works</button>
+    </section>`}
+    <div class="accounts-groups">${groupHtml}</div>
+    <div class="accounts-overview-actions">
+      <button id="accounts-add-bottom" class="accounts-wide-action"><span aria-hidden="true">⊕</span> Add Account</button>
+      <button id="accounts-bank" class="accounts-wide-action"><span aria-hidden="true">▥</span> Manage Bank Connections</button>
+    </div>
+  </div>`;
+
+  root.querySelectorAll('[data-account-id]').forEach(row => {
+    row.onclick = () => navigate(`#/account/${row.dataset.accountId}`);
+  });
+  root.querySelector('#accounts-add-top').onclick = openAddAccountModal;
+  root.querySelector('#accounts-add-bottom').onclick = openAddAccountModal;
+  root.querySelector('#accounts-bank').onclick = openBankConnectionsInfo;
+  root.querySelector('#accounts-more').onclick = openAccountsMore;
+  root.querySelector('#accounts-intro-action')?.addEventListener('click', () => {
+    const modal = openModal(h`<h2>Your data stays local</h2>
+      <p class="muted">Sapient Spend stores your plan in this browser, works offline, and only exports data when you choose to create a backup.</p>
+      <div class="modal-actions"><button class="btn" id="local-info-close">Got it</button></div>`);
+    modal.querySelector('#local-info-close').onclick = closeModal;
+  });
+  root.querySelector('#accounts-intro-close')?.addEventListener('click', () => {
+    localStorage.setItem('ss-accounts-intro-dismissed', '1');
+    renderAccountsOverview(root);
+  });
+}
+
+function accountGlyph(account) {
+  if (account.loanInfo) return '⌂';
+  if (account.type === 'creditCard') return '▰';
+  if (account.type === 'savings') return '◇';
+  if (account.type === 'cash') return '$';
+  if (!account.onBudget) return '↗';
+  return '▣';
+}
+
+function openBankConnectionsInfo() {
+  const modal = openModal(h`<h2>Bank Connections</h2>
+    <p class="muted">Secure bank syncing is planned. For now, Sapient Spend remains local-first and you can import or enter transactions manually.</p>
+    <div class="modal-actions"><button class="btn" id="bank-info-close">Got it</button></div>`);
+  modal.querySelector('#bank-info-close').onclick = closeModal;
+}
+
+function openAccountsMore() {
+  const modal = openModal(h`<h2>Account options</h2>
+    <div class="accounts-modal-menu">
+      <button class="accounts-modal-row" id="accounts-more-add">Add an account</button>
+      <button class="accounts-modal-row" id="accounts-more-bank">Bank connections</button>
+      <button class="accounts-modal-row" id="accounts-more-spending">Open all spending</button>
+    </div>`);
+  modal.querySelector('#accounts-more-add').onclick = () => { closeModal(); openAddAccountModal(); };
+  modal.querySelector('#accounts-more-bank').onclick = () => { closeModal(); openBankConnectionsInfo(); };
+  modal.querySelector('#accounts-more-spending').onclick = () => { closeModal(); navigate('#/spending'); };
+}
+
+// ---------- mobile Spending feed ----------
+let spendingSearchOpen = false;
+let spendingOnlyUncleared = false;
+let spendingScheduledOpen = false;
+let spendingQuery = '';
+
+export function renderSpendingOverview(root) {
+  const all = sortTxs(gatherTxs(null));
+  const scheduled = store.upcomingScheduled(null, 365);
+  const unclearedCount = all.filter(transaction => transaction.cleared === 'uncleared').length;
+  const query = spendingQuery.trim().toLowerCase();
+  const filtered = all.filter(transaction => {
+    if (spendingOnlyUncleared && transaction.cleared !== 'uncleared') return false;
+    if (!query) return true;
+    const payee = spendingPayee(transaction).toLowerCase();
+    const category = spendingCategory(transaction).toLowerCase();
+    const account = store.state.accounts.find(item => item.id === transaction.accountId)?.name?.toLowerCase() || '';
+    return payee.includes(query) || category.includes(query) || account.includes(query) || (transaction.memo || '').toLowerCase().includes(query);
+  });
+
+  root.innerHTML = h`<div class="spending-overview">
+    <header class="spending-overview-head">
+      <h1>Spending</h1>
+      <div class="spending-head-actions">
+        <button id="spending-search-toggle" class="spending-head-icon" aria-label="Search transactions">⌕</button>
+        <button id="spending-more" class="spending-head-icon" aria-label="More spending options">⋮</button>
+      </div>
+    </header>
+    ${spendingSearchOpen ? h`<div class="spending-search-row">
+      <input id="spending-search-input" type="search" placeholder="Search transactions" value="${spendingQuery}">
+      <button id="spending-search-close" aria-label="Close search">×</button>
+    </div>` : ''}
+    ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
+      <span><i aria-hidden="true">↻</i> Upcoming scheduled</span>
+      <span><strong>${scheduled.length}</strong><b aria-hidden="true">${spendingScheduledOpen ? '⌃' : '›'}</b></span>
+    </button>` : ''}
+    ${spendingScheduledOpen ? h`<section class="spending-scheduled-panel">
+      <div class="spending-scheduled-head"><h2>Scheduled transactions</h2><span>Next 12 months</span></div>
+      <div class="spending-scheduled-list">${scheduled.map(item => renderSchedCard(item, null)).join('')}</div>
+    </section>` : ''}
+    ${unclearedCount ? h`<button class="spending-uncleared ${spendingOnlyUncleared ? 'active' : ''}" id="spending-uncleared">
+      <span>${spendingOnlyUncleared ? 'Showing' : 'Show'} <strong>${unclearedCount}</strong> uncleared transaction${unclearedCount === 1 ? '' : 's'}</span>
+      <span aria-hidden="true">›</span>
+    </button>` : ''}
+    <div class="spending-feed">${filtered.length ? spendingFeedHtml(filtered) : '<div class="spending-empty">No transactions match this view.</div>'}</div>
+  </div>`;
+
+  root.querySelector('#spending-search-toggle').onclick = () => {
+    spendingSearchOpen = !spendingSearchOpen;
+    if (!spendingSearchOpen) spendingQuery = '';
+    renderSpendingOverview(root);
+  };
+  root.querySelector('#spending-search-close')?.addEventListener('click', () => {
+    spendingSearchOpen = false; spendingQuery = ''; renderSpendingOverview(root);
+  });
+  const searchInput = root.querySelector('#spending-search-input');
+  if (searchInput) {
+    searchInput.focus();
+    searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    searchInput.oninput = debounce(() => { spendingQuery = searchInput.value; renderSpendingOverview(root); }, 120);
+  }
+  root.querySelector('#spending-uncleared')?.addEventListener('click', () => {
+    spendingOnlyUncleared = !spendingOnlyUncleared;
+    renderSpendingOverview(root);
+  });
+  root.querySelector('#spending-scheduled-toggle')?.addEventListener('click', () => {
+    spendingScheduledOpen = !spendingScheduledOpen;
+    renderSpendingOverview(root);
+  });
+  root.querySelector('#spending-more').onclick = () => openSpendingMore(root);
+  root.querySelectorAll('[data-spending-tx]').forEach(row => {
+    row.onclick = () => {
+      const transaction = store.state.transactions.find(item => item.id === row.dataset.spendingTx);
+      if (transaction) openAddTransactionModal(transaction.accountId, transaction.id);
+    };
+  });
+  wireScheduled(root, null, () => renderSpendingOverview(root));
+}
+
+function spendingFeedHtml(transactions) {
+  const groups = [];
+  for (const transaction of transactions) {
+    let group = groups.find(item => item.date === transaction.date);
+    if (!group) { group = { date: transaction.date, rows: [] }; groups.push(group); }
+    group.rows.push(transaction);
+  }
+  return groups.map(group => h`<section class="spending-date-group">
+    <h2>${fmtDate(group.date)}</h2>
+    <div class="spending-date-card">${group.rows.map(spendingFeedRow).join('')}</div>
+  </section>`).join('');
+}
+
+function spendingFeedRow(transaction) {
+  const payee = spendingPayee(transaction);
+  const category = spendingCategory(transaction);
+  const account = store.state.accounts.find(item => item.id === transaction.accountId)?.name || '';
+  const isInflow = transaction.amount > 0;
+  const clearingLabel = transaction.cleared === 'reconciled' ? 'Reconciled' : transaction.cleared === 'cleared' ? 'Cleared' : 'Uncleared';
+  return h`<div class="spending-feed-row ${!transaction.approved ? 'needs-approval' : ''}" data-spending-tx="${transaction.id}">
+    <div class="spending-row-main">
+      <div class="spending-payee">${payee}</div>
+      <div class="spending-row-tags">
+        <div class="spending-category ${isInflow ? 'inflow' : ''}">${category || 'Uncategorised'}</div>
+        ${transaction.approved ? '' : '<span class="spending-approval-badge">Needs approval</span>'}
+      </div>
+    </div>
+    <div class="spending-row-side">
+      <div class="spending-amount-line">
+        <div class="spending-amount ${isInflow ? 'pos-text' : 'neg-text'}">${fmt(transaction.amount)}</div>
+        <span class="spending-clear-status ${transaction.cleared}" role="img" aria-label="${clearingLabel}" title="${clearingLabel}">C</span>
+      </div>
+      <div class="spending-account">${account}</div>
+    </div>
+  </div>`;
+}
+
+function spendingPayee(transaction) {
+  if (transaction.transferAccountId) return transferPayeeLabel(transaction);
+  return transaction.payeeId ? (store.getPayee(transaction.payeeId)?.name || 'Payee Needed') : 'Payee Needed';
+}
+
+function spendingCategory(transaction) {
+  if (transaction.subtransactions?.length) return 'Split';
+  if (transaction.categoryId === INFLOW) return 'Ready to Assign';
+  return transaction.categoryId ? (store.state.categories.find(category => category.id === transaction.categoryId)?.name || '') : '';
+}
+
+function openSpendingMore(root) {
+  const modal = openModal(h`<h2>Spending options</h2>
+    <div class="accounts-modal-menu">
+      <button class="accounts-modal-row" id="spending-more-filter">${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</button>
+      <button class="accounts-modal-row" id="spending-more-scheduled">${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</button>
+      <button class="accounts-modal-row" id="spending-more-add">Add a transaction</button>
+      <button class="accounts-modal-row" id="spending-more-accounts">Accounts</button>
+    </div>`);
+  modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
+  modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
+  modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
+  modal.querySelector('#spending-more-accounts').onclick = () => { closeModal(); navigate('#/accounts'); };
+}
+
 // ---------- main render ----------
 let lastRoot = null;
 export function render(root, { accountId }) {
@@ -289,9 +528,9 @@ function renderScheduledSection(scheduled, accountId) {
   </div>`;
 }
 
-function wireScheduled(root, accountId) {
+function wireScheduled(root, accountId, rerender = () => render(root, { accountId })) {
   const toggle = root.querySelector('#sched-toggle');
-  if (toggle) toggle.onclick = () => { scheduledOpen = !scheduledOpen; render(root, { accountId }); };
+  if (toggle) toggle.onclick = () => { scheduledOpen = !scheduledOpen; rerender(); };
   root.querySelectorAll('.sched-row').forEach(row => {
     const id = row.dataset.id;
     const s = store.state.scheduled.find(x => x.id === id);
@@ -303,9 +542,10 @@ function wireScheduled(root, accountId) {
       });
       store.updateScheduled(id, { nextDate: advanceDate(s.nextDate, s.frequency) });
       toast('Transaction entered');
+      rerender();
     };
     row.querySelector('.sched-del').onclick = () => {
-      if (confirm('Delete this scheduled transaction?')) store.deleteScheduled(id);
+      if (confirm('Delete this scheduled transaction?')) { store.deleteScheduled(id); rerender(); }
     };
     row.querySelector('.sched-edit').onclick = () => openScheduledEditModal(s);
   });

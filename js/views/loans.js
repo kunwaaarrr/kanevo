@@ -78,7 +78,7 @@ function accountCard(a) {
 
 function renderGrid(root) {
   const loans = store.state.accounts.filter(a => a.loanInfo && !a.closed);
-  root.innerHTML = h`<div class="view-head"><div class="view-title">Loan Planner</div></div>
+  root.innerHTML = h`<div class="view-head loans-head">${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>' : ''}<div class="view-title">Loan Planner</div></div>
     <div class="loans-body">
       ${loans.length
         ? [`<div class="loan-grid">${loans.map(accountCard).join('')}</div>`]
@@ -129,7 +129,8 @@ function renderSimulator(root, account) {
   const rate = account.loanInfo.interestRate;
   const payment = account.loanInfo.minimumPayment;
 
-  root.innerHTML = h`<div class="view-head">
+  root.innerHTML = h`<div class="view-head loans-head">
+      ${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/loans" aria-label="Back to Loan Planner">‹</a>' : ''}
       <div>
         <div class="view-title">${account.name}</div>
         <div class="muted">${rate}% APR · min payment ${fmt(payment)}/mo · balance <span class="neg-text">${fmt(balance)}</span></div>

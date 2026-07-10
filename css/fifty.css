@@ -117,10 +117,21 @@
 
 /* ================= mobile ================= */
 @media (max-width: 767px) {
-  .fifty-head { padding: 10px 12px; justify-content: center; }
+  .fifty-view { min-height: 100%; background: var(--app-cream); }
+  .fifty-head { position: sticky; top: 0; z-index: 20; padding: 8px 12px; justify-content: flex-start; background: var(--app-cream); border-bottom: 1px solid var(--line-subtle); }
+  .fifty-head .view-title { order: 1; font-size: 19px; }
+  .fifty-head .reflect-tool-back { order: 0; }
+  .fifty-head .month-group { order: 2; width: 100%; justify-content: center; padding-top: 7px; }
+  .fifty-head .income-source-seg { order: 3; width: 100%; }
+  .fifty-head .income-source-seg .seg-btn { flex: 1; }
   .fifty-head .head-spacer { display: none; flex-basis: 100%; }
   .fifty-body { padding: 12px 12px 28px; }
+  .fifty-section { padding: 15px; border-radius: 20px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+  .split-control { padding: 3px; border-radius: 999px; background: var(--track); }
+  .split-control .segmented { width: 100%; }
+  .split-control .seg-btn { flex: 1; }
   .target-stats { grid-template-columns: 1fr; }
+  .target-stat { border-radius: 14px; }
   .class-cards { grid-template-columns: 1fr; }
   .donut-row { flex-direction: column; align-items: stretch; }
   .donut-wrap { width: 160px; margin: 0 auto; }

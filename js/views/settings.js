@@ -1,6 +1,6 @@
 import { store } from '../store.js';
-import { toast, navigate } from '../app.js';
-import { h, thisMonth } from '../util.js';
+import { toast } from '../app.js';
+import { h } from '../util.js';
 
 function download(filename, text) {
   const blob = new Blob([text], { type: 'application/json' });
@@ -17,15 +17,6 @@ export function render(root, params) {
   const balance = s.balanceStyle || 'default';
   root.innerHTML = h`<div class="view-head"><div class="view-title">Settings</div></div>
     <div class="settings-body">
-
-      <section class="settings-card">
-        <h3>More views</h3>
-        <div class="settings-quick-links">
-          <a class="btn subtle" href="#/fifty">50/30/20 Rule</a>
-          <a class="btn subtle" href="#/forecast">Forecast &amp; What-Ifs</a>
-          <a class="btn subtle" href="#/loans">Loan Planner</a>
-        </div>
-      </section>
 
       <section class="settings-card">
         <h3>Budget</h3>

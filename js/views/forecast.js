@@ -113,8 +113,9 @@ function head(fc) {
   const endCash = fc ? fc.cash[fc.cash.length - 1] : 0;
   return h`<div class="view-head fc-head">
     <div class="fc-head-top">
+      ${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>' : ''}
       <div>
-        <span class="view-title">Forecast</span>
+        <span class="view-title">Forecast &amp; What-If</span>
         <div class="muted fc-subtitle">Projected from your last 3 months of income and spending. Adjust any row to test a what-if.</div>
       </div>
     </div>
