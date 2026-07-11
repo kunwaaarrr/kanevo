@@ -1,5 +1,6 @@
 // store.js — data layer + budget engine. Money is integer cents. Import-safe in Node.
 import { uid, todayISO, thisMonth, addMonths, monthsBetween, daysBetween, debounce } from './util.js';
+import { trainClassifier, suggestCategory } from './lib/categorize.js';
 
 export const INFLOW = 'inflow';
 const KEY = 'sapientspend/v1';
@@ -640,6 +641,7 @@ function _importTransactions(accountId, bankTxns) {
   let inserted = 0, merged = 0, skipped = 0;
   const seen = new Set();
   for (const t of state.transactions) if (t.accountId === accountId && t.importId) seen.add(t.importId);
+  const model = trainClassifier(state); // learns payee-token -> category from existing history
   for (const b of bankTxns) {
     if (b.importId && seen.has(b.importId)) { skipped++; continue; } // same statement re-imported
     if (b.importId) seen.add(b.importId);
@@ -652,7 +654,9 @@ function _importTransactions(accountId, bankTxns) {
       merged++;
     } else {
       const payeeId = b.payeeName ? findOrCreatePayee(b.payeeName) : null;
-      const catId = payeeId ? (getPayee(payeeId).lastCategoryId || null) : null;
+      const catId = payeeId
+        ? (getPayee(payeeId).lastCategoryId || suggestCategory(state, b.payeeName, b.amount, model))
+        : null;
       _addTransaction({
         accountId, date: b.date, payeeId, categoryId: catId, memo: b.memo || '',
         amount: b.amount, importId: b.importId, approved: false, cleared: 'cleared',

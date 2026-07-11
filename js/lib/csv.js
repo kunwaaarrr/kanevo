@@ -82,6 +82,18 @@ function soleSepIsDecimal(s, ch, lastPos) {
   return (count === 1 && trailing !== 3) ? lastPos : -1;
 }
 
+// strict test for COLUMN DETECTION only: a lone amount, not free text that happens to contain
+// digits ("... Card xx1234 AUD 11.95 Value Date: 04/07/2026" must not classify as money)
+export function looksLikeMoney(raw) {
+  let s = String(raw ?? '').trim();
+  if (!s) return false;
+  s = s.replace(/^\(|\)$/g, '')
+    .replace(/\s*(DR|CR)\.?$/i, '')
+    .replace(/^[A-Z]{3}\s+|\s+[A-Z]{3}$/, '')
+    .replace(/[$€£¥\s]/g, '');
+  return /\d/.test(s) && /^[+\-]?[\d.,]+[+\-]?$/.test(s);
+}
+
 // ---------- dates ----------
 
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
@@ -165,7 +177,7 @@ export function detectMapping(rows) {
   for (let c = 0; c < width; c++) {
     const cells = sample.map(r => r[c]).filter(v => v != null && String(v).trim() !== '');
     const dates = cells.filter(v => parseDate(v)).length;
-    const moneys = cells.filter(v => !parseDate(v) && parseMoney(v) != null).length;
+    const moneys = cells.filter(v => !parseDate(v) && looksLikeMoney(v)).length;
     const avgLen = cells.reduce((s, v) => s + String(v).length, 0) / (cells.length || 1);
     colStats.push({ c, n: cells.length, dates, moneys, avgLen });
   }
@@ -201,7 +213,8 @@ const PROCESSOR_PREFIX = /^(sq|square|pp|paypal|google|apple|amzn mktp|zip|after
 // tokens that are reference noise rather than name: store numbers, card refs, #123, 12/07-style dates
 const NOISE_TOKEN = /^(\d{2,}|[x*]{2,}\d+|#\d+|\d{1,2}[\/\-.]\d{1,2}([\/\-.]\d{2,4})?)$/i;
 // trailing state/country/reference words, stripped repeatedly from the end
-const TRAIL_WORD = /^(aus?|usa?|gbr?|uk|nzl?|can|nsw|ns|vic|vi|qld|ql|wa|sa|tas|ta|act|nt|card|ref|reference|receipt|rcpt|no|value|date|pty|ltd|p\/l|inc|llc|gmbh)$/i;
+// (AU states + US states seen on card statements + company suffixes; end-of-name only, so low risk)
+const TRAIL_WORD = /^(aus?|usa?|gbr?|uk|nzl?|can|nsw|ns|vic|vi|qld|ql|wa|sa|tas|ta|act|nt|al|ak|az|ar|ca|co|ct|de|dc|fl|ga|hi|id|il|ia|ks|ky|la|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wv|wi|wy|card|ref|reference|receipt|rcpt|no|value|date|pty|ltd|p\/l|inc|llc|gmbh)$/i;
 const TLD = /([a-z0-9\-]+)\.(com|net|org|co|io|app|shop|dev|au|nz|uk|ca|us|gov|edu)(\.[a-z]{2,3})?([\/?#]\S*)?$/i;
 
 // "WOOLWORTHS 1234 SYDNEY NS AUS Card xx1234" -> "Woolworths"
@@ -226,7 +239,10 @@ export function cleanPayeeName(raw) {
   const isDomain = t => t.includes('.') && TLD.test(t);
   if (tokens.some(t => !isDomain(t))) tokens = tokens.filter(t => !isDomain(t));
   else tokens = tokens.map(t => isDomain(t) ? t.match(TLD)[1] : t);
-  while (tokens.length > 1 && TRAIL_WORD.test(tokens[tokens.length - 1])) tokens.pop();
+
+  // banks repeat the suburb ("MCDONALDS HARRISDALE HARRISDALE") — collapse consecutive dupes
+  tokens = tokens.filter((t, i) => i === 0 || t.toLowerCase() !== tokens[i - 1].toLowerCase());
+  while (tokens.length > 1 && (TRAIL_WORD.test(tokens[tokens.length - 1]) || /^[&+\-\/@]$/.test(tokens[tokens.length - 1]))) tokens.pop();
 
   const out = tokens.join(' ');
   if (!out) return original; // cleaned everything away — raw is better than nothing

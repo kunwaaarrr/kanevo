@@ -83,7 +83,7 @@ const quoted = statement(
 '01/07/2026,"SMITH, JONES & CO","-1,050.00"\r\n' +
 '02/07/2026,"LINE ONE\nLINE TWO",25.00\r\n');
 assert.equal(quoted.txns.length, 2);
-assert.equal(quoted.txns[0].payeeName, 'Smith Jones & CO');
+assert.equal(quoted.txns[0].payeeName, 'Smith Jones', 'trailing "& CO" trimmed');
 assert.equal(quoted.txns[0].amount, -105000);
 assert.equal(quoted.txns[1].payeeName, 'Line One Line Two');
 
@@ -156,5 +156,21 @@ const cleaned = statement(
 06/07/2026,UBER *TRIP HELP.UBER.COM,-15.00`);
 assert.equal(cleaned.txns[0].payeeName, 'Woolworths');
 assert.equal(cleaned.txns[1].payeeName, 'Uber Trip');
+
+// ---- 14. real NetBank shape: noisy descriptions must not classify as a money column ----
+// regression: "Card xx1234 AUD 11.95 Value Date: 04/07/2026" once parsed as money, so the
+// description column was never mapped and every payee came through empty
+// (rows are fictional but mirror the CBA NetBank export structure exactly)
+const netbank = statement(
+`07/07/2026,"-11.95","WIDGETCO ST LOUISVILLE KY USA Card xx1234 AUD 11.95 Value Date: 04/07/2026","+265.01"
+07/07/2026,"-9.75","MCDONALDS SEAVIEW SEAVIEW WA AUS Card xx1234 Value Date: 03/07/2026","+276.96"
+07/07/2026,"-24.35","DD *DOORDASH NOODLEHUT MELBOURNE VI AUS Card xx1234 Value Date: 04/07/2026","+311.06"
+07/07/2026,"-1.11","International Transaction Fee Value Date: 04/07/2026","+355.07"`);
+assert.equal(netbank.txns.length, 4);
+assert.equal(netbank.txns.filter(t => t.payeeName).length, 4, 'every row keeps a payee');
+assert.equal(netbank.txns[1].payeeName, 'Mcdonalds Seaview', 'suburb not repeated');
+assert.equal(netbank.txns[2].payeeName, 'Doordash Noodlehut Melbourne');
+assert.equal(netbank.txns[3].payeeName, 'International Transaction Fee');
+assert.equal(netbank.txns[0].amount, -1195, 'amount column still the real one, not balance');
 
 console.log('csv-check: all assertions passed');

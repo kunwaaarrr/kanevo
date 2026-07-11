@@ -1,12 +1,12 @@
 // ponytail: simple cache-first offline shell; bump VERSION on deploys
-const VERSION = 'sapientspend-v21';
+const VERSION = 'sapientspend-v22';
 const ASSETS = [
   './', 'index.html', 'manifest.json', 'fonts/figtree-var.woff2',
   'css/app.css', 'css/budget.css',
   'css/register.css', 'css/reports.css', 'css/loans.css',
   'css/fifty.css', 'css/forecast.css',
   'js/app.js', 'js/util.js', 'js/store.js', 'js/seed.js',
-  'js/lib/fifty.js', 'js/lib/forecast.js', 'js/lib/csv.js',
+  'js/lib/fifty.js', 'js/lib/forecast.js', 'js/lib/csv.js', 'js/lib/categorize.js',
   'js/views/budget.js', 'js/views/register.js', 'js/views/reports.js',
   'js/views/loans.js', 'js/views/settings.js',
   'js/views/fifty.js', 'js/views/forecast.js',
