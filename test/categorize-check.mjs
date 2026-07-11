@@ -8,7 +8,7 @@ globalThis.localStorage = {
   removeItem: k => { delete _ls[k]; },
 };
 
-const { suggestCategory, trainClassifier, classify } = await import('../js/lib/categorize.js');
+const { suggestCategory, trainClassifier, classify, dist1 } = await import('../js/lib/categorize.js');
 const { store } = await import('../js/store.js');
 
 store.resetAll();
@@ -69,7 +69,72 @@ assert.equal(res2.inserted, 1);
 assert.equal(byImport('i4').categoryId, junk, 'exact payee history wins');
 
 // ---- 5. hidden / credit-card-payment categories are never suggested ----
+// (Junk Food also matches the dining bucket's /food/ name pattern, so hide both)
 store.updateCategory(dining, { hidden: true });
-assert.equal(suggestCategory(store.state, 'KFC Seaview', -975, null), null, 'hidden category not suggested');
+store.updateCategory(junk, { hidden: true });
+assert.equal(suggestCategory(store.state, 'KFC Seaview', -975, null), null, 'hidden categories not suggested');
+store.updateCategory(dining, { hidden: false });
+store.updateCategory(junk, { hidden: false });
+
+// ---- 6. memo words drive categorization ----
+const st = store.state;
+assert.equal(suggestCategory(st, 'Transfer To Jess Smith', -2000, null, 'food drink'), dining, 'memo word "food" -> Dining Out');
+assert.equal(suggestCategory(st, 'Random Person', -4500, null, 'fuel money'), fuel, 'memo word "fuel" -> Fuel');
+assert.equal(suggestCategory(st, 'Random Person', -4500, null, ''), null, 'no signal without memo');
+
+// ---- 7. generic word vocabulary + new buckets ----
+const personal = store.addCategory(grp, 'Personal Care');
+const ent = store.addCategory(grp, 'Entertainment');
+const payback = store.addCategory(grp, 'Paybacks');
+assert.equal(suggestCategory(st, 'Luxe Studio', -6500, null, 'nails'), personal, '"nails" -> Personal Care');
+assert.equal(suggestCategory(st, 'Some Venue', -3000, null, 'tickets'), ent, '"tickets" -> Entertainment');
+assert.equal(suggestCategory(st, 'Glamour Bar Willagee', -4000, null, 'haircut and beard trim'), personal);
+
+// ---- 8. typo tolerance: plural-s and 1-letter typos ----
+assert.equal(suggestCategory(st, 'A Friend', -2500, null, 'foods'), dining, 'plural survives');
+assert.equal(suggestCategory(st, 'A Friend', -2500, null, 'tiket'), ent, 'missing letter survives');
+assert.equal(suggestCategory(st, 'A Friend', -2500, null, 'grocceries'), groceries, 'doubled letter survives');
+assert.equal(suggestCategory(st, 'A Friend', -2500, null, 'fod'), null, 'short words need exact match');
+assert.equal(suggestCategory(st, 'A Friend', -2500, null, 'stickets'), ent, 'stray leading letter survives');
+assert.equal(suggestCategory(st, 'Beach Foodies Victoria Park', -1500, null, ''), null, 'foodie must not fuzzy-match hoodie');
+assert.equal(dist1('nails', 'nailz'), true);
+assert.equal(dist1('nails', 'snail'), false, 'two edits away');
+
+// ---- 9. payback words: the one inflow case, only into a matching category ----
+assert.equal(suggestCategory(st, 'Jess Smith', 2500, null, 'payback for dinner'), payback, 'inflow + payback word -> Paybacks');
+assert.equal(suggestCategory(st, 'Jess Smith', 2500, null, 'thanks!'), null, 'other inflows untouched');
+store.updateCategory(payback, { hidden: true });
+assert.equal(suggestCategory(st, 'Jess Smith', 2500, null, 'payback'), null, 'no Paybacks category -> no guess');
+store.updateCategory(payback, { hidden: false });
+
+// ---- 10. approval teaches: approve = confirm payee category ----
+const res3 = store.importTransactions(acc, [{ date: '2026-07-10', amount: -1800, payeeName: 'Caltex Hillcrest', memo: '', importId: 'i5' }]);
+assert.equal(res3.inserted, 1);
+const tx5 = byImport('i5');
+assert.equal(tx5.categoryId, fuel, 'dictionary suggested Fuel');
+assert.equal(tx5.autoCategorized, true, 'marked as auto');
+assert.equal(store.state.payees.find(p => p.name === 'Caltex Hillcrest').lastCategoryId ?? null, null, 'not learned before approval');
+store.approveTransaction(tx5.id);
+assert.equal(store.state.payees.find(p => p.name === 'Caltex Hillcrest').lastCategoryId, fuel, 'approval locked it in');
+
+// ---- 11. manual category edit clears the auto flag ----
+const res4 = store.importTransactions(acc, [{ date: '2026-07-11', amount: -900, payeeName: 'KFC Seaview', memo: '', importId: 'i6' }]);
+assert.equal(res4.inserted, 1);
+assert.equal(byImport('i6').autoCategorized, true);
+store.updateTransaction(byImport('i6').id, { categoryId: junk });
+assert.equal(byImport('i6').autoCategorized, undefined, 'user-chosen category is no longer a guess');
+
+// ---- 12. learner reads memos too ----
+store.resetAll();
+const acc2 = store.addAccount({ name: 'C2', type: 'checking', balance: 0, date: '2026-06-01' });
+const grp2 = store.addGroup('G');
+const outings = store.addCategory(grp2, 'Outings');
+const other = store.addCategory(grp2, 'Other');
+for (let i = 0; i < 6; i++) {
+  store.addTransaction({ accountId: acc2, date: `2026-06-${10 + i}`, payeeId: store.findOrCreatePayee(`Friend${i}`), categoryId: outings, amount: -1000 - i, memo: 'bowling night' });
+  store.addTransaction({ accountId: acc2, date: `2026-06-${10 + i}`, payeeId: store.findOrCreatePayee(`Shop${i}`), categoryId: other, amount: -2000 - i, memo: 'stuff' });
+}
+const model2 = trainClassifier(store.state);
+assert.equal(classify(model2, 'NewMate bowling'), outings, 'memo tokens were trained on');
 
 console.log('categorize-check: all assertions passed');

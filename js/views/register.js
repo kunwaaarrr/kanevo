@@ -975,7 +975,7 @@ function renderReadRow(t, showAccount) {
     ${showAccount ? `<td>${acc ? acc.name : ''}</td>` : ''}
     <td>${fmtDate(t.date)}</td>
     <td>${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}${isMatch ? ' <span class="match-badge">MATCH</span>' : ''}</td>
-    <td>${cat || ''}</td>
+    <td>${cat || ''}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</td>
     ${showMemoCol ? `<td class="muted">${t.memo || ''}</td>` : ''}
     <td class="num neg-text">${t.amount < 0 ? fmt(-t.amount) : ''}</td>
     <td class="num pos-text">${t.amount > 0 ? fmt(t.amount) : ''}</td>
@@ -1566,7 +1566,7 @@ function renderMobileRow(t) {
     <div class="mobile-row-main">
       <div class="mobile-row-left">
         <div class="mobile-payee">${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}</div>
-        <div class="mobile-sub muted">${[cat, showMemoCol ? t.memo : null].filter(Boolean).join(' · ')}</div>
+        <div class="mobile-sub muted">${[cat, showMemoCol ? t.memo : null].filter(Boolean).join(' · ')}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</div>
       </div>
       <div class="mobile-row-right">
         <div class="mobile-amount ${t.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(t.amount)}</div>

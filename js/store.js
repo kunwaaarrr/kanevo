@@ -614,6 +614,7 @@ function _addTransaction(tx) {
     importId: tx.importId || null, attachments: tx.attachments || [],
     subtransactions: tx.subtransactions || null,
   };
+  if (tx.autoCategorized) full.autoCategorized = true; // category was a guess, pending user approval
   if (full.subtransactions) full.categoryId = null;
   state.transactions.push(full);
   return full.id;
@@ -655,11 +656,12 @@ function _importTransactions(accountId, bankTxns) {
     } else {
       const payeeId = b.payeeName ? findOrCreatePayee(b.payeeName) : null;
       const catId = payeeId
-        ? (getPayee(payeeId).lastCategoryId || suggestCategory(state, b.payeeName, b.amount, model))
+        ? (getPayee(payeeId).lastCategoryId || suggestCategory(state, b.payeeName, b.amount, model, b.memo))
         : null;
       _addTransaction({
         accountId, date: b.date, payeeId, categoryId: catId, memo: b.memo || '',
         amount: b.amount, importId: b.importId, approved: false, cleared: 'cleared',
+        autoCategorized: catId != null,
       });
       inserted++;
     }
@@ -851,6 +853,7 @@ export const store = {
   updateTransaction: mutate((id, patch) => {
     const tx = state.transactions.find(t => t.id === id);
     Object.assign(tx, patch);
+    if ('categoryId' in patch) delete tx.autoCategorized; // user chose — no longer a guess
     if (tx.subtransactions) tx.categoryId = null;
   }),
   deleteTransaction: mutate(id => {
@@ -859,7 +862,15 @@ export const store = {
     state.transactions = state.transactions.filter(t => t.id !== id);
   }),
   addTransfer: mutate(_addTransfer),
-  approveTransaction: mutate(id => { state.transactions.find(t => t.id === id).approved = true; }),
+  approveTransaction: mutate(id => {
+    const tx = state.transactions.find(t => t.id === id);
+    tx.approved = true;
+    // approving is confirmation: teach the payee its category so future imports auto-fill
+    if (tx.payeeId && tx.categoryId && !tx.transferAccountId) {
+      const p = getPayee(tx.payeeId);
+      if (p) p.lastCategoryId = tx.categoryId;
+    }
+  }),
   toggleCleared: mutate(id => {
     const tx = state.transactions.find(t => t.id === id);
     tx.cleared = tx.cleared === 'uncleared' ? 'cleared' : 'uncleared';
