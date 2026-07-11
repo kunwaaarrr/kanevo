@@ -820,7 +820,8 @@ function openLinkAccountModal(accountId) {
   });
 }
 
-function openFileImportModal(accountId) {
+// exported for the Settings view, which hands over an already-picked statement file
+export function openFileImportModal(accountId, initialFile) {
   const accounts = store.state.accounts.filter(a => !a.closed);
   const defaultAcc = accountId || accounts[0]?.id;
   openModal(h`<h2>File Import</h2>
@@ -866,10 +867,10 @@ function openFileImportModal(accountId) {
       };
 
       modal.querySelector('#fi-flip').onchange = () => { if (csv) renderPreview(); };
-      modal.querySelector('#fi-file').onchange = async e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        // .json = plan backup; anything else (csv, txt, whatever the bank exports) tries the statement parser
+      let pickedFile = null;
+      // .json = plan backup; anything else (csv, txt, whatever the bank exports) tries the statement parser
+      const handleFile = async file => {
+        pickedFile = file;
         if (/\.json$/i.test(file.name) || file.type === 'application/json') {
           csv = null;
           modal.querySelector('#fi-csv').hidden = true;
@@ -880,12 +881,18 @@ function openFileImportModal(accountId) {
           renderCsv();
         }
       };
+      modal.querySelector('#fi-file').onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
+      if (initialFile) {
+        try { const dt = new DataTransfer(); dt.items.add(initialFile); modal.querySelector('#fi-file').files = dt.files; } catch { /* cosmetic only */ }
+        handleFile(initialFile);
+      }
 
       modal.querySelector('#fi-import').onclick = async () => {
-        const file = modal.querySelector('#fi-file').files[0];
+        const file = pickedFile;
         if (!file) { toast('Choose a file first'); return; }
         if (csv) {
           const targetId = modal.querySelector('#fi-account').value;
+          if (!targetId) { toast('Add an account first, then import your statement'); return; }
           const { txns } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
           if (!txns.length) { toast('No transactions to import — check the column mapping'); return; }
           const { inserted, merged, skipped } = store.importTransactions(targetId, txns);

@@ -1,6 +1,7 @@
 import { store } from '../store.js';
 import { toast } from '../app.js';
 import { h, thisMonth, ICONS } from '../util.js';
+import { openFileImportModal } from './register.js';
 
 function download(filename, text) {
   const blob = new Blob([text], { type: 'application/json' });
@@ -97,7 +98,7 @@ export function render(root, params) {
         <section class="settings-card">
           <h2 class="settings-card-title">Your data</h2>
           <button id="set-export" class="settings-action-row"><span class="settings-row-icon" aria-hidden="true">↓</span><span class="settings-row-copy"><strong>Export backup</strong><small>Save a portable JSON copy</small></span><span class="settings-chevron" aria-hidden="true">›</span></button>
-          <label class="settings-action-row file-btn"><span class="settings-row-icon" aria-hidden="true">↑</span><span class="settings-row-copy"><strong>Import backup</strong><small>Restore a previously exported budget</small></span><span class="settings-chevron" aria-hidden="true">›</span><input id="set-import" type="file" accept="application/json" hidden></label>
+          <label class="settings-action-row file-btn"><span class="settings-row-icon" aria-hidden="true">↑</span><span class="settings-row-copy"><strong>Import backup or bank CSV</strong><small>Restore a backup, or bring in bank transactions</small></span><span class="settings-chevron" aria-hidden="true">›</span><input id="set-import" type="file" hidden></label>
           <button id="set-reset" class="settings-action-row settings-danger-row"><span class="settings-row-icon" aria-hidden="true">×</span><span class="settings-row-copy"><strong>Reset all data</strong><small>Permanently erase this budget</small></span><span class="settings-chevron" aria-hidden="true">›</span></button>
         </section>
 
@@ -128,7 +129,13 @@ export function render(root, params) {
   root.querySelector('#set-import').onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!confirm('Import will replace your current budget data. Continue?')) { e.target.value = ''; return; }
+    e.target.value = ''; // allow re-picking the same file
+    // bank statements route to the register's import modal; only .json is a backup restore
+    if (!/\.json$/i.test(file.name) && file.type !== 'application/json') {
+      openFileImportModal(null, file);
+      return;
+    }
+    if (!confirm('Import will replace your current budget data. Continue?')) return;
     file.text().then(text => {
       store.importJSON(text);
       toast('Budget imported');
