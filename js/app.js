@@ -78,7 +78,8 @@ function renderView() {
     'loan-account': () => loansView.render(viewEl, { accountId: r.params[0] || null, context: 'accounts' }),
     settings: () => settingsView.render(viewEl, {}),
     fifty:    () => fiftyView.render(viewEl, { month: r.params[0] || thisMonth() }),
-    forecast: () => forecastView.render(viewEl, {}),
+    forecast: () => forecastView.render(viewEl, { variant: 'classic' }),
+    'what-if-v2': () => forecastView.render(viewEl, { variant: 'v2' }),
   };
   (table[r.name] || table.budget)();
   renderSidebar(r);
@@ -92,7 +93,7 @@ function renderSidebar(route) {
   const month = route.name === 'budget' ? route.params[0] || thisMonth() : thisMonth();
   const items = [
     { hash: `#/budget/${month}`, ico: ICONS.plan, label: 'Plan', active: route.name === 'budget' },
-    { hash: '#/reports/overview', ico: ICONS.reflect, label: 'Reflect', active: ['reports', 'fifty', 'forecast', 'loans'].includes(route.name) },
+    { hash: '#/reports/overview', ico: ICONS.reflect, label: 'Reflect', active: ['reports', 'fifty', 'forecast', 'what-if-v2', 'loans'].includes(route.name) },
     { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' },
     { hash: '#/settings', ico: ICONS.settings, label: 'Settings', active: route.name === 'settings' },
   ];
@@ -134,7 +135,7 @@ function renderTabbar(route) {
     budget: 'plan',
     spending: 'spending',
     account: 'accounts', accounts: 'accounts', 'loan-account': 'accounts',
-    reports: 'reflect', fifty: 'reflect', forecast: 'reflect', loans: 'reflect',
+    reports: 'reflect', fifty: 'reflect', forecast: 'reflect', 'what-if-v2': 'reflect', loans: 'reflect',
   };
   document.querySelectorAll('#tabbar button').forEach(b =>
     b.classList.toggle('active', map[route.name] === b.dataset.tab));

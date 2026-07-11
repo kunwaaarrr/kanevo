@@ -247,6 +247,7 @@ function reflectOverview(root) {
             <a href="#/reports/age-of-money"><span class="reflect-view-icon" aria-hidden="true">${ICONS.clock}</span><span>Age of money</span></a>
             <a href="#/fifty"><span class="reflect-view-icon" aria-hidden="true">${ICONS.fifty}</span><span>50/30/20</span></a>
             <a href="#/forecast"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>Forecast</span></a>
+            <a href="#/what-if-v2"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>What If v2</span></a>
             <a href="#/loans"><span class="reflect-view-icon" aria-hidden="true">${ICONS.loans}</span><span>Loan planner</span></a>
           </div>
         </div>
@@ -290,6 +291,7 @@ function reflectOverview(root) {
         <h2>Planning tools</h2>
         <a href="#/fifty"><span><i aria-hidden="true">%</i><b>50/30/20</b><small>Compare your plan with a simple allocation guide</small></span><strong aria-hidden="true">›</strong></a>
         <a href="#/forecast"><span><i aria-hidden="true">⌁</i><b>Forecast &amp; What-If</b><small>Project cash flow and test future changes</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/what-if-v2"><span><i aria-hidden="true">◇</i><b>What If v2</b><small>A mobile-first forecast with adjustable assumptions</small></span><strong aria-hidden="true">›</strong></a>
         <a href="#/loans"><span><i aria-hidden="true">↓</i><b>Loan Planner</b><small>Explore payoff timing and extra payments</small></span><strong aria-hidden="true">›</strong></a>
       </section>
     </main>
@@ -497,7 +499,9 @@ function renderMobileSpendingReport(root, slices, total, groupBys) {
         <span class="mobile-eyebrow">Total spending</span>
         <strong class="mobile-hero-value">${fmt(total)}</strong>
         <span class="mobile-hero-period">${state.from === state.to ? monthLabel(state.from) : `${monthLabel(state.from)} – ${monthLabel(state.to)}`}</span>
-        <span class="mobile-hero-bar"></span>
+        <span class="mobile-hero-bar mobile-allocation-bar" aria-label="Spending allocation by ${groupBys.find(group => group.id === state.groupBy).label.toLowerCase()}">
+          ${slices.map(item => h`<i style="flex-grow:${item.amount};background:${item.color}" title="${item.name}: ${Math.round(item.pct)}%"></i>`).join('')}
+        </span>
       </section>
       <div class="mobile-report-segmented">
         ${groupBys.map(group => `<button class="${group.id === state.groupBy ? 'active' : ''}" data-gb="${group.id}">${group.label}</button>`).join('')}
@@ -510,7 +514,7 @@ function renderMobileSpendingReport(root, slices, total, groupBys) {
     ${mobileFilterPanel('spending')}
   </div>`;
   wireMobileReport(root, 'spending', () => spendingReport(root), exportAction);
-  root.querySelectorAll('[data-gb]').forEach(button => button.onclick = () => { state.groupBy = button.dataset.gb; spendingReport(root); });
+  root.querySelectorAll('[data-gb]').forEach(button => button.onclick = () => { state.groupBy = button.dataset.gb; state.highlight = null; spendingReport(root); });
 }
 
 function donutSvg(slices, total) {

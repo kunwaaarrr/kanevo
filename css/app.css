@@ -234,7 +234,7 @@ html, body { overflow-x: clip; }
 
 /* Compact overflow card shared by the Plan and Spending top-bar menus. */
 .mobile-options-modal { width: min(351px, calc(100vw - 24px)) !important; padding: 14px 12px 8px !important; border-radius: 18px !important; }
-.mobile-options-title { padding: 2px 8px 10px; margin: 0 !important; font-size: 17px !important; font-weight: 650; }
+.mobile-options-title { padding: 2px 8px 12px; margin: 0 !important; border-bottom: 1px solid var(--line-subtle); font-size: 17px !important; font-weight: 650; }
 .mobile-options-menu { display: flex; flex-direction: column; }
 .mobile-options-row {
   width: 100%; min-height: 47px; padding: 11px 8px; border-top: 1px solid var(--line-subtle);
@@ -247,11 +247,11 @@ html, body { overflow-x: clip; }
 .mobile-options-row .mobile-options-check { color: var(--blue); font-size: 17px; font-weight: 750; }
 .mobile-options-row-main { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .mobile-options-icon {
-  width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px;
+  width: 24px; height: 30px; flex: 0 0 24px;
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--chip-active-bg); color: var(--blue);
+  background: transparent; color: var(--text-faint);
 }
-.mobile-options-icon .ico { width: 17px; height: 17px; stroke-width: 1.8; }
+.mobile-options-icon .ico { width: 18px; height: 18px; stroke-width: 1.8; }
 .mobile-options-checkbox {
   width: 20px; height: 20px; flex: 0 0 20px; border: 1.5px solid var(--text-faint); border-radius: 6px;
   display: inline-flex; align-items: center; justify-content: center; color: transparent; font-size: 13px; font-weight: 800;

@@ -10,6 +10,7 @@ let incomeSource = 'income';      // 'income' | 'incomeAvg3'
 let splitPreset = '50/30/20';     // '50/30/20' | '60/30/10' | 'custom'
 let customSplit = { need: 50, want: 30, savings: 20 };
 let calcIncomeOverride = null;    // cents, or null to follow detected income
+let openClassMenuId = null;
 
 const PRESETS = {
   '50/30/20': { need: 50, want: 30, savings: 20 },
@@ -52,13 +53,16 @@ function splitControl() {
         return h`<button class="seg-btn ${splitPreset === key ? 'active' : ''}" data-act="set-split" data-id="${key}">${p}</button>`;
       }).join('')}
     </div>
-    ${splitPreset === 'custom' ? h`<div class="custom-split-row">
-      ${CLASS_ORDER.map(cls => h`<label class="custom-split-input">
-        <span>${CLASS_LABEL[cls].split(' ')[0]}</span>
-        <input type="number" min="0" max="100" data-act="custom-pct" data-id="${cls}" value="${customSplit[cls]}">
-        <span>%</span>
-      </label>`).join('')}
-      ${!valid ? `<span class="split-error">Percentages must total 100 (currently ${total})</span>` : ''}
+    ${splitPreset === 'custom' ? h`<div class="custom-split-panel">
+      <div class="custom-split-row">
+        ${CLASS_ORDER.map(cls => h`<label class="custom-split-input custom-split-${cls}">
+          <span class="class-dot dot-${cls}" aria-hidden="true"></span>
+          <span>${cls === 'need' ? 'Necessities' : cls === 'want' ? 'Wants' : 'Savings'}</span>
+          <span class="custom-split-value"><input type="number" min="0" max="100" data-act="custom-pct" data-id="${cls}" value="${customSplit[cls]}"><b>%</b></span>
+        </label>`).join('')}
+      </div>
+      <div class="custom-split-total ${valid ? 'valid' : 'invalid'}"><span>Total</span><strong>${total}%</strong></div>
+      ${!valid ? `<span class="split-error">Adjust the three amounts so the total is 100%.</span>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -181,11 +185,14 @@ function classManager(data) {
         ${g.rows.map(r => h`<div class="class-row">
           <span class="class-row-name">${r.name}<span class="muted class-row-group"> · ${r.groupName}</span></span>
           <span class="class-row-amt">${fmt(r.amount)}</span>
-          <select class="class-row-select" data-act="set-class" data-id="${r.id}">
-            <option value="need" ${r.cls === 'need' ? 'selected' : ''}>Need</option>
-            <option value="want" ${r.cls === 'want' ? 'selected' : ''}>Want</option>
-            <option value="savings" ${r.cls === 'savings' ? 'selected' : ''}>Savings</option>
-          </select>
+          <div class="class-row-picker">
+            <button class="class-row-select" data-act="toggle-class-menu" data-id="${r.id}" aria-haspopup="listbox" aria-expanded="${openClassMenuId === r.id}">
+              <span class="class-dot dot-${r.cls}" aria-hidden="true"></span><span>${r.cls === 'need' ? 'Need' : r.cls === 'want' ? 'Want' : 'Savings'}</span><span class="class-row-chevron" aria-hidden="true">⌄</span>
+            </button>
+            ${openClassMenuId === r.id ? h`<div class="class-row-menu" role="listbox" aria-label="Classify ${r.name}">
+              ${CLASS_ORDER.map(cls => h`<button role="option" aria-selected="${r.cls === cls}" class="${r.cls === cls ? 'selected' : ''}" data-act="set-class" data-id="${r.id}" data-class="${cls}"><span class="class-dot dot-${cls}"></span><span>${cls === 'need' ? 'Need' : cls === 'want' ? 'Want' : 'Savings'}</span>${r.cls === cls ? '<b>✓</b>' : ''}</button>`).join('')}
+            </div>` : ''}
+          </div>
         </div>`).join('')}
       </div>`}
     </div>`).join('')}
@@ -222,7 +229,10 @@ export function render(root, { month }) {
 function wireEvents(root) {
   root.onclick = e => {
     const act = e.target.closest('[data-act]');
-    if (!act) return;
+    if (!act) {
+      if (openClassMenuId) { openClassMenuId = null; render(root, { month: curMonth }); }
+      return;
+    }
     switch (act.dataset.act) {
       case 'income-src':
         incomeSource = act.dataset.id;
@@ -231,6 +241,16 @@ function wireEvents(root) {
         break;
       case 'set-split':
         splitPreset = act.dataset.id;
+        render(root, { month: curMonth });
+        break;
+      case 'toggle-class-menu':
+        openClassMenuId = openClassMenuId === act.dataset.id ? null : act.dataset.id;
+        render(root, { month: curMonth });
+        break;
+      case 'set-class':
+        store.updateCategory(act.dataset.id, { budgetClass: act.dataset.class });
+        openClassMenuId = null;
+        toast('Category reclassified');
         render(root, { month: curMonth });
         break;
     }
@@ -249,10 +269,4 @@ function wireEvents(root) {
     });
   });
 
-  root.querySelectorAll('.class-row-select').forEach(sel => {
-    sel.addEventListener('change', e => {
-      store.updateCategory(e.target.dataset.id, { budgetClass: e.target.value });
-      toast('Category reclassified');
-    });
-  });
 }

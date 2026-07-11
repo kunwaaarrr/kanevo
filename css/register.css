@@ -276,14 +276,21 @@
 .mobile-row { padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
 .mobile-row.unapproved-row { box-shadow: inset 3px 0 0 var(--blue); }
 .mobile-row-main { display: flex; justify-content: space-between; gap: 10px; }
+.mobile-row-left { flex: 1; min-width: 0; }
 .mobile-payee { font-weight: 700; font-size: 14px; }
-.mobile-sub { font-size: 12px; margin-top: 2px; }
+.mobile-sub { display: flex; align-items: center; gap: 5px; min-width: 0; margin-top: 4px; font-size: 12px; }
+.mobile-category-pill { display: inline-flex; max-width: 145px; min-width: 0; flex-shrink: 1; padding: 3px 9px; border-radius: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--track); color: var(--text); font-size: 11px; }
+.mobile-category-pill.inflow { background: var(--accounts-glyph-bg); color: var(--green); }
+.mobile-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
+.mobile-approval-badge { flex-shrink: 0; color: var(--warning-text); font-size: 10px; font-weight: 700; }
 /* amount + cleared icon share one line; a thin hairline separates them (keeps the card short) */
+.mobile-row-side { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; max-width: 44%; }
 .mobile-row-right { display: flex; flex-direction: row; align-items: center; gap: 8px; }
 .mobile-amount { font-weight: 700; color: var(--red); }
 .mobile-amount.pos-text { color: var(--green); }
 .mobile-clr-sep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; }
 .mobile-clr { display: inline-flex; align-items: center; }
+.mobile-row-account { max-width: 120px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 11px; line-height: 1.1; }
 
 /* compact rows (mobile "Compact rows" option) — ~30% shorter cards */
 .reg-mobile-list.compact .mobile-date-head { padding: 6px 12px 2px; font-size: 10px; }
@@ -318,14 +325,14 @@
   background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.06); color: var(--text); text-align: left;
 }
 .spending-scheduled-link > span { display: inline-flex; align-items: center; gap: 8px; }
-.spending-scheduled-link i { width: 27px; height: 27px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); color: var(--blue); font-size: 17px; font-style: normal; }
+.spending-scheduled-link i { width: 30px; height: 30px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); color: var(--blue); font-style: normal; }
+.spending-scheduled-link i .ico { width: 20px; height: 20px; stroke-width: 1.9; }
 .spending-scheduled-link strong { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--track); font-size: 12px; }
-.spending-scheduled-link b { font-size: 22px; line-height: 1; color: var(--text-faint); font-weight: 400; }
+.spending-scheduled-link b { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-faint); transform: rotate(-90deg); transition: transform .18s ease; transform-origin: center; }
+.spending-scheduled-link b.open { transform: rotate(0deg); }
+.spending-scheduled-link b .ico { width: 16px; height: 16px; stroke-width: 2; }
 .spending-scheduled-link.active { background: var(--chip-active-bg); }
-.spending-scheduled-panel { margin: 0 14px 14px; }
-.spending-scheduled-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 5px 2px 8px; }
-.spending-scheduled-head h2 { font-size: 15px; }
-.spending-scheduled-head span { font-size: 11px; color: var(--text-dim); }
+.spending-scheduled-panel { margin: -3px 14px 14px; }
 .spending-scheduled-list { display: flex; flex-direction: column; gap: 9px; }
 .spending-scheduled-list .sched-card { border-radius: 18px; border: 0; box-shadow: 0 2px 8px rgba(20,30,70,.05); }
 .spending-uncleared {
@@ -339,35 +346,15 @@
 }
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
-.spending-feed { display: flex; flex-direction: column; gap: 16px; }
-.spending-date-group h2 { padding: 0 15px 7px; font-size: 14px; font-weight: 700; }
-.spending-date-card { overflow: hidden; background: var(--bg); border-top: 1px solid var(--line-subtle); border-bottom: 1px solid var(--line-subtle); }
-.spending-feed-row {
-  min-height: 64px; display: flex; align-items: center; gap: 10px; padding: 9px 14px;
-  border-bottom: 1px solid var(--line-subtle); background: var(--bg); cursor: pointer;
-}
-.spending-feed-row:last-child { border-bottom: none; }
-.spending-feed-row:active { background: var(--bg-alt); }
-.spending-feed-row.needs-approval { box-shadow: inset 3px 0 0 var(--orange); }
-.spending-row-main { flex: 1; min-width: 0; }
-.spending-payee { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; }
-.spending-row-tags { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.spending-category {
-  display: inline-flex; max-width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: 9px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--track); font-size: 12px;
-}
-.spending-category.inflow { background: var(--accounts-glyph-bg); color: var(--green); }
-.spending-approval-badge { flex-shrink: 0; margin-top: 4px; font-size: 10px; font-weight: 700; color: var(--warning-text); }
-.spending-row-side { flex-shrink: 0; max-width: 42%; text-align: right; }
-.spending-amount-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-.spending-amount { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.spending-clear-status {
-  width: 18px; height: 18px; flex: 0 0 18px; border: 1.5px solid var(--text-faint); border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 10px; font-weight: 800;
-}
-.spending-clear-status.cleared { border-color: var(--green); background: var(--green); color: var(--on-brand); }
-.spending-clear-status.reconciled { border-color: var(--navy); background: var(--navy); color: var(--on-brand); }
-.spending-account { margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-dim); }
+.spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
+.spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
+.spending-overview .mobile-date-card { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+.spending-overview .mobile-row { min-height: 58px; padding: 10px 13px; border-bottom-color: var(--line-subtle); cursor: pointer; }
+.spending-overview .mobile-row:last-child { border-bottom: 0; }
+.spending-overview .mobile-row:active { background: var(--bg-alt); }
+.spending-overview .mobile-payee { font-size: 14.5px; }
+.spending-overview .mobile-sub { max-width: 190px; }
+.spending-overview .mobile-amount { font-size: 15px; font-variant-numeric: tabular-nums; }
 .spending-empty { padding: 60px 20px; text-align: center; color: var(--text-dim); font-size: 14px; }
 
 /* ================= mobile Accounts overview ================= */
@@ -444,14 +431,16 @@
 .mobile-account-detail { min-height: 100%; background: var(--app-cream); padding-bottom: 28px; }
 .mobile-account-head { padding: 9px 12px 7px; gap: 8px; }
 .mobile-account-back {
-  width: 30px; flex: 0 0 30px; display: inline-flex; align-items: center; justify-content: flex-start;
-  font-size: 33px; font-weight: 300; line-height: 1; color: var(--text);
+  width: 34px; height: 34px; flex: 0 0 34px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 11px; color: var(--text);
 }
+.mobile-account-back > span { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; transform: rotate(90deg); }
+.mobile-account-back .ico { width: 20px; height: 20px; stroke-width: 2; }
 .mobile-account-head-copy { flex: 1; min-width: 0; }
 .mobile-account-kicker { font-size: 10px; line-height: 1.1; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); font-weight: 700; }
 .mobile-account-head h1 { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 20px; line-height: 1.15; font-weight: 700; }
 .mobile-account-head-action { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 11px; }
-.mobile-account-head-action:active { background: var(--accounts-action-bg); }
+.mobile-account-head-action:hover, .mobile-account-head-action:active { background: var(--accounts-action-bg); }
 .mobile-account-head-action .ico { width: 20px; height: 20px; }
 .mobile-account-menu-wrap .view-menu { top: calc(100% + 2px); }
 .mobile-account-content { padding: 8px 14px 0; }
@@ -477,19 +466,26 @@
 .mobile-account-balance-grid > div + div { border-left: 1px solid var(--line-subtle); }
 .mobile-account-balance-grid span { color: var(--text-dim); font-size: 11px; }
 .mobile-account-balance-grid strong { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.mobile-account-status { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-dim); font-size: 11px; }
-.mobile-account-status > span { width: 17px; height: 17px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accounts-glyph-bg); color: var(--green); font-size: 10px; font-weight: 800; }
 .mobile-account-note.reg-note { max-width: none; min-height: 0; margin: 9px auto 0; border: 0; color: var(--text-dim); font-size: 12px; }
 .mobile-account-note.reg-note:empty::before { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--bg-alt); opacity: 1; }
-.mobile-account-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 11px; }
-.mobile-account-actions button { min-width: 0; min-height: 72px; padding: 9px 3px 8px; border-radius: 18px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(20,30,70,.04); color: var(--blue); }
+.mobile-account-reconcile-card { margin-top: 11px; padding: 13px; border-radius: 18px; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 9px 10px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+.mobile-account-reconcile-icon { width: 34px; height: 34px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--accounts-glyph-bg); color: var(--green); font-size: 15px; font-weight: 800; }
+.mobile-account-reconcile-card > div { min-width: 0; }
+.mobile-account-reconcile-card strong { display: block; font-size: 13px; line-height: 1.25; }
+.mobile-account-reconcile-card p { margin-top: 4px; color: var(--text-2); font-size: 11px; line-height: 1.4; }
+.mobile-account-reconcile-card button { grid-column: 2; width: 100%; min-height: 34px; padding: 0 10px 0 12px; border-radius: 11px; background: var(--bg-alt); color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; font-size: 11px; font-weight: 750; }
+.mobile-account-reconcile-card button b { color: var(--text-faint); font-size: 20px; line-height: 1; font-weight: 400; }
+.mobile-account-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 11px; }
+.mobile-account-actions button { min-width: 0; min-height: 54px; padding: 9px 11px; border-radius: 16px; background: var(--bg); display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 9px; box-shadow: 0 2px 8px rgba(20,30,70,.04); color: var(--text); text-align: left; }
 .mobile-account-actions button:active { background: var(--chip-active-bg); }
-.mobile-account-actions button > span { width: 30px; height: 30px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); font-size: 16px; font-weight: 800; }
-.mobile-account-actions .ico { width: 17px; height: 17px; }
-.mobile-account-actions strong { overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: 11px; color: var(--text); font-weight: 650; }
-.mobile-account-undo { margin: 10px auto 0; min-height: 30px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--link); font-size: 12px; }
-.mobile-account-undo .ico { width: 14px; height: 14px; }
-.mobile-account-undo:disabled { display: none; }
+.mobile-account-actions button > span { width: 22px; height: 22px; flex: 0 0 22px; display: inline-flex; align-items: center; justify-content: center; color: var(--blue); }
+.mobile-account-actions .ico { width: 20px; height: 20px; }
+.mobile-account-actions strong { min-width: 0; font-size: 11px; line-height: 1.2; color: var(--text); font-weight: 650; }
+.mobile-account-actions button:disabled { opacity: .42; }
+.reconcile-explainer { margin-top: 5px; line-height: 1.45; }
+.reconcile-help { margin-top: 8px; font-size: 12px; line-height: 1.45; }
+.reconcile-choice-actions { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+.reconcile-choice-actions .btn { min-width: 0; min-height: 46px; padding: 8px 10px; white-space: normal; line-height: 1.15; }
 .mobile-account-approval { width: 100%; min-height: 48px; margin-top: 11px; padding: 10px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--chip-active-bg); color: var(--blue-dark); text-align: left; font-size: 13px; }
 .mobile-account-approval strong { display: inline-flex; min-width: 24px; height: 24px; margin-right: 5px; padding: 0 7px; align-items: center; justify-content: center; border-radius: 999px; background: var(--blue); color: var(--on-brand); }
 .mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
@@ -507,9 +503,10 @@
 .mobile-account-search .reg-search { min-width: 0; width: 100%; padding: 0; border: 0; background: transparent; font-size: 14px; }
 .mobile-account-search .reg-search:focus { outline: 0; }
 .mobile-account-detail .reg-mobile-list { padding: 0 14px 64px; display: flex; flex-direction: column; gap: 14px; }
-.mobile-account-detail .mobile-date-head { padding: 0 3px 6px; font-size: 11px; }
-.mobile-account-detail .mobile-date-group { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
-.mobile-account-detail .mobile-date-group .mobile-date-head { background: var(--app-cream); }
+.mobile-account-detail .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
+.mobile-account-detail .mobile-date-group { overflow: visible; }
+.mobile-account-detail .mobile-date-group .mobile-date-head { background: transparent; }
+.mobile-account-detail .mobile-date-card { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
 .mobile-account-detail .mobile-row { min-height: 58px; padding: 10px 13px; border-bottom-color: var(--line-subtle); }
 .mobile-account-detail .mobile-row:last-child { border-bottom: 0; }
 .mobile-account-detail .mobile-row:active { background: var(--bg-alt); }
@@ -534,33 +531,33 @@
        which otherwise makes column-flex children size to max-content and overflow the card */
     display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; color: var(--text);
   }
-  .sched-card-top { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 9px; padding: 11px 12px 7px; }
+  .sched-card-top { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 13px 13px 11px; }
   .sched-card-icon {
-    width: 32px; height: 32px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center;
     background: var(--chip-active-bg); color: var(--blue);
   }
-  .sched-card-icon .ico { width: 17px; height: 17px; stroke-width: 1.9; }
+  .sched-card-icon .ico { width: 18px; height: 18px; stroke-width: 1.8; }
   .sched-card-info { flex: 1; min-width: 0; }
   .sched-card-payee {
-    font-size: 14.5px; font-weight: 700; color: var(--text); line-height: 1.2;
+    font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sched-card-schedule { margin-top: 5px; display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .sched-card-schedule > span { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 3px 7px; border-radius: 999px; background: var(--chip-active-bg); color: var(--blue-dark); font-size: 10px; font-weight: 700; }
-  .sched-card-schedule > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 10px; }
-  .sched-card-side { min-width: 94px; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
-  .sched-card-next { color: var(--text-2); font-size: 10px; line-height: 1.1; font-weight: 700; white-space: nowrap; }
+  .sched-card-schedule > span { padding: 3px 7px; border-radius: 999px; background: var(--chip-active-bg); color: var(--blue-dark); font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .sched-card-schedule > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-size: 11px; font-weight: 600; }
+  .sched-card-meta { margin-top: 5px; font-size: 11px; color: var(--text-dim); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sched-card-amt {
-    margin-top: 3px; font-size: 16px; font-weight: 750; line-height: 1.1; white-space: nowrap;
+    padding-top: 1px; font-size: 16px; font-weight: 750; line-height: 1.15; white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-  .sched-card-account { max-width: 112px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 10.5px; }
-  .sched-card-actions { min-height: 36px; padding: 0 8px 8px 12px; border-top: 0; display: flex; align-items: center; gap: 5px; }
+  .sched-card-actions { min-height: 43px; padding: 5px 8px 5px 13px; border-top: 0; display: flex; align-items: center; gap: 5px; position: relative; }
+  .sched-card-actions::before { content: ''; position: absolute; top: 0; left: 13px; right: 8px; height: 1px; background: var(--line-subtle); }
   .sched-card-spacer { flex: 1; }
-  .sched-card .sched-enter { min-height: 28px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; background: var(--chip-active-bg); color: var(--blue-dark); font-size: 11px; font-weight: 750; }
+  .sched-card .sched-enter { min-height: 32px; display: inline-flex; align-items: center; gap: 5px; color: var(--link); font-size: 12px; font-weight: 750; }
+  .sched-card .sched-enter span { font-size: 19px; line-height: 1; font-weight: 400; }
   .sched-card .sched-edit, .sched-card .sched-del {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; padding: 0; border-radius: 9px; color: var(--text-faint);
+    width: 30px; height: 30px; padding: 0; border-radius: 9px; color: var(--text-faint);
   }
   .sched-card .sched-edit:hover, .sched-card .sched-del:hover,
   .sched-card .sched-edit:active, .sched-card .sched-del:active { background: var(--bg-alt); color: var(--text-dim); }

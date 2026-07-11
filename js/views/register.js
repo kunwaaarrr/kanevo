@@ -204,11 +204,10 @@ export function renderSpendingOverview(root) {
       <button id="spending-search-close" aria-label="Close search">${ICONS.close}</button>
     </div>` : ''}
     ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
-      <span><i aria-hidden="true">↻</i> Upcoming scheduled</span>
-      <span><strong>${scheduled.length}</strong><b aria-hidden="true">${spendingScheduledOpen ? '⌃' : '›'}</b></span>
+      <span><i aria-hidden="true">${ICONS.clock}</i> Upcoming scheduled</span>
+      <span><strong>${scheduled.length}</strong><b class="spending-scheduled-chevron ${spendingScheduledOpen ? 'open' : ''}" aria-hidden="true">${ICONS.chevronDown}</b></span>
     </button>` : ''}
     ${spendingScheduledOpen ? h`<section class="spending-scheduled-panel">
-      <div class="spending-scheduled-head"><h2>Scheduled transactions</h2><span>Next 12 months</span></div>
       <div class="spending-scheduled-list">${scheduled.map(item => renderSchedCard(item, null)).join('')}</div>
     </section>` : ''}
     ${unclearedCount ? h`<button class="spending-uncleared ${spendingOnlyUncleared ? 'active' : ''}" id="spending-uncleared">
@@ -258,33 +257,9 @@ function spendingFeedHtml(transactions) {
     group.rows.push(transaction);
   }
   return groups.map(group => h`<section class="spending-date-group">
-    <h2>${fmtDate(group.date)}</h2>
-    <div class="spending-date-card">${group.rows.map(spendingFeedRow).join('')}</div>
+    <div class="mobile-date-head">${fmtDate(group.date)}</div>
+    <div class="mobile-date-card">${group.rows.map(transaction => renderMobileRow(transaction, { spending: true })).join('')}</div>
   </section>`).join('');
-}
-
-function spendingFeedRow(transaction) {
-  const payee = spendingPayee(transaction);
-  const category = spendingCategory(transaction);
-  const account = store.state.accounts.find(item => item.id === transaction.accountId)?.name || '';
-  const isInflow = transaction.amount > 0;
-  const clearingLabel = transaction.cleared === 'reconciled' ? 'Reconciled' : transaction.cleared === 'cleared' ? 'Cleared' : 'Uncleared';
-  return h`<div class="spending-feed-row ${!transaction.approved ? 'needs-approval' : ''}" data-spending-tx="${transaction.id}">
-    <div class="spending-row-main">
-      <div class="spending-payee">${payee}</div>
-      <div class="spending-row-tags">
-        <div class="spending-category ${isInflow ? 'inflow' : ''}">${category || 'Uncategorised'}</div>
-        ${transaction.approved ? '' : '<span class="spending-approval-badge">Needs approval</span>'}
-      </div>
-    </div>
-    <div class="spending-row-side">
-      <div class="spending-amount-line">
-        <div class="spending-amount ${isInflow ? 'pos-text' : 'neg-text'}">${fmt(transaction.amount)}</div>
-        <span class="spending-clear-status ${transaction.cleared}" role="img" aria-label="${clearingLabel}" title="${clearingLabel}">C</span>
-      </div>
-      <div class="spending-account">${account}</div>
-    </div>
-  </div>`;
 }
 
 function spendingPayee(transaction) {
@@ -401,12 +376,15 @@ export function render(root, { accountId }) {
 
 function renderMobileAccountDetail(root, { account, accountId, bal, filtered, scheduled, unapprovedCount }) {
   const typeLabel = TYPE_LABEL[account.type] || account.type;
-  const recon = account.lastReconciled ? `Reconciled ${fmtDate(account.lastReconciled)}` : 'Not yet reconciled';
+  const reconTitle = account.lastReconciled ? `Balance verified ${fmtDate(account.lastReconciled)}` : 'Balance not verified yet';
+  const reconCopy = account.lastReconciled
+    ? 'On that date, you confirmed the cleared balance here matched your bank. Verify it again whenever you want to confirm your records are still accurate.'
+    : `Compare the cleared balance of ${fmt(bal.cleared)} here with the balance in your bank app. If they match, mark it verified. Sapient Spend does not access your bank or move any money.`;
   const txLabel = `${filtered.length} transaction${filtered.length === 1 ? '' : 's'}`;
 
   root.innerHTML = h`<div class="mobile-account-detail">
     <header class="mobile-account-head mobile-page-head">
-      <button id="mobile-account-back" class="mobile-account-back mobile-head-action" aria-label="Back to accounts">‹</button>
+      <button id="mobile-account-back" class="mobile-account-back mobile-head-action" aria-label="Back to accounts"><span aria-hidden="true">${ICONS.chevronDown}</span></button>
       <div class="mobile-account-head-copy">
         <div class="mobile-account-kicker">${typeLabel}</div>
         <h1>${account.name}</h1>
@@ -430,18 +408,21 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
           <div><span>Cleared</span><strong class="${bal.cleared < 0 ? 'neg-text' : ''}">${fmt(bal.cleared)}</strong></div>
           <div><span>Uncleared</span><strong class="${bal.uncleared < 0 ? 'neg-text' : ''}">${fmt(bal.uncleared)}</strong></div>
         </div>
-        <div class="mobile-account-status"><span aria-hidden="true">${account.lastReconciled ? '✓' : '○'}</span>${recon}</div>
         <div class="mobile-account-note reg-note" id="reg-note" contenteditable="true" data-placeholder="Add a note">${account.note || ''}</div>
       </section>
 
-      <section class="mobile-account-actions" aria-label="Account actions">
-        <button id="add-tx-btn"><span>${ICONS.addCircle}</span><strong>Add</strong></button>
-        <button id="reconcile-btn"><span>✓</span><strong>Reconcile</strong></button>
-        <button id="file-import-btn"><span>${ICONS.download}</span><strong>Import</strong></button>
-        <button id="link-account-btn"><span>${ICONS.accounts}</span><strong>Link</strong></button>
+      <section class="mobile-account-reconcile-card" aria-label="Balance verification">
+        <span class="mobile-account-reconcile-icon" aria-hidden="true">${account.lastReconciled ? '✓' : '!'}</span>
+        <div><strong>${reconTitle}</strong><p>${reconCopy}</p></div>
+        <button id="reconcile-btn"><span>${account.lastReconciled ? 'Verify again' : 'Verify balance'}</span><b aria-hidden="true">›</b></button>
       </section>
 
-      <button id="undo-btn" class="mobile-account-undo" ${store.canUndo() ? '' : 'disabled'}>${ICONS.undo}<span>Undo last change</span></button>
+      <section class="mobile-account-actions" aria-label="Account actions">
+        <button id="add-tx-btn"><span>${ICONS.addCircle}</span><strong>Add transaction</strong></button>
+        <button id="undo-btn" ${store.canUndo() ? '' : 'disabled'}><span>${ICONS.undo}</span><strong>Undo change</strong></button>
+        <button id="file-import-btn"><span>${ICONS.download}</span><strong>Import statement</strong></button>
+        <button id="link-account-btn"><span>${ICONS.accounts}</span><strong>Link bank</strong></button>
+      </section>
       <button id="redo-btn" hidden disabled>Redo</button>
 
       ${unapprovedCount ? `<button class="mobile-account-approval" id="approval-banner"><span><strong>${unapprovedCount}</strong> transaction${unapprovedCount === 1 ? '' : 's'} need approval</span><span aria-hidden="true">›</span></button>` : ''}
@@ -581,21 +562,19 @@ function renderSchedCard(s, accountId) {
   const acc = store.state.accounts.find(a => a.id === s.accountId);
   const frequency = FREQ_LABEL[s.frequency] || s.frequency;
   const shortDate = s.nextDate ? `${s.nextDate.slice(8, 10)}/${s.nextDate.slice(5, 7)}/${s.nextDate.slice(2, 4)}` : '';
+  const context = [acc?.name, s.memo].filter(Boolean).join(' · ');
   return h`<div class="sched-row sched-card" data-id="${s.id}">
     <div class="sched-card-top">
       <span class="sched-card-icon" aria-hidden="true">${ICONS.clock}</span>
       <div class="sched-card-info">
         <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
-        <div class="sched-card-schedule">${s.memo ? `<span>${s.memo}</span>` : ''}<small>${frequency}</small></div>
+        <div class="sched-card-schedule"><span>${frequency}</span><strong>Next: ${shortDate}</strong></div>
+        ${context ? `<div class="sched-card-meta">${context}</div>` : ''}
       </div>
-      <div class="sched-card-side">
-        <strong class="sched-card-next">Next: ${shortDate}</strong>
-        <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
-        <div class="sched-card-account">${acc?.name || ''}</div>
-      </div>
+      <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
     </div>
     <div class="sched-card-actions">
-      <button class="sched-enter">Enter now</button>
+      <button class="sched-enter">Enter now <span aria-hidden="true">›</span></button>
       <span class="sched-card-spacer"></span>
       <button class="icon-btn sched-edit" aria-label="Edit scheduled transaction">${SCHED_ICO_EDIT}</button>
       <button class="icon-btn sched-del" aria-label="Delete scheduled transaction">${SCHED_ICO_DEL}</button>
@@ -732,23 +711,25 @@ function openEditAccountModal(account) {
 
 function openReconcileModal(accountId) {
   const bal = store.accountBalances(accountId);
-  openModal(h`<h2>Reconcile Account</h2>
-    <p>Is your current account balance <strong>${fmt(bal.cleared)}</strong>?</p>
-    <div class="modal-actions">
-      <button class="btn secondary" id="rec-no">No</button>
-      <button class="btn" id="rec-yes">Yes, Finish Reconciliation</button>
+  openModal(h`<div class="reconcile-modal-content"><h2>Verify your balance</h2>
+    <p class="reconcile-explainer">Look at this account in your bank app. Does its cleared balance match <strong>${fmt(bal.cleared)}</strong> here?</p>
+    <p class="muted reconcile-help">If it matches, Sapient Spend records that you verified these cleared transactions. It does not connect to or change anything at your bank.</p>
+    <div class="modal-actions reconcile-choice-actions">
+      <button class="btn secondary" id="rec-no">No, balances differ</button>
+      <button class="btn" id="rec-yes">Yes, they match</button>
     </div>
     <div class="form-row" id="rec-no-block" hidden style="margin-top:14px">
-      <label>Enter your current balance</label>
+      <label>Balance shown by your bank</label>
       <input id="rec-actual" type="text" placeholder="$0.00">
-      <div class="modal-actions"><button class="btn" id="rec-adjust">Create Adjustment &amp; Finish</button></div>
-    </div>`, {
+      <p class="muted reconcile-help">We will add one adjustment transaction for the difference, then mark the balance verified.</p>
+      <div class="modal-actions"><button class="btn" id="rec-adjust">Add adjustment and finish</button></div>
+    </div></div>`, {
     onOpen: modal => {
       modal.querySelector('#rec-yes').onclick = () => {
         store.reconcileAccount(accountId, bal.cleared);
         store.updateAccount(accountId, { lastReconciled: todayISO() });
         closeModal();
-        toast('Account reconciled ✓');
+        toast('Balance verified ✓');
       };
       modal.querySelector('#rec-no').onclick = () => {
         modal.querySelector('#rec-no-block').hidden = false;
@@ -759,7 +740,7 @@ function openReconcileModal(accountId) {
         store.reconcileAccount(accountId, cents);
         store.updateAccount(accountId, { lastReconciled: todayISO() });
         closeModal();
-        toast('Account reconciled ✓');
+        toast('Balance verified ✓');
       };
     },
   });
@@ -1554,24 +1535,32 @@ function renderMobileList(txs, accountId) {
   return h`<div class="reg-mobile-list ${compactRows ? 'compact' : ''}">${groups.map(g => h`
     <div class="mobile-date-group">
       <div class="mobile-date-head">${fmtDate(g.date)}</div>
-      ${g.items.map(t => renderMobileRow(t)).join('')}
+      <div class="mobile-date-card">${g.items.map(t => renderMobileRow(t)).join('')}</div>
     </div>`).join('')}</div>`;
 }
 
-function renderMobileRow(t) {
+function renderMobileRow(t, { spending = false } = {}) {
   const payee = t.payeeId ? store.getPayee(t.payeeId) : null;
   const payeeName = t.transferAccountId ? transferPayeeLabel(t) : (payee ? payee.name : '(no payee)');
   const cat = t.subtransactions ? 'Split' : (t.categoryId === INFLOW ? 'Ready to Assign' : (t.categoryId ? store.state.categories.find(c => c.id === t.categoryId)?.name : ''));
-  return h`<div class="mobile-row ${!t.approved ? 'unapproved-row' : ''}" data-id="${t.id}">
+  const category = cat || 'Uncategorised';
+  const account = spending ? (store.state.accounts.find(a => a.id === t.accountId)?.name || '') : '';
+  const categoryPill = h`<span class="mobile-category-pill ${t.amount > 0 ? 'inflow' : ''}">${category}</span>`;
+  const memo = showMemoCol && t.memo ? h`<span class="mobile-memo">${t.memo}</span>` : '';
+  const accountLabel = account ? h`<div class="mobile-row-account">${account}</div>` : '';
+  return h`<div class="mobile-row ${!t.approved ? 'unapproved-row' : ''}" data-id="${t.id}" data-spending-tx="${spending ? t.id : ''}">
     <div class="mobile-row-main">
       <div class="mobile-row-left">
         <div class="mobile-payee">${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}</div>
-        <div class="mobile-sub muted">${[cat, showMemoCol ? t.memo : null].filter(Boolean).join(' · ')}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</div>
+        <div class="mobile-sub">${categoryPill}${memo}${!t.approved ? '<span class="mobile-approval-badge">Needs approval</span>' : ''}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</div>
       </div>
-      <div class="mobile-row-right">
-        <div class="mobile-amount ${t.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(t.amount)}</div>
-        <span class="mobile-clr-sep"></span>
-        <div class="mobile-clr">${clearedIcon(t)}</div>
+      <div class="mobile-row-side">
+        <div class="mobile-row-right">
+          <div class="mobile-amount ${t.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(t.amount)}</div>
+          <span class="mobile-clr-sep"></span>
+          <div class="mobile-clr">${clearedIcon(t)}</div>
+        </div>
+        ${accountLabel}
       </div>
     </div>
   </div>`;

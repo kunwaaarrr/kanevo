@@ -1097,6 +1097,7 @@ const M_ICONS = {
   chevRight: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>`,
   views: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/></svg>`,
   pencil: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/></svg>`,
+  trash: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>`,
   dots: `<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4.6" r="1.95"/><circle cx="12" cy="12" r="1.95"/><circle cx="12" cy="19.4" r="1.95"/></svg>`,
   plusCircle: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
 };
@@ -1209,6 +1210,7 @@ function openViewsSheet(root, md) {
     </div>
     <div class="m-views-list">${rows}</div>`);
   sheet.classList.add('bottom-sheet', 'ss-sheet');
+  sheet.classList.add('views-sheet');
   sheet.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
@@ -1248,6 +1250,91 @@ function openEditViewsSheet(root, md) {
 }
 
 // ---------- Edit Plan sheet (pencil) ----------
+function openPlanEditor(root, { title, label, value = '', inputMode = 'text', onSave }) {
+  const host = document.querySelector('#modal-root .edit-plan-modal');
+  if (!host) return;
+  host.querySelector('.plan-editor-layer')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'plan-editor-layer';
+  layer.innerHTML = h`<div class="plan-editor-card" role="dialog" aria-modal="true" aria-labelledby="plan-editor-title">
+    <h2 id="plan-editor-title">${title}</h2>
+    <label for="plan-editor-input">${label}</label>
+    <input id="plan-editor-input" type="text" inputmode="${inputMode}" value="${value}" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn secondary" id="plan-editor-cancel">Cancel</button>
+      <button class="btn" id="plan-editor-save">Save</button>
+    </div>
+  </div>`;
+  host.append(layer);
+  const input = layer.querySelector('#plan-editor-input');
+  const dismiss = () => layer.remove();
+  const save = () => {
+    const value = input.value.trim();
+    if (inputMode !== 'decimal' && !value) { input.focus(); return; }
+    onSave(value);
+    openEditPlanSheet(root, store.monthData(curMonth));
+  };
+  layer.onclick = event => {
+    event.stopPropagation();
+    if (event.target === layer) dismiss();
+  };
+  layer.querySelector('#plan-editor-cancel').onclick = dismiss;
+  layer.querySelector('#plan-editor-save').onclick = save;
+  input.onkeydown = event => {
+    if (event.key === 'Enter') { event.preventDefault(); save(); }
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismiss(); }
+  };
+  requestAnimationFrame(() => { input.focus(); input.select(); });
+}
+
+function openPlanCategoryActions(root, category) {
+  const host = document.querySelector('#modal-root .edit-plan-modal');
+  if (!host || !category) return;
+  host.querySelector('.plan-editor-layer')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'plan-editor-layer plan-category-layer';
+  const dismiss = () => layer.remove();
+  const renderActions = () => {
+    layer.innerHTML = h`<div class="plan-editor-card plan-category-card" role="dialog" aria-modal="true" aria-labelledby="plan-category-title">
+      <div class="plan-category-head"><div><span>Category</span><h2 id="plan-category-title">${category.name}</h2></div><button class="plan-category-close" aria-label="Close">×</button></div>
+      <div class="plan-category-actions">
+        <button data-category-act="rename"><span>${M_ICONS.pencil}</span><strong>Edit name</strong><b aria-hidden="true">›</b></button>
+        <button data-category-act="delete" class="danger-text"><span>${M_ICONS.trash}</span><strong>Delete category</strong><b aria-hidden="true">›</b></button>
+      </div>
+    </div>`;
+    layer.querySelector('.plan-category-close').onclick = dismiss;
+    layer.querySelector('[data-category-act="rename"]').onclick = () => {
+      dismiss();
+      openPlanEditor(root, { title: 'Edit category name', label: 'Category name', value: category.name, onSave: name => store.updateCategory(category.id, { name }) });
+    };
+    layer.querySelector('[data-category-act="delete"]').onclick = renderDeleteConfirm;
+  };
+  const renderDeleteConfirm = () => {
+    layer.innerHTML = h`<div class="plan-editor-card plan-category-confirm" role="alertdialog" aria-modal="true" aria-labelledby="plan-delete-title">
+      <span class="plan-delete-icon" aria-hidden="true">${M_ICONS.trash}</span>
+      <h2 id="plan-delete-title">Delete ${category.name}?</h2>
+      <p>Transactions in this category will become uncategorised. Any money budgeted here will return to Ready to Assign.</p>
+      ${category.available ? `<div class="plan-delete-balance"><span>Available now</span><strong>${fmt(category.available)}</strong></div>` : ''}
+      <div class="modal-actions">
+        <button class="btn secondary" data-category-act="cancel-delete">Keep category</button>
+        <button class="btn danger" data-category-act="confirm-delete">Delete</button>
+      </div>
+    </div>`;
+    layer.querySelector('[data-category-act="cancel-delete"]').onclick = renderActions;
+    layer.querySelector('[data-category-act="confirm-delete"]').onclick = () => {
+      store.deleteCategory(category.id);
+      openEditPlanSheet(root, store.monthData(curMonth));
+      toast('Category deleted');
+    };
+  };
+  layer.onclick = event => {
+    event.stopPropagation();
+    if (event.target === layer) dismiss();
+  };
+  renderActions();
+  host.append(layer);
+}
+
 function openEditPlanSheet(root, md) {
   const monthWord = monthLabel(curMonth).split(' ')[0];
   const totalTargets = md.groups.flatMap(g => g.categories)
@@ -1294,21 +1381,22 @@ function openEditPlanSheet(root, md) {
     if (!act) return;
     if (act.dataset.act === 'plan-close') closeModal();
     else if (act.dataset.act === 'plan-new-group') {
-      const name = prompt('New group name:');
-      if (name && name.trim()) { store.addGroup(name.trim()); closeModal(); }
+      openPlanEditor(root, { title: 'New category group', label: 'Group name', onSave: name => store.addGroup(name) });
     } else if (act.dataset.act === 'plan-add-cat') {
-      const name = prompt('New category name:');
-      if (name && name.trim()) { store.addCategory(act.dataset.id, name.trim()); closeModal(); }
+      const groupId = act.dataset.id;
+      openPlanEditor(root, { title: 'Add category', label: 'Category name', onSave: name => store.addCategory(groupId, name) });
     } else if (act.dataset.act === 'plan-rename-group') {
       const group = md.groups.find(item => item.id === act.dataset.id);
-      const name = prompt('Category group name:', group?.name || '');
-      if (name && name.trim()) { store.renameGroup(act.dataset.id, name.trim()); closeModal(); }
+      const groupId = act.dataset.id;
+      openPlanEditor(root, { title: 'Rename category group', label: 'Group name', value: group?.name || '', onSave: name => store.renameGroup(groupId, name) });
     } else if (act.dataset.act === 'plan-income') {
-      const val = prompt('Expected income this month:', income == null ? '' : fmtExact(income).replace('$', ''));
-      if (val != null) { store.updateSettings({ expectedIncome: parseAmount(val) }); closeModal(); }
+      openPlanEditor(root, {
+        title: 'Monthly income', label: 'Expected income', value: income == null ? '' : fmtExact(income).replace('$', ''), inputMode: 'decimal',
+        onSave: value => store.updateSettings({ expectedIncome: parseAmount(value) }),
+      });
     } else if (act.dataset.act === 'plan-open-cat') {
-      closeModal();
-      openCategoryDetailsSheet(act.dataset.id);
+      const category = md.groups.flatMap(group => group.categories).find(item => item.id === act.dataset.id);
+      openPlanCategoryActions(root, category);
     }
   };
 }
