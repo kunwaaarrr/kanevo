@@ -21,7 +21,7 @@ const BUCKETS = [
   ['dining', /mcdonald|maccas|\bkfc\b|hungry jack|\bhjs?\b|domino|pizza|subway\b|nando|guzman|zambrero|red rooster|grill'?d|oporto|donut|krispy kreme|boost juice|gong cha|chatime|starbucks|gloria jean|muffin break|jamaica blue|dome cafe|cafe|coffee|espresso|restaurant|sushi|kebab|charcoal chicken|chicken treat|bakery|bakers delight|doordash|uber ?eats|menulog|deliveroo|easi\b|hungry panda|burger|taco|noodle|ramen|pho\b|bistro|eatery|food court|fish ?n ?chip|pepper ?lunch|schnitz|betty's burgers|roll'?d|soul origin|sumo salad|mad mex|grilled|ogalo|el jannah|milky lane|yo.?chi|baskin|cold rock|gelare|gelatissimo|san churro|max brenner|pancake|ihop\b|denny'?s/i],
   ['subscriptions', /netflix|spotify|disney|stan\.|binge|paramount|kayo|youtube|prime video|audible|apple\.com|apple music|itunes|google one|google storage|icloud|openai|chatgpt|anthropic|claude\.ai|midjourney|patreon|crunchyroll|playstation|ps plus|xbox|nintendo|steamgames|steam purchase|adobe|canva|dropbox|notion\b|linkedin|figma|github|onlyfans|twitch|discord nitro|duolingo|masterclass|skillshare|subscr/i],
   ['phone', /telstra|optus|vodafone|belong\b|amaysim|boost mobile|felix mobile|aldimobile|tpg\b|iinet|aussie broadband|superloop|tangerine|exetel|dodo\b|nbn\b|kogan mobile|lebara|lyca|circles\.life/i],
-  ['transport', /transperth|translink|opal card|myki|adelaide metro|metro trains|uber(?! ?eats)|didi\b|ola cabs|shofer|taxi|cabcharge|swan taxis|13cabs|parking|wilson park|secure park|city of .* park|cpp wilson|linkt|eastlink|citylink|e.?toll|rego\b|dept of transport|vicroads|service nsw.*rego/i],
+  ['transport', /transperth|translink|opal card|myki|adelaide metro|metro trains|uber(?! ?eats)|didi ?mobility|didi\b|ola cabs|shofer|taxi|cabcharge|swan taxis|13cabs|parking|wilson park|secure park|city of .* park|cpp wilson|linkt|eastlink|citylink|e.?toll|rego\b|dept of transport|vicroads|service nsw.*rego/i],
   ['health', /chemist|pharmac|priceline|terry white|amcal|medical|medicare|doctor|dental|dentist|physio|chiro|optometr|specsavers|oscar wylee|opsm|hospital|pathology|radiology|clinipath|healthengine|hotdoc|bulk ?bill/i],
   ['fitness', /jetts|anytime fitness|goodlife|f45|snap fitness|plus fitness|revo fitness|fitness first|world gym|crunch fitness|zap fitness|\bgym\b|rec centre|aquatic centre|swim school|muscle nation|myprotein|bulk nutrients|asn\b/i],
   ['shopping', /bunnings|kmart|target aust|big w\b|jb hi|officeworks|amazon(?!.*prime video)|ebay|myer\b|david jones|cotton on|uniqlo|h ?& ?m\b|zara\b|culture kings|city beach|universal store|glue store|rebel sport|rebel\b|bcf\b|anaconda|supercheap|autobarn|repco|ikea|temu\b|shein|wish\.com|typo\b|smiggle|lovisa|priceattack|toyworld|eb games|the reject shop|cheap as chips|spotlight|harvey norman|the good guys|bing lee|dick smith|kathmandu|macpac|nike\b|adidas|foot locker|platypus|hype dc/i],
@@ -39,7 +39,7 @@ const BUCKETS = [
 
 const WORD_BUCKETS = {
   groceries: 'groceries grocery veggies vegetables fruit milk bread eggs meat butcher deli',
-  dining: 'food lunch dinner breakfast brunch snack takeaway takeout meal restaurant cafe coffee drink boba feed hungry kebab dessert icecream churros',
+  dining: 'food lunch dinner breakfast brunch snack takeaway takeout meal restaurant cafe coffee drink boba feed hungry kebab dessert icecream churros bagel chicken juice wings curry biryani dumpling shawarma falafel wrap grill bbq charcoal donuts waffle crepe acai poke bento',
   fuel: 'fuel petrol servo diesel',
   entertainment: 'ticket movie cinema concert gig show festival bowling arcade event outing golf minigolf karaoke',
   personal: 'nails haircut hair salon barber beauty spa massage skincare makeup cosmetics waxing lashes brows tanning facial manicure pedicure grooming',
@@ -47,7 +47,7 @@ const WORD_BUCKETS = {
   housing: 'rent bond lease mortgage strata',
   transport: 'bus train tram taxi cab ride toll parking rego fare',
   health: 'doctor dentist meds medicine prescription physio checkup scripts',
-  fitness: 'gym workout protein creatine supplements membership',
+  fitness: 'gym workout protein creatine supplements nutrition membership',
   travel: 'flight hotel motel holiday trip vacation luggage accommodation',
   education: 'tuition uni tafe course textbook semester hecs enrolment',
   pets: 'vet kibble petfood grooming',
