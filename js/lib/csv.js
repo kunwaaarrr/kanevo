@@ -131,6 +131,35 @@ function detectDayFirst(values) {
   return true; // ambiguous throughout: assume day-first (AU default)
 }
 
+// dates buried inside free text ("... Value Date: 04/07/2026") or sitting in
+// unmapped columns. '-' separated d/m/y is skipped: too many account numbers look like it.
+const DATE_IN_TEXT = /\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4}|\d{1,2} [a-z]{3,9},? \d{2,4}/gi;
+
+function isoAddDays(isoDate, days) {
+  const d = new Date(isoDate + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// The date column holds when the bank SETTLED it; the day the money actually left can
+// hide elsewhere — a "Value Date" column, or "Value Date: ..." inside the description.
+// Take the earliest date on the row, bounded to a month before settlement so invoice
+// numbers and unrelated dates in the text can't yank a transaction into the past.
+function earliestRowDate(row, primary, dateCol, dayFirst) {
+  const floor = isoAddDays(primary, -31);
+  let best = primary;
+  for (let c = 0; c < row.length; c++) {
+    if (c === dateCol) continue;
+    const cell = String(row[c] ?? '');
+    if (!cell || cell.length > 400) continue;
+    for (const m of cell.matchAll(DATE_IN_TEXT)) {
+      const d = parseDate(m[0], dayFirst);
+      if (d && d >= floor && d < best) best = d;
+    }
+  }
+  return best;
+}
+
 // ---------- column detection ----------
 
 function roleFor(hdr) {
@@ -268,7 +297,8 @@ export function buildTxns(rows, columns, { dataStart = 0, flip = false } = {}) {
   let skipped = 0;
   const occ = {};
   for (const r of dataRows) {
-    const date = columns.date != null ? parseDate(r[columns.date], dayFirst) : null;
+    let date = columns.date != null ? parseDate(r[columns.date], dayFirst) : null;
+    if (date) date = earliestRowDate(r, date, columns.date, dayFirst); // spend date beats settlement date
     let amount = null;
     if (columns.amount != null) amount = parseMoney(r[columns.amount]);
     else if (columns.debit != null || columns.credit != null) {

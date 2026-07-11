@@ -172,5 +172,24 @@ assert.equal(netbank.txns[1].payeeName, 'Mcdonalds Seaview', 'suburb not repeate
 assert.equal(netbank.txns[2].payeeName, 'Doordash Noodlehut Melbourne');
 assert.equal(netbank.txns[3].payeeName, 'International Transaction Fee');
 assert.equal(netbank.txns[0].amount, -1195, 'amount column still the real one, not balance');
+assert.equal(netbank.txns[0].date, '2026-07-04', 'embedded Value Date beats the settlement date');
+assert.equal(netbank.txns[1].date, '2026-07-03');
+assert.equal(netbank.txns[3].date, '2026-07-04', 'fee row uses its Value Date too');
+
+// ---- 15. earliest-date rule across shapes ----
+// separate Value Date column (whatever it's called) is picked up by the row scan
+const vdcol = statement(
+`Date,Value Date,Description,Amount
+07/07/2026,04/07/2026,SHOP A,-10.00
+08/07/2026,08/07/2026,SHOP B,-20.00`);
+assert.equal(vdcol.txns[0].date, '2026-07-04', 'value-date column wins when earlier');
+assert.equal(vdcol.txns[1].date, '2026-07-08', 'same date is fine');
+// unrelated old dates in the text must not yank the transaction into the past
+const oldref = statement(
+`Date,Description,Amount
+07/07/2026,"INVOICE 01/01/2020 ACME UTILITIES",-50.00
+07/07/2026,"FLIGHT QF404 DEPARTING 12/08/2026 QANTAS",-500.00`);
+assert.equal(oldref.txns[0].date, '2026-07-07', 'date older than a month before settlement ignored');
+assert.equal(oldref.txns[1].date, '2026-07-07', 'future date ignored');
 
 console.log('csv-check: all assertions passed');
