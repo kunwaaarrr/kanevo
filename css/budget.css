@@ -451,6 +451,10 @@
   /* ---- category list ---- */
   /* FAB clearance lives on the cream page, so the final category no longer leaves a white slab below it. */
   .m-list { margin-top: 11px; padding-bottom: 0; background: transparent; }
+  .m-empty-state { margin: 32px 14px 0; padding: 16px 18px; border: 1px solid var(--line-subtle); border-radius: 16px; background: var(--bg); color: var(--text-2); text-align: center; }
+  .m-empty-state p { margin: 0; font-size: 13px; line-height: 1.45; }
+  .m-empty-edit-icon { display: inline-flex; vertical-align: -4px; color: var(--blue); }
+  .m-empty-edit-icon .ico { width: 17px; height: 17px; }
   .m-group { display: flex; align-items: center; gap: 8px; background: var(--app-cream); padding: 10px 14px; }
   .m-group-chev { color: var(--text-2); display: inline-flex; flex-shrink: 0; }
   .m-group-chev .ico { width: 15px; height: 15px; }

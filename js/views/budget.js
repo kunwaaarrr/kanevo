@@ -1162,6 +1162,12 @@ function mCatRow(c, bars) {
   </div>`;
 }
 
+function mobileEmptyState() {
+  return h`<div class="m-empty-state" role="status">
+    <p>Nothing here yet. Tap the <span class="m-empty-edit-icon" aria-hidden="true">${[M_ICONS.pencil]}</span> edit icon above to add groups and categories.</p>
+  </div>`;
+}
+
 function renderMobile(root, md) {
   const bars = progressBarsOn();
   const view = activeFocusedViewId ? store.state.focusedViews.find(v => v.id === activeFocusedViewId) : null;
@@ -1173,6 +1179,7 @@ function renderMobile(root, md) {
     if (!cats.length) return '';
     return [mGroupHeader(g, bars), collapsed ? '' : cats.map(c => mCatRow(c, bars))];
   });
+  const hasCategories = md.groups.some(group => group.categories.length > 0);
 
   root.innerHTML = h`<div class="budget-view budget-mobile bars-${bars ? 'on' : 'off'}">
     <div class="m-head mobile-page-head">
@@ -1188,7 +1195,7 @@ function renderMobile(root, md) {
     </div>
     ${[mRtaBanner(md.rta, md)]}
     ${[mobileCoverBanner(md)]}
-    <div class="m-list">${list}</div>
+    <div class="m-list">${hasCategories ? list : [mobileEmptyState()]}</div>
   </div>`;
 
   wireEvents(root, md);
@@ -1337,6 +1344,56 @@ function openPlanCategoryActions(root, category) {
   host.append(layer);
 }
 
+function openPlanGroupActions(root, group) {
+  const host = document.querySelector('#modal-root .edit-plan-modal');
+  if (!host || !group) return;
+  host.querySelector('.plan-editor-layer')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'plan-editor-layer plan-group-layer';
+  const dismiss = () => layer.remove();
+  const renderActions = () => {
+    layer.innerHTML = h`<div class="plan-editor-card plan-category-card" role="dialog" aria-modal="true" aria-labelledby="plan-group-title">
+      <div class="plan-category-head"><div><span>Category group</span><h2 id="plan-group-title">${group.name}</h2></div><button class="plan-category-close" aria-label="Close">×</button></div>
+      <div class="plan-category-actions">
+        <button data-group-act="rename"><span>${M_ICONS.pencil}</span><strong>Edit name</strong><b aria-hidden="true">›</b></button>
+        <button data-group-act="delete" class="danger-text"><span>${M_ICONS.trash}</span><strong>Delete group</strong><b aria-hidden="true">›</b></button>
+      </div>
+    </div>`;
+    layer.querySelector('.plan-category-close').onclick = dismiss;
+    layer.querySelector('[data-group-act="rename"]').onclick = () => {
+      dismiss();
+      openPlanEditor(root, { title: 'Edit category group', label: 'Group name', value: group.name, onSave: name => store.renameGroup(group.id, name) });
+    };
+    layer.querySelector('[data-group-act="delete"]').onclick = renderDeleteConfirm;
+  };
+  const renderDeleteConfirm = () => {
+    const categoryCount = group.categories.length;
+    const available = group.categories.reduce((sum, category) => sum + Math.max(0, category.available), 0);
+    layer.innerHTML = h`<div class="plan-editor-card plan-category-confirm" role="alertdialog" aria-modal="true" aria-labelledby="plan-group-delete-title">
+      <span class="plan-delete-icon" aria-hidden="true">${M_ICONS.trash}</span>
+      <h2 id="plan-group-delete-title">Delete ${group.name}?</h2>
+      <p>This will delete ${categoryCount} categor${categoryCount === 1 ? 'y' : 'ies'} in this group. Transactions will become uncategorised, and any money budgeted here will return to Ready to Assign.</p>
+      ${available ? h`<div class="plan-delete-balance"><span>Available now</span><strong>${fmt(available)}</strong></div>` : ''}
+      <div class="modal-actions">
+        <button class="btn secondary" data-group-act="cancel-delete">Keep group</button>
+        <button class="btn danger" data-group-act="confirm-delete">Delete group</button>
+      </div>
+    </div>`;
+    layer.querySelector('[data-group-act="cancel-delete"]').onclick = renderActions;
+    layer.querySelector('[data-group-act="confirm-delete"]').onclick = () => {
+      store.deleteGroup(group.id);
+      openEditPlanSheet(root, store.monthData(curMonth));
+      toast('Category group deleted');
+    };
+  };
+  layer.onclick = event => {
+    event.stopPropagation();
+    if (event.target === layer) dismiss();
+  };
+  renderActions();
+  host.append(layer);
+}
+
 function openEditPlanSheet(root, md) {
   const monthWord = monthLabel(curMonth).split(' ')[0];
   const totalTargets = md.groups.flatMap(g => g.categories)
@@ -1389,8 +1446,7 @@ function openEditPlanSheet(root, md) {
       openPlanEditor(root, { title: 'Add category', label: 'Category name', onSave: name => store.addCategory(groupId, name) });
     } else if (act.dataset.act === 'plan-rename-group') {
       const group = md.groups.find(item => item.id === act.dataset.id);
-      const groupId = act.dataset.id;
-      openPlanEditor(root, { title: 'Rename category group', label: 'Group name', value: group?.name || '', onSave: name => store.renameGroup(groupId, name) });
+      openPlanGroupActions(root, group);
     } else if (act.dataset.act === 'plan-income') {
       openPlanEditor(root, {
         title: 'Monthly income', label: 'Expected income', value: income == null ? '' : fmtExact(income).replace('$', ''), inputMode: 'decimal',

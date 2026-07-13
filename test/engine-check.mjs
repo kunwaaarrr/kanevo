@@ -25,6 +25,15 @@ store.assign(M1, rent, 30000); // assign $300
 assert.equal(store.readyToAssign(M1), 70000, 'RTA reduced by assignment');
 assert.equal(store.monthData(M1).groups.find(g => g.id === grp).categories[0].available, 30000, 'rent available = assigned');
 
+// deleting a group also removes its budget assignments, so the money returns to RTA
+const disposableGroup = store.addGroup('Disposable');
+const disposableCategory = store.addCategory(disposableGroup, 'Temporary');
+store.assign(M1, disposableCategory, 20000);
+assert.equal(store.readyToAssign(M1), 50000, 'RTA includes the disposable group assignment');
+store.deleteGroup(disposableGroup);
+assert.equal(store.readyToAssign(M1), 70000, 'deleted group assignment returns to RTA');
+assert.equal(store.state.budget[M1]?.[disposableCategory], undefined, 'deleted group budget key is removed');
+
 // ---- 2. Carryover: positive carries, negative does not ----
 reset();
 const a2 = store.addAccount({ name: 'C', type: 'checking', balance: 0, date: '2026-01-01' });

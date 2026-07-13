@@ -820,11 +820,13 @@ export const store = {
   hideGroup: mutate(id => { state.categoryGroups.find(g => g.id === id).hidden = true; }),
   deleteGroup: mutate(id => {
     // move its categories out is not possible without a target group; delete empty, else reassign txns null + delete cats
-    for (const c of state.categories.filter(c => c.groupId === id)) {
+    const categoryIds = state.categories.filter(c => c.groupId === id).map(c => c.id);
+    for (const cid of categoryIds) {
       for (const tx of state.transactions) {
-        if (tx.categoryId === c.id) tx.categoryId = null;
-        if (tx.subtransactions) for (const s of tx.subtransactions) if (s.categoryId === c.id) s.categoryId = null;
+        if (tx.categoryId === cid) tx.categoryId = null;
+        if (tx.subtransactions) for (const s of tx.subtransactions) if (s.categoryId === cid) s.categoryId = null;
       }
+      for (const m of Object.keys(state.budget)) delete state.budget[m][cid];
     }
     state.categories = state.categories.filter(c => c.groupId !== id);
     state.categoryGroups = state.categoryGroups.filter(g => g.id !== id);
