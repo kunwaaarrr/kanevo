@@ -4,7 +4,7 @@
 
 ## 项目定位
 
-- 名称：Sapient Spend
+- 名称：Kanevo
 - 一句话定位：Local-first YNAB-clone budgeting web app — offline PWA, zero dependencies, no backend; all data in localStorage (Basiq bank sync planned but not wired).
 - 当前阶段：v1 + two beyond-YNAB features shipped (50/30/20 rule view at `#/fifty`, Forecast
   what-if spreadsheet at `#/forecast`). Local git repo with clean history; private GitHub push pending

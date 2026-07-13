@@ -1,6 +1,6 @@
 {
-  "name": "Sapient Spend",
-  "short_name": "SapientSpend",
+  "name": "Kanevo",
+  "short_name": "Kanevo",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f7f4ea",

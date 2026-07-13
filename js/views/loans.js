@@ -1,6 +1,6 @@
 import { store } from '../store.js';
 import { navigate } from '../app.js';
-import { fmt, fmtExact, fmtDate, h } from '../util.js';
+import { fmt, fmtExact, fmtDate, h, raw } from '../util.js';
 
 const STEP = 25, MAX_EXTRA = 2000;
 let extraCents = null; // module-local slider state, reset when accountId changes
@@ -55,13 +55,13 @@ function burndownSvg(baseline, withExtra) {
     xlabels.push(`<text x="${x(yr * 12).toFixed(1)}" y="${H - 6}" class="ln-xlabel" text-anchor="middle">Yr ${yr}</text>`);
   const xlabelsStr = xlabels.join('');
 
-  return `<svg viewBox="0 0 ${W} ${H}" class="burndown-svg" preserveAspectRatio="xMidYMid meet">
+  return raw(`<svg viewBox="0 0 ${W} ${H}" class="burndown-svg" preserveAspectRatio="xMidYMid meet">
     ${gridlines.join('')}
     <path d="${areaPath(withExtra.points)}" class="area-extra"/>
     <path d="${path(baseline.points)}" class="line-baseline"/>
     <path d="${path(withExtra.points)}" class="line-extra"/>
     ${xlabelsStr}
-  </svg>`;
+  </svg>`);
 }
 
 function accountCard(a) {
@@ -78,14 +78,14 @@ function accountCard(a) {
 
 function renderGrid(root) {
   const loans = store.state.accounts.filter(a => a.loanInfo && !a.closed);
-  root.innerHTML = h`<div class="view-head loans-head">${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>' : ''}<div class="view-title">Loan Planner</div></div>
+  root.innerHTML = h`<div class="view-head loans-head">${innerWidth < 768 ? raw('<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>') : ''}<div class="view-title">Loan Planner</div></div>
     <div class="loans-body">
       ${loans.length
-        ? [`<div class="loan-grid">${loans.map(accountCard).join('')}</div>`]
-        : `<div class="empty-state">
+        ? h`<div class="loan-grid">${loans.map(accountCard)}</div>`
+        : raw(`<div class="empty-state">
              <p>Add a loan account to start planning.</p>
              <p class="muted">Use "＋ Add Account" and choose a loan type (mortgage, auto, student, personal).</p>
-           </div>`}
+           </div>`)}
     </div>`;
 }
 
@@ -102,8 +102,8 @@ function simResults(account, balance, rate, payment) {
   const withExtra = store.loanStats(account.id, extraCents);
   const degenerate = withExtra.months === Infinity;
   return degenerate
-    ? `<div class="empty-state"><p>Payment too low to ever pay off.</p><p class="muted">Increase the extra monthly payment to see a payoff date.</p></div>`
-    : `<div class="loan-stats-grid">
+    ? h`<div class="empty-state"><p>Payment too low to ever pay off.</p><p class="muted">Increase the extra monthly payment to see a payoff date.</p></div>`
+    : h`<div class="loan-stats-grid">
         <div class="stat-card">
           <div class="stat-label">Payoff Date</div>
           <div class="stat-value">${fmtDate(base.payoffDate)} <span class="arrow">→</span> ${fmtDate(withExtra.payoffDate)}</div>
@@ -130,7 +130,7 @@ function renderSimulator(root, account, context = 'reflect') {
   const payment = account.loanInfo.minimumPayment;
 
   root.innerHTML = h`<div class="view-head loans-head">
-      ${innerWidth < 768 ? `<a class="reflect-tool-back" href="${context === 'accounts' ? '#/accounts' : '#/loans'}" aria-label="${context === 'accounts' ? 'Back to Accounts' : 'Back to Loan Planner'}">‹</a>` : ''}
+      ${innerWidth < 768 ? h`<a class="reflect-tool-back" href="${context === 'accounts' ? '#/accounts' : '#/loans'}" aria-label="${context === 'accounts' ? 'Back to Accounts' : 'Back to Loan Planner'}">‹</a>` : ''}
       <div>
         <div class="view-title">${account.name}</div>
         <div class="muted">${rate}% APR · min payment ${fmt(payment)}/mo · balance <span class="neg-text">${fmt(balance)}</span></div>
@@ -145,7 +145,7 @@ function renderSimulator(root, account, context = 'reflect') {
         </div>
       </div>
       <div id="sim-results">${simResults(account, balance, rate, payment)}</div>
-      ${context === 'accounts' ? '<a class="register-link" href="#/spending">View all spending →</a>' : `<a class="register-link" href="#/account/${account.id}">View account register →</a>`}
+      ${context === 'accounts' ? raw('<a class="register-link" href="#/spending">View all spending →</a>') : h`<a class="register-link" href="#/account/${account.id}">View account register →</a>`}
     </div>`;
 
   const slider = root.querySelector('#extra-slider');

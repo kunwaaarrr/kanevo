@@ -1,7 +1,7 @@
 // Forecast ("what-if") spreadsheet view. Pure UI — all math lives in js/lib/forecast.js.
 import { baseline, forecast } from '../lib/forecast.js';
 import { store } from '../store.js';
-import { fmt, fmtExact, parseAmount, thisMonth, h, ICONS } from '../util.js';
+import { fmt, fmtExact, parseAmount, thisMonth, h, raw, ICONS } from '../util.js';
 import { toast } from '../app.js';
 
 // module-local UI state — survives re-render (render() rebuilds root.innerHTML each time)
@@ -51,7 +51,7 @@ function rowControls(kind, id, base) {
   return h`<div class="fc-controls">
     <button class="fc-toggle ${off ? 'off' : ''}" data-act="toggle-off" data-kind="${kind}" data-id="${id}" title="${off ? 'Enable' : 'Disable'}">${off ? '○' : '●'}</button>
     ${isEditingThis
-      ? `<input class="fc-edit-input" data-kind="${kind}" data-id="${id}" type="text" value="${fmtExact(base).replace('$', '')}">`
+      ? h`<input class="fc-edit-input" data-kind="${kind}" data-id="${id}" type="text" value="${fmtExact(base).replace('$', '')}">`
       : h`<button class="fc-amt" data-act="edit-amt" data-kind="${kind}" data-id="${id}">${fmt(displayVal)}</button>`}
     <span class="fc-or">or</span>
     <span class="fc-stepper">
@@ -59,7 +59,7 @@ function rowControls(kind, id, base) {
       <span class="fc-pct ${pct === 100 ? 'default' : ''}">${pct}%</span>
       <button class="fc-step-btn" data-act="step" data-kind="${kind}" data-id="${id}" data-dir="1">+</button>
     </span>
-    ${ov ? `<button class="fc-reset" data-act="reset-row" data-kind="${kind}" data-id="${id}" title="Reset">✕</button>` : ''}
+    ${ov ? h`<button class="fc-reset" data-act="reset-row" data-kind="${kind}" data-id="${id}" title="Reset">✕</button>` : ''}
   </div>`;
 }
 
@@ -73,7 +73,7 @@ function rowLabel(kind, id, name, base) {
 // ---------- grid cell helpers ----------
 function numCell(cents, extraClass = '') {
   const neg = cents < 0 ? 'neg-text' : '';
-  return `<td class="num ${extraClass} ${neg}">${fmt(cents)}</td>`;
+  return h`<td class="num ${extraClass} ${neg}">${fmt(cents)}</td>`;
 }
 
 function loanExtraInput(accountId, extra) {
@@ -130,7 +130,7 @@ function head(fc) {
   const endCash = fc ? fc.cash[fc.cash.length - 1] : 0;
   return h`<div class="view-head fc-head">
     <div class="fc-head-top">
-      ${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>' : ''}
+      ${innerWidth < 768 ? raw('<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>') : ''}
       <div>
         <span class="view-title">Forecast &amp; What-If</span>
         <div class="muted fc-subtitle">Projected from your last 3 months of income and spending. Adjust any row to test a what-if.</div>
@@ -138,7 +138,7 @@ function head(fc) {
     </div>
     <div class="fc-toolbar">
       <div class="segmented fc-horizon">
-        ${[1, 6, 12, 24].map(n => h`<button class="seg-btn ${horizon === n ? 'active' : ''}" data-act="set-horizon" data-id="${n}">${n} mo</button>`).join('')}
+        ${[1, 6, 12, 24].map(n => h`<button class="seg-btn ${horizon === n ? 'active' : ''}" data-act="set-horizon" data-id="${n}">${n} mo</button>`)}
       </div>
       <button class="btn secondary sm" data-act="reset-whatifs" ${hasAnyOverride() ? '' : 'disabled'}>Reset what-ifs</button>
       <div class="fc-summary">
@@ -193,7 +193,7 @@ function v2Outlook(fc) {
     <div><span>Income</span><strong>${fmt(fc.income[index])}</strong></div>
     <div><span>Spending</span><strong>${fmt(fc.totalExpense[index])}</strong></div>
     <div class="fcv2-cash-row"><span>Cash at end</span><strong class="${fc.cash[index] < 0 ? 'neg-text' : ''}">${fmt(fc.cash[index])}</strong></div>
-  </article>`).join('');
+  </article>`);
 }
 
 function v2Spreadsheet(fc) {
@@ -209,14 +209,14 @@ function v2Spreadsheet(fc) {
   const shownRows = variableRows.filter(row => row.adjusted || (v2ShowUnchanged && (v2ShowZero || !row.zero)));
   const hiddenUnchanged = v2ShowUnchanged ? 0 : variableRows.filter(row => !row.adjusted).length;
   const hiddenZero = v2ShowUnchanged && !v2ShowZero ? variableRows.filter(row => !row.adjusted && row.zero).length : 0;
-  const rowHtml = row => h`<tr class="${row.adjusted ? 'adjusted' : ''} ${row.total ? 'total' : ''}"><th>${row.adjusted ? '● ' : ''}${row.name}</th>${row.values.map(value => `<td class="${value < 0 ? 'neg-text' : ''}">${fmt(value)}</td>`).join('')}</tr>`;
+  const rowHtml = row => h`<tr class="${row.adjusted ? 'adjusted' : ''} ${row.total ? 'total' : ''}"><th>${row.adjusted ? '● ' : ''}${row.name}</th>${row.values.map(value => h`<td class="${value < 0 ? 'neg-text' : ''}">${fmt(value)}</td>`)}</tr>`;
   return h`<div class="fcv2-sheet-wrap"><table class="fcv2-sheet">
-    <thead><tr><th>Variable</th>${fc.months.map(month => `<th>${shortMonth(month)}</th>`).join('')}</tr></thead>
+    <thead><tr><th>Variable</th>${fc.months.map(month => h`<th>${shortMonth(month)}</th>`)}</tr></thead>
     <tbody>
-      ${shownRows.map(rowHtml).join('')}
-      ${hiddenUnchanged ? `<tr class="collapsed"><td colspan="${fc.months.length + 1}">Collapsed ${hiddenUnchanged} unchanged variable${hiddenUnchanged === 1 ? '' : 's'}</td></tr>` : ''}
-      ${hiddenZero ? `<tr class="collapsed zero"><td colspan="${fc.months.length + 1}">Collapsed ${hiddenZero} zero-value categor${hiddenZero === 1 ? 'y' : 'ies'}</td></tr>` : ''}
-      ${totalRows.map(rowHtml).join('')}
+      ${shownRows.map(rowHtml)}
+      ${hiddenUnchanged ? h`<tr class="collapsed"><td colspan="${fc.months.length + 1}">Collapsed ${hiddenUnchanged} unchanged variable${hiddenUnchanged === 1 ? '' : 's'}</td></tr>` : ''}
+      ${hiddenZero ? h`<tr class="collapsed zero"><td colspan="${fc.months.length + 1}">Collapsed ${hiddenZero} zero-value categor${hiddenZero === 1 ? 'y' : 'ies'}</td></tr>` : ''}
+      ${totalRows.map(rowHtml)}
     </tbody>
   </table></div>`;
 }
@@ -231,8 +231,8 @@ function v2Page(base, fc) {
   }
   const variableGroups = [...groups.values()].map(group => h`<div class="fcv2-variable-group">
     <h3>${group.name}</h3>
-    <div class="fcv2-variable-list">${group.rows.map(row => v2VariableCard('cat', row.id, row.name, row.base)).join('')}</div>
-  </div>`).join('');
+    <div class="fcv2-variable-list">${group.rows.map(row => v2VariableCard('cat', row.id, row.name, row.base))}</div>
+  </div>`);
   const resultMode = horizon === 1 ? 'outlook' : v2ResultMode;
   const changedCount = Object.keys(overrides.categories).length + (overrides.income ? 1 : 0) + Object.values(overrides.loanExtra).filter(Boolean).length;
 
@@ -251,14 +251,14 @@ function v2Page(base, fc) {
         <div class="fcv2-section-title"><div><h2>Change something</h2><p>Tap a category to reveal its controls.</p></div><button data-act="reset-whatifs" ${hasAnyOverride() ? '' : 'disabled'}>Reset${changedCount ? ` (${changedCount})` : ''}</button></div>
         <div class="fcv2-variable-group"><h3>Money in</h3><div class="fcv2-variable-list">${v2VariableCard('income', 'income', 'Income', base.incomePerMonth)}</div></div>
         ${variableGroups}
-        ${fc.loans.length ? h`<div class="fcv2-variable-group fcv2-loan-group"><h3>Loans</h3><div class="fcv2-variable-list">${fc.loans.map(v2LoanCard).join('')}</div></div>` : ''}
+        ${fc.loans.length ? h`<div class="fcv2-variable-group fcv2-loan-group"><h3>Loans</h3><div class="fcv2-variable-list">${fc.loans.map(v2LoanCard)}</div></div>` : ''}
       </section>
       <section class="fcv2-results">
         <div class="fcv2-results-head">
           <h2>Result:</h2>
           <div class="fcv2-span-wrap">
             <button class="fcv2-span-pill ${v2SpanOpen ? 'open' : ''}" data-act="toggle-v2-span" aria-haspopup="listbox" aria-expanded="${v2SpanOpen}"><span>Span</span><strong>${horizon} month${horizon === 1 ? '' : 's'}</strong><i aria-hidden="true">${ICONS.chevronDown}</i></button>
-            ${v2SpanOpen ? h`<div class="fcv2-span-menu" role="listbox" aria-label="Result month span">${[1,6,12,24].map(value => h`<button role="option" aria-selected="${horizon === value}" class="${horizon === value ? 'selected' : ''}" data-act="set-v2-span" data-value="${value}"><span>${value} month${value === 1 ? '' : 's'}</span>${horizon === value ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}
+            ${v2SpanOpen ? h`<div class="fcv2-span-menu" role="listbox" aria-label="Result month span">${[1,6,12,24].map(value => h`<button role="option" aria-selected="${horizon === value}" class="${horizon === value ? 'selected' : ''}" data-act="set-v2-span" data-value="${value}"><span>${value} month${value === 1 ? '' : 's'}</span>${horizon === value ? raw('<b>✓</b>') : ''}</button>`)}</div>` : ''}
           </div>
         </div>
         <div class="fcv2-result-modes">
@@ -290,7 +290,7 @@ function rerender() { render(rootEl, { variant: currentVariant }); }
 function eventBanner(fc) {
   if (!fc.events.length) return '';
   return h`<div class="fc-events">
-    ${fc.events.map(ev => h`<div class="fc-event"><span class="fc-event-dot">●</span> <strong>${ev.month}:</strong> ${ev.label}</div>`).join('')}
+    ${fc.events.map(ev => h`<div class="fc-event"><span class="fc-event-dot">●</span> <strong>${ev.month}:</strong> ${ev.label}</div>`)}
   </div>`;
 }
 
@@ -302,30 +302,30 @@ function grid(base, fc) {
     groups.get(row.groupId).rows.push(row);
   }
 
-  const monthHeadCells = fc.months.map(m => `<th class="num">${shortMonth(m)}</th>`).join('');
+  const monthHeadCells = fc.months.map(m => h`<th class="num">${shortMonth(m)}</th>`);
 
   const incomeRow = h`<tr class="fc-row fc-income-row ${overrides.income ? 'fc-tinted' : ''}">
     <td class="fc-first-col">${[rowLabel('income', 'income', 'Income', base.incomePerMonth)]}</td>
-    ${fc.income.map(v => numCell(v)).join('')}
+    ${fc.income.map(v => numCell(v))}
   </tr>`;
 
   const groupSections = [...groups.values()].map(g => h`
     <tr class="fc-group-row"><td class="fc-group-cell" colspan="${fc.months.length + 1}">${g.groupName}</td></tr>
     ${g.rows.map(row => h`<tr class="fc-row ${overrides.categories[row.id] ? 'fc-tinted' : ''}">
       <td class="fc-first-col">${[rowLabel('cat', row.id, row.name, row.base)]}</td>
-      ${row.values.map(v => numCell(v)).join('')}
-    </tr>`).join('')}
-  `).join('');
+      ${row.values.map(v => numCell(v))}
+    </tr>`)}
+  `);
 
   const totalsRows = h`
-    <tr class="fc-row fc-bold"><td class="fc-first-col">Total Expenses</td>${fc.totalExpense.map(v => numCell(v)).join('')}</tr>
-    <tr class="fc-row fc-bold"><td class="fc-first-col">Net</td>${fc.net.map(v => numCell(v)).join('')}</tr>
-    <tr class="fc-row fc-bold"><td class="fc-first-col">Cash</td>${fc.cash.map(v => `<td class="num ${v < 0 ? 'fc-cash-neg' : ''}">${fmt(v)}</td>`).join('')}</tr>
+    <tr class="fc-row fc-bold"><td class="fc-first-col">Total Expenses</td>${fc.totalExpense.map(v => numCell(v))}</tr>
+    <tr class="fc-row fc-bold"><td class="fc-first-col">Net</td>${fc.net.map(v => numCell(v))}</tr>
+    <tr class="fc-row fc-bold"><td class="fc-first-col">Cash</td>${fc.cash.map(v => h`<td class="num ${v < 0 ? 'fc-cash-neg' : ''}">${fmt(v)}</td>`)}</tr>
   `;
 
   const loanSection = fc.loans.length ? h`
     <tr class="fc-group-row"><td class="fc-group-cell" colspan="${fc.months.length + 1}">Loans</td></tr>
-    ${fc.loans.map(loan => loanRows(loan, fc)).join('')}
+    ${fc.loans.map(loan => loanRows(loan, fc))}
   ` : '';
 
   return h`<table class="fc-table">
@@ -343,10 +343,10 @@ function loanRows(loan, fc) {
   const extra = overrides.loanExtra[loan.accountId] || 0;
   const payoffIdx = loan.payoffMonth ? fc.months.indexOf(loan.payoffMonth) : -1;
   const balCells = loan.balances.map((bal, i) => {
-    if (payoffIdx >= 0 && i === payoffIdx) return `<td class="num"><span class="fc-paid-badge">PAID OFF ✓</span></td>`;
-    if (payoffIdx >= 0 && i > payoffIdx) return `<td class="num muted">N/A</td>`;
+    if (payoffIdx >= 0 && i === payoffIdx) return raw('<td class="num"><span class="fc-paid-badge">PAID OFF ✓</span></td>');
+    if (payoffIdx >= 0 && i > payoffIdx) return raw('<td class="num muted">N/A</td>');
     return numCell(bal);
-  }).join('');
+  });
   return h`<tr class="fc-row fc-loan-row">
     <td class="fc-first-col">
       <div class="fc-row-label">

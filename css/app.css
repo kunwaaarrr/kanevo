@@ -370,7 +370,7 @@ html, body { overflow-x: clip; }
 }
 
 /* ================= dark theme =================
-   Sapient's own dark palette: a near-black blue-tinted page, dark-navy elevated
+   Kanevo's own dark palette: a near-black blue-tinted page, dark-navy elevated
    surfaces, brand blurple kept recognizable (nudged brighter for contrast on dark).
    Light theme is untouched — every dark rule is gated on [data-theme="dark"]. */
 [data-theme="dark"] {

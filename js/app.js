@@ -1,7 +1,7 @@
 // Shell: router, sidebar, modal, toast. Views own everything inside #view.
 import { store } from './store.js';
 import { maybeSeed } from './seed.js';
-import { fmt, esc, h, thisMonth, setHideAmounts, ICONS } from './util.js';
+import { fmt, esc, h, raw, thisMonth, setHideAmounts, ICONS } from './util.js';
 import * as budgetView from './views/budget.js';
 import * as registerView from './views/register.js';
 import * as reportsView from './views/reports.js';
@@ -28,7 +28,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modalRoot
 const toastRoot = document.getElementById('toast-root');
 let toastTimer;
 export function toast(msg, { undoable = false } = {}) {
-  toastRoot.innerHTML = h`<div class="toast">${msg}${undoable && store.canUndo() ? ['<button id="toast-undo">Undo</button>'] : ''}</div>`;
+  toastRoot.innerHTML = h`<div class="toast">${msg}${undoable && store.canUndo() ? [raw('<button id="toast-undo">Undo</button>')] : ''}</div>`;
   const btn = document.getElementById('toast-undo');
   if (btn) btn.onclick = () => { store.undo(); toastRoot.innerHTML = ''; };
   clearTimeout(toastTimer);
@@ -137,10 +137,12 @@ function renderSidebar(route) {
   document.getElementById('budget-sub').textContent = store.state.settings.budgetName;
 }
 document.getElementById('add-account-btn').onclick = () => registerView.openAddAccountModal();
-document.getElementById('bank-connections-btn').onclick = () =>
-  openModal(h`<h2>Bank Connections</h2>
+document.getElementById('bank-connections-btn').onclick = () => {
+  const m = openModal(h`<h2>Bank Connections</h2>
     <p class="muted" style="margin-bottom:14px">Direct bank syncing via Basiq is coming soon. Until then, use the Sync button in a register to simulate a bank feed, or enter transactions manually. Everything stays on this device.</p>
-    <div class="modal-actions"><button class="btn" onclick="document.getElementById('modal-root').hidden=true">Got It!</button></div>`);
+    <div class="modal-actions"><button class="btn" id="bank-conn-close">Got It!</button></div>`);
+  m.querySelector('#bank-conn-close').onclick = closeModal;
+};
 
 // ---------- mobile tab bar ----------
 function renderTabbar(route) {

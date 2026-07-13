@@ -225,7 +225,7 @@ svg=f'<svg viewBox="0 0 {W:.0f} {H:.0f}" width="{W:.0f}" height="{H:.0f}" xmlns=
 total=len(items)
 HTML=f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sapient Spend — User Flow (YNAB reference)</title>
+<title>Kanevo — User Flow (YNAB reference)</title>
 <style>
 :root{{--bg:#f5f6fa;--panel:#fff;--ink:#161826;--soft:#5a6078;--line:#e4e6f0;--accent:#4b4ddb;--pop:#16a34a;--radius:14px}}
 *{{box-sizing:border-box}}
@@ -270,7 +270,7 @@ footer{{max-width:1240px;margin:0 auto;padding:24px 28px 60px;color:var(--soft);
 </style></head><body>
 <header>
   <div class="kick">Screen recording · 15 fps · settled frames only</div>
-  <h1>Sapient Spend — YNAB user-flow reference</h1>
+  <h1>Kanevo — YNAB user-flow reference</h1>
   <p>Every distinct screen from the recording, grouped by app section, plus a decision map of how they connect. Frames were taken only where the video is <b>temporally still</b>, so nothing is mid-animation. Click any screen to open it full-resolution (native 1080×2340).</p>
 </header>
 <div class="note"><div class="box">

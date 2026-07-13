@@ -4,6 +4,8 @@
 // ---------- low-level parse ----------
 
 export function parseCSV(text) {
+  text = String(text ?? '');
+  if (text.length > 25e6) text = text.slice(0, 25e6); // ponytail: cap untrusted input ~25MB; real statements are KB, this just stops a giant paste from hanging the tab
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
   const delim = detectDelimiter(text);
   const rows = [];
@@ -249,7 +251,9 @@ const TLD = /([a-z0-9\-]+)\.(com|net|org|co|io|app|shop|dev|au|nz|uk|ca|us|gov|e
 // "WOOLWORTHS 1234 SYDNEY NS AUS Card xx1234" -> "Woolworths"
 // "UBER *TRIP HELP.UBER.COM" -> "Uber Trip"; "DIRECT DEBIT NETFLIX.COM 123" -> "Netflix"
 export function cleanPayeeName(raw) {
-  const original = clean(raw);
+  // slice before any regex: a merchant name is never >400 chars, and the unanchored TLD test
+  // below is O(n^2) — a giant single-token cell ("aaaa...a.") would otherwise hang the tab
+  const original = clean(String(raw ?? '').slice(0, 400));
   let s = original;
   for (let i = 0; i < 3; i++) s = s.replace(RAIL_PREFIX, '').replace(PROCESSOR_PREFIX, '');
   s = s.replace(/\s*\*\s*/g, ' '); // remaining processor stars: "UBER *TRIP" -> "UBER TRIP"

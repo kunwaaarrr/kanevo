@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { fmt, h, thisMonth, addMonths, monthLabel, monthsBetween, ICONS } from '../util.js';
+import { fmt, h, raw, thisMonth, addMonths, monthLabel, monthsBetween, ICONS } from '../util.js';
 
 const TABS = [
   { id: 'spending', label: 'Spending Breakdown' },
@@ -77,7 +77,7 @@ function monthStepperChip() {
 function datePopover() {
   return h`<div class="popover date-popover">
     <div class="popover-presets">
-      ${PRESETS.map(p => `<button type="button" class="popover-preset ${p === state.preset ? 'active' : ''}" data-preset="${p}">${p}</button>`).join('')}
+      ${PRESETS.map(p => h`<button type="button" class="popover-preset ${p === state.preset ? 'active' : ''}" data-preset="${p}">${p}</button>`)}
     </div>
     <div class="popover-range">
       <label><span class="range-label">From</span><input type="month" id="from-month" value="${state.from}"></label>
@@ -231,7 +231,7 @@ function reflectOverview(root) {
   const allocationSegments = raw.filter(item => item.amount > 0).map((item, index) => {
     const share = totalSpending ? Math.round((item.amount / totalSpending) * 100) : 0;
     return h`<span style="flex-grow:${item.amount};background:var(${CHART_COLORS[index % CHART_COLORS.length]})" title="${item.name}: ${share}%"></span>`;
-  }).join('');
+  });
 
   root.innerHTML = h`<div class="reflect-overview">
     <header class="reflect-overview-head mobile-page-head">
@@ -262,7 +262,7 @@ function reflectOverview(root) {
         <div class="reflect-allocation-bar" aria-label="Spending allocation by category">${allocationSegments}</div>
         <div class="reflect-list-head"><span>Top Categories</span><span>Spent</span></div>
         <div class="reflect-top-list">
-          ${topCategories.length ? topCategories.map((item, index) => h`<div><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></div>`).join('') : '<p class="muted">No spending this month yet.</p>'}
+          ${topCategories.length ? topCategories.map((item, index) => h`<div><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></div>`) : h`<p class="muted">No spending this month yet.</p>`}
         </div>
       </a>
       <a class="reflect-summary-card" href="#/reports/income-expense">
@@ -337,8 +337,8 @@ function mobileRangeBar(active) {
     <button id="mobile-month-next" aria-label="Next period">›</button>
   </div>
   ${(showCategories || showAccounts) ? h`<div class="mobile-report-filter-summary">
-    ${showCategories ? `<button id="mobile-categories-open">${categoryLabel}</button>` : ''}
-    ${showAccounts ? `<button id="mobile-accounts-open">${accountLabel}</button>` : ''}
+    ${showCategories ? h`<button id="mobile-categories-open">${categoryLabel}</button>` : ''}
+    ${showAccounts ? h`<button id="mobile-accounts-open">${accountLabel}</button>` : ''}
   </div>` : ''}`;
 }
 
@@ -353,7 +353,7 @@ function mobileFilterPanel(active) {
     <div class="mobile-filter-body">
       <section class="mobile-filter-card">
         <h3>Date range</h3>
-        ${PRESETS.map(preset => `<button class="mobile-preset-row ${preset === state.preset ? 'active' : ''}" data-mobile-preset="${preset}"><span>${preset}</span><i>${preset === state.preset ? '✓' : ''}</i></button>`).join('')}
+        ${PRESETS.map(preset => h`<button class="mobile-preset-row ${preset === state.preset ? 'active' : ''}" data-mobile-preset="${preset}"><span>${preset}</span><i>${preset === state.preset ? '✓' : ''}</i></button>`)}
         <div class="mobile-custom-range">
           ${mobileMonthField('from', state.from)}
           ${mobileMonthField('to', state.to)}
@@ -381,7 +381,7 @@ function mobileMonthPicker(which) {
   const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
   return h`<div class="mobile-month-picker" role="dialog" aria-label="Choose ${which} month">
     <div class="mobile-month-picker-head"><button type="button" data-mobile-month-year="-1">‹</button><strong>${year}</strong><button type="button" data-mobile-month-year="1">›</button></div>
-    <div class="mobile-month-grid">${months.map((item, i) => `<button type="button" class="${i + 1 === month ? 'active' : ''}" data-mobile-month-value="${item}">${new Date(year, i, 1).toLocaleDateString('en-AU', { month: 'short' })}</button>`).join('')}</div>
+    <div class="mobile-month-grid">${months.map((item, i) => h`<button type="button" class="${i + 1 === month ? 'active' : ''}" data-mobile-month-value="${item}">${new Date(year, i, 1).toLocaleDateString('en-AU', { month: 'short' })}</button>`)}</div>
   </div>`;
 }
 
@@ -446,7 +446,7 @@ function mobileProgressRows(items) {
   return items.map((item, index) => h`<div class="mobile-data-row">
     <span class="mobile-data-row-top"><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></span>
     <span class="mobile-data-track"><span style="width:${Math.max(3, Math.round((item.amount / max) * 100))}%;background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></span></span>
-  </div>`).join('');
+  </div>`);
 }
 
 // ============================================================
@@ -485,7 +485,7 @@ function spendingReport(root) {
             <div class="card-big-amt">${fmt(total)}</div>
           </div>
           <div class="segmented">
-            ${GROUPBYS.map(g => `<button type="button" class="segment-btn ${g.id === state.groupBy ? 'active' : ''}" data-gb="${g.id}">${g.label}</button>`).join('')}
+            ${GROUPBYS.map(g => h`<button type="button" class="segment-btn ${g.id === state.groupBy ? 'active' : ''}" data-gb="${g.id}">${g.label}</button>`)}
           </div>
         </div>
         <div class="donut-wrap">${donutSvg(slices, total)}</div>
@@ -528,11 +528,11 @@ function renderMobileSpendingReport(root, slices, total, groupBys) {
         <strong class="mobile-hero-value">${fmt(total)}</strong>
         <span class="mobile-hero-period">${state.from === state.to ? monthLabel(state.from) : `${monthLabel(state.from)} – ${monthLabel(state.to)}`}</span>
         <span class="mobile-hero-bar mobile-allocation-bar" aria-label="Spending allocation by ${groupBys.find(group => group.id === state.groupBy).label.toLowerCase()}">
-          ${slices.map(item => h`<i style="flex-grow:${item.amount};background:${item.color}" title="${item.name}: ${Math.round(item.pct)}%"></i>`).join('')}
+          ${slices.map(item => h`<i style="flex-grow:${item.amount};background:${item.color}" title="${item.name}: ${Math.round(item.pct)}%"></i>`)}
         </span>
       </section>
       <div class="mobile-report-segmented">
-        ${groupBys.map(group => `<button class="${group.id === state.groupBy ? 'active' : ''}" data-gb="${group.id}">${group.label}</button>`).join('')}
+        ${groupBys.map(group => h`<button class="${group.id === state.groupBy ? 'active' : ''}" data-gb="${group.id}">${group.label}</button>`)}
       </div>
       <section class="mobile-list-section">
         <div class="mobile-section-title"><h2>${groupBys.find(group => group.id === state.groupBy).label}</h2><span>${slices.length} shown</span></div>
@@ -549,11 +549,11 @@ function donutSvg(slices, total) {
   const R = 80, CX = 100, CY = 100, STROKE = 32;
   const circumference = 2 * Math.PI * R;
   if (!total) {
-    return `<svg viewBox="0 0 200 200" class="donut-svg">
+    return raw(`<svg viewBox="0 0 200 200" class="donut-svg">
       <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--track)" stroke-width="${STROKE}"/>
       <text x="${CX}" y="${CY - 6}" text-anchor="middle" class="donut-total">${fmt(0)}</text>
       <text x="${CX}" y="${CY + 14}" text-anchor="middle" class="donut-total-label">Total Spending</text>
-    </svg>`;
+    </svg>`);
   }
   const GAP = slices.length > 1 ? 2 : 0; // px of separator visible between adjacent slices
   let acc = 0;
@@ -569,11 +569,11 @@ function donutSvg(slices, total) {
       stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="butt" transform="rotate(-90 ${CX} ${CY})" class="donut-arc ${dim ? 'dim' : ''}"
       data-arc="${s.id}"/>`;
   }).join('');
-  return `<svg viewBox="0 0 200 200" class="donut-svg">
+  return raw(`<svg viewBox="0 0 200 200" class="donut-svg">
     ${arcs}
     <text x="${CX}" y="${CY - 6}" text-anchor="middle" class="donut-total">${fmt(total)}</text>
     <text x="${CX}" y="${CY + 14}" text-anchor="middle" class="donut-total-label">Total Spending</text>
-  </svg>`;
+  </svg>`);
 }
 
 // ============================================================
@@ -604,7 +604,7 @@ function trendsReport(root) {
       <div class="card-label">Average Monthly Spending</div>
       <div class="card-big-amt">${fmt(avg)}</div>
       <div class="card-sub-amt">Total Spending: ${fmt(total)}</div>
-      ${!byMonth.length ? emptyState('No spending in this range.') : `<div class="chart-wrap">${trendsSvg(byMonth, avg)}</div>`}
+      ${!byMonth.length ? emptyState('No spending in this range.') : h`<div class="chart-wrap">${trendsSvg(byMonth, avg)}</div>`}
     </div>
     ${byMonth.length ? h`<div class="card trends-table-card">
       <table class="report-table">
@@ -654,7 +654,7 @@ function renderMobileTrendsReport(root, byMonth, total, avg) {
         <div class="mobile-data-card">${byMonth.map(item => {
           const difference = avg ? ((item.amount - avg) / avg) * 100 : 0;
           return h`<div class="mobile-month-row"><span><b>${monthLabel(item.month)}</b><i><em style="width:${Math.max(3, Math.round((item.amount / max) * 100))}%"></em></i></span><span><strong>${fmt(item.amount)}</strong><small class="${difference <= 0 ? 'pos-text' : 'neg-text'}">${difference >= 0 ? '+' : ''}${difference.toFixed(1)}%</small></span></div>`;
-        }).join('')}</div>
+        })}</div>
       </section>
     </main>
     ${mobileFilterPanel('trends')}
@@ -691,14 +691,14 @@ function trendsSvg(byMonth, avg) {
   const xlabels = byMonth.map((m, i) => i % everyN === 0
     ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="ln-xlabel" text-anchor="middle">${monthLabel(m.month).slice(0, 3)}</text>` : '').join('');
 
-  return `<svg viewBox="0 0 ${W} ${H}" class="trends-svg" preserveAspectRatio="xMidYMid meet">
+  return raw(`<svg viewBox="0 0 ${W} ${H}" class="trends-svg" preserveAspectRatio="xMidYMid meet">
     ${gridlines.join('')}
     ${baseline}
     ${bars}
     <path d="${linePath}" class="trend-line"/>
     ${dots}
     ${xlabels}
-  </svg>`;
+  </svg>`);
 }
 
 // ============================================================
@@ -772,7 +772,7 @@ function renderMobileNetWorthReport(root, series) {
         const previous = series[series.length - 2 - index];
         const delta = previous ? item.netWorth - previous.netWorth : 0;
         return h`<div class="mobile-history-row"><span><b>${monthLabel(item.month)}</b><small>Assets ${fmt(item.assets)} · Debts ${fmt(item.liabilities)}</small></span><span><strong>${fmt(item.netWorth)}</strong><small class="${delta >= 0 ? 'pos-text' : 'neg-text'}">${fmt(delta, { sign: true })}</small></span></div>`;
-      }).join('')}</div></section>` : emptyState('No net worth data in this range.')}
+      })}</div></section>` : emptyState('No net worth data in this range.')}
     </main>
     ${mobileFilterPanel('net-worth')}
   </div>`;
@@ -857,13 +857,13 @@ function netWorthSvg(series) {
   const linePath = series.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.netWorth).toFixed(1)}`).join(' ');
   const dots = series.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.netWorth).toFixed(1)}" r="3.5" class="nw-dot" data-i="${i}"/>`).join('');
 
-  return `<svg viewBox="0 0 ${W} ${H}" class="nw-svg" preserveAspectRatio="xMidYMid meet">
+  return raw(`<svg viewBox="0 0 ${W} ${H}" class="nw-svg" preserveAspectRatio="xMidYMid meet">
     ${gridlines.join('')}
     ${bars}
     <path d="${linePath}" class="nw-line"/>
     ${dots}
     ${xlabels}
-  </svg>`;
+  </svg>`);
 }
 
 function bindNetWorthChart(root, series) {
@@ -943,8 +943,8 @@ function renderMobileIncomeExpenseReport(root, data, hasData) {
         <div class="mobile-compare-line"><span><b>Income</b><strong>${fmt(income)}</strong></span><i><em class="income" style="width:${Math.round((income / comparisonMax) * 100)}%"></em></i></div>
         <div class="mobile-compare-line"><span><b>Expenses</b><strong>${fmt(expenses)}</strong></span><i><em class="expense" style="width:${Math.round((expenses / comparisonMax) * 100)}%"></em></i></div>
       </section>
-      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Income sources</h2></div><div class="mobile-data-card">${incomeRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong class="pos-text">${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`).join('') || '<div class="mobile-simple-empty">No income in this period</div>'}</div></section>
-      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Expense groups</h2></div><div class="mobile-data-card">${expenseRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong>${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`).join('') || '<div class="mobile-simple-empty">No expenses in this period</div>'}</div></section>` : emptyState('No income or expense data in this range.')}
+      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Income sources</h2></div><div class="mobile-data-card">${incomeRows.length ? incomeRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong class="pos-text">${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`) : raw('<div class="mobile-simple-empty">No income in this period</div>')}</div></section>
+      <section class="mobile-list-section"><div class="mobile-section-title"><h2>Expense groups</h2></div><div class="mobile-data-card">${expenseRows.length ? expenseRows.map(row => h`<div class="mobile-simple-row"><span>${row.name}</span><strong>${fmt(row.values.reduce((a, b) => a + b, 0))}</strong></div>`) : raw('<div class="mobile-simple-empty">No expenses in this period</div>')}</div></section>` : emptyState('No income or expense data in this range.')}
     </main>
     ${mobileFilterPanel('income-expense')}
   </div>`;
@@ -980,7 +980,7 @@ function ieCsvRows(data) {
 function ieTable(data) {
   const months = data.months;
   const cols = [...months.map(m => monthLabel(m)), 'AVERAGE', 'TOTAL'];
-  const moneyRow = (label, vals, cls = '') => h`<tr class="${cls}"><td class="ie-name">${label}</td>${rowVals(vals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>`;
+  const moneyRow = (label, vals, cls = '') => h`<tr class="${cls}"><td class="ie-name">${label}</td>${rowVals(vals).map(v => h`<td class="num money">${fmt(v)}</td>`)}</tr>`;
 
   const incomeExpanded = state.expandedGroups.has('section:income');
   const incomeRows = incomeExpanded ? (data.income.payeeRows || []).map(r => moneyRow(r.name, r.values)) : [];
@@ -991,7 +991,7 @@ function ieTable(data) {
     const expanded = state.expandedGroups.has(g.id);
     const groupRow = h`<tr class="ie-group-row" data-toggle-group="${g.id}">
       <td class="ie-name"><span class="ie-caret">${expanded ? '▾' : '▸'}</span>${g.name}</td>
-      ${rowVals(g.values).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}
+      ${rowVals(g.values).map(v => h`<td class="num money">${fmt(v)}</td>`)}
     </tr>`;
     const catRows = expanded ? (g.categoryRows || []).map(c => moneyRow(c.name, c.values, 'ie-cat-row')) : [];
     return [groupRow, ...catRows];
@@ -1003,20 +1003,20 @@ function ieTable(data) {
 
   return h`<div class="ie-scroll">
     <table class="ie-table">
-      <thead><tr><th class="ie-name">&nbsp;</th>${cols.map(c => `<th class="num">${c}</th>`).join('')}</tr></thead>
+      <thead><tr><th class="ie-name">&nbsp;</th>${cols.map(c => h`<th class="num">${c}</th>`)}</tr></thead>
       <tbody>
         <tr class="ie-section-head ie-income-head" data-toggle-section="income">
           <td class="ie-name"><span class="ie-caret">${incomeExpanded ? '▾' : '▸'}</span>Income</td><td colspan="${cols.length}"></td>
         </tr>
         ${incomeRows}
-        <tr class="ie-total-row ie-tinted"><td class="ie-name">Total All Income Sources</td>${rowVals(totalIncomeVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
-        <tr class="ie-total-row"><td class="ie-name">Total Income</td>${rowVals(totalIncomeVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
+        <tr class="ie-total-row ie-tinted"><td class="ie-name">Total All Income Sources</td>${rowVals(totalIncomeVals).map(v => h`<td class="num money">${fmt(v)}</td>`)}</tr>
+        <tr class="ie-total-row"><td class="ie-name">Total Income</td>${rowVals(totalIncomeVals).map(v => h`<td class="num money">${fmt(v)}</td>`)}</tr>
         <tr class="ie-section-head ie-expense-head" data-toggle-section="expense">
           <td class="ie-name"><span class="ie-caret">${expenseExpanded ? '▾' : '▸'}</span>Expense</td><td colspan="${cols.length}"></td>
         </tr>
         ${expenseGroupBlocks}
-        <tr class="ie-total-row ie-tinted"><td class="ie-name">Total Expenses</td>${rowVals(totalExpenseVals).map(v => `<td class="num money">${fmt(v)}</td>`).join('')}</tr>
-        <tr class="ie-net-row"><td class="ie-name">Net Income</td>${rowVals(netVals).map(v => `<td class="num money ${netTotal >= 0 ? 'pos-text' : 'neg-text'}">${fmt(v, { sign: true })}</td>`).join('')}</tr>
+        <tr class="ie-total-row ie-tinted"><td class="ie-name">Total Expenses</td>${rowVals(totalExpenseVals).map(v => h`<td class="num money">${fmt(v)}</td>`)}</tr>
+        <tr class="ie-net-row"><td class="ie-name">Net Income</td>${rowVals(netVals).map(v => h`<td class="num money ${netTotal >= 0 ? 'pos-text' : 'neg-text'}">${fmt(v, { sign: true })}</td>`)}</tr>
       </tbody>
     </table>
   </div>`;
@@ -1043,7 +1043,7 @@ function ageOfMoneyReport(root) {
       ${current == null ? aomEmptyCard() : h`
         <div class="card-label">Age of Money</div>
         <div class="card-big-amt">${current} days</div>
-        ${series.length ? `<div class="chart-wrap">${aomSvg(series)}</div>` : ''}
+        ${series.length ? h`<div class="chart-wrap">${aomSvg(series)}</div>` : ''}
       `}
     </div>
     <div class="card aom-explainer-card">
@@ -1071,7 +1071,7 @@ function renderMobileAgeOfMoneyReport(root, series, current) {
         <span class="mobile-eyebrow">Your current cushion</span>
         ${current == null ? h`<strong class="mobile-age-pending">Still learning</strong><p>Keep recording cash-account spending and this measure will appear once there is enough history.</p>` : h`<strong class="mobile-hero-value">${current} <small>days</small></strong><p>Your recent spending used money that had been available for about ${current} days.</p>`}
       </section>
-      ${series.length ? `<section class="mobile-chart-card"><div class="mobile-section-title"><h2>Age over time</h2></div>${aomSvg(series)}</section>` : ''}
+      ${series.length ? h`<section class="mobile-chart-card"><div class="mobile-section-title"><h2>Age over time</h2></div>${aomSvg(series)}</section>` : ''}
       <section class="mobile-explainer-card"><span aria-hidden="true">◷</span><div><h2>What this means</h2><p>Age of Money looks at when recently spent cash first entered your accounts. A larger number generally means more breathing room between earning and spending.</p><p>Use it as a trend, not a score: consistent progress matters more than any single day.</p></div></section>
     </main>
     ${mobileFilterPanel('age-of-money')}
@@ -1110,13 +1110,13 @@ function aomSvg(series) {
   const areaPath = `${linePath} L${x(n - 1).toFixed(1)},${y(0).toFixed(1)} L${x(0).toFixed(1)},${y(0).toFixed(1)} Z`;
   const dots = series.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.aom ?? 0).toFixed(1)}" r="3.5" class="aom-dot"/>`).join('');
 
-  return `<svg viewBox="0 0 ${W} ${H}" class="aom-svg" preserveAspectRatio="xMidYMid meet">
+  return raw(`<svg viewBox="0 0 ${W} ${H}" class="aom-svg" preserveAspectRatio="xMidYMid meet">
     ${gridlines.join('')}
     <path d="${areaPath}" class="aom-area"/>
     <path d="${linePath}" class="aom-line"/>
     ${dots}
     ${xlabels}
-  </svg>`;
+  </svg>`);
 }
 
 // ============================================================

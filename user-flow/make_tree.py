@@ -1,7 +1,7 @@
 import json, os
 from PIL import Image, ImageDraw, ImageFont
 
-# Decision-map generator for the Sapient Spend / YNAB user-flow reference.
+# Decision-map generator for the Kanevo / YNAB user-flow reference.
 # Reproduces the original tree.png style (rounded outlined nodes with a colored
 # left rail + screenshot thumb, orthogonal grey connectors, pill edge labels),
 # renumbered to the 65-card set and extended with the Views / Move Money /

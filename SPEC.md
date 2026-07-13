@@ -1,4 +1,4 @@
-# Sapient Spend — Build Spec (contract for all modules)
+# Kanevo — Build Spec (contract for all modules)
 
 Local-only YNAB clone. No build step, no dependencies. ES modules + localStorage. Money is **integer cents** everywhere. Months are `"YYYY-MM"`, dates `"YYYY-MM-DD"`.
 
@@ -65,7 +65,7 @@ Special category ids (constants exported from store.js):
 export const INFLOW = 'inflow';
 export const store = {
   get state(),                       // live reference, treat read-only outside store
-  subscribe(fn), unsubscribe(fn),    // fn() after every mutation (also fires persistence, debounced 300ms, key 'sapientspend/v1')
+  subscribe(fn), unsubscribe(fn),    // fn() after every mutation (also fires persistence, debounced 300ms, key 'kanevo/v1')
   undo(), canUndo(),                 // in-memory snapshot stack (20), every public mutation pushes
 
   // accounts

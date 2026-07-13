@@ -189,7 +189,10 @@ function categoryFor(state, bucket) {
 }
 
 export function suggestCategory(state, payeeName, amount, model, memo = '') {
-  const text = `${payeeName ?? ''} ${memo ?? ''}`.trim();
+  // cap first: a few BUCKETS patterns ("city of .* park", "service nsw.*rego",
+  // "amazon(?!.*prime video)") are O(n^2), and memo is untrusted CSV text. Brand/word
+  // signals land in the first chars anyway, so 500 is generous.
+  const text = `${payeeName ?? ''} ${memo ?? ''}`.trim().slice(0, 500);
   if (!text) return null;
 
   // inflows: only reimbursement words may categorize ("payback" offsets the original spend)

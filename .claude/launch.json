@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "sapientspend",
+      "name": "kanevo",
       "runtimeExecutable": "/opt/homebrew/bin/python3",
       "runtimeArgs": ["serve.py"],
       "port": 8437

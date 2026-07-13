@@ -9,7 +9,7 @@ export function render(root) {
     <main class="profile-content">
       <section class="profile-hero">
         <span class="profile-avatar" aria-hidden="true">${ICONS.profile}</span>
-        <div><span>Your Sapient Spend</span><strong>Local profile</strong><small>Private to this device</small></div>
+        <div><span>Your Kanevo</span><strong>Local profile</strong><small>Private to this device</small></div>
       </section>
 
       <section class="profile-card">
@@ -23,8 +23,8 @@ export function render(root) {
       </section>
 
       <section class="profile-card">
-        <a class="profile-row" href="https://github.com/kunwaaarrr/sapient-spend" target="_blank" rel="noopener"><span class="profile-row-icon">${ICONS.flag}</span><span><strong>Help &amp; feedback</strong><small>Support and feature requests</small></span><b aria-hidden="true">›</b></a>
-        <a class="profile-row" href="#/settings"><span class="profile-row-icon profile-about-icon">S</span><span><strong>About Sapient Spend</strong><small>Version, privacy promise and project details</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="https://github.com/kunwaaarrr/kanevo" target="_blank" rel="noopener"><span class="profile-row-icon">${ICONS.flag}</span><span><strong>Help &amp; feedback</strong><small>Support and feature requests</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="#/settings"><span class="profile-row-icon profile-about-icon">K</span><span><strong>About Kanevo</strong><small>Version, privacy promise and project details</small></span><b aria-hidden="true">›</b></a>
       </section>
     </main>
   </div>`;

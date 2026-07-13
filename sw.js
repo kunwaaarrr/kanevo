@@ -1,5 +1,5 @@
 // ponytail: simple cache-first offline shell; bump VERSION on deploys
-const VERSION = 'sapientspend-v33';
+const VERSION = 'kanevo-v34';
 const ASSETS = [
   './', 'index.html', 'manifest.json', 'fonts/figtree-var.woff2',
   'css/app.css', 'css/budget.css',
@@ -22,8 +22,11 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // network-first (bypassing the HTTP cache) so edits ship immediately; cache answers when offline
   e.respondWith(fetch(e.request, { cache: 'no-store' }).then(res => {
-    const copy = res.clone();
-    caches.open(VERSION).then(c => c.put(e.request, copy));
+    // only cache same-origin, OK, non-opaque responses (skip redirects/opaque/errors)
+    if (res.ok && res.type === 'basic' && new URL(e.request.url).origin === self.location.origin) {
+      const copy = res.clone();
+      caches.open(VERSION).then(c => c.put(e.request, copy));
+    }
     return res;
   }).catch(() => caches.match(e.request)));
 });

@@ -3,8 +3,14 @@ import { uid, todayISO, thisMonth, addMonths, monthsBetween, daysBetween, deboun
 import { trainClassifier, suggestCategory } from './lib/categorize.js';
 
 export const INFLOW = 'inflow';
-const KEY = 'sapientspend/v1';
+const KEY = 'kanevo/v1';
 const hasLS = typeof localStorage !== 'undefined';
+
+// one-time migration: adopt data saved under the pre-rebrand SapientSpend key
+if (hasLS && localStorage.getItem(KEY) == null) {
+  const legacy = localStorage.getItem('sapientspend/v1');
+  if (legacy != null) { localStorage.setItem(KEY, legacy); localStorage.removeItem('sapientspend/v1'); }
+}
 
 const CASH_TYPES = new Set(['checking', 'savings', 'cash']);
 const ONBUDGET_TYPES = new Set(['checking', 'savings', 'cash', 'creditCard']);
@@ -24,6 +30,37 @@ function emptyState() {
     payees: [],
     focusedViews: [],
   };
+}
+
+const DANGER_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const isPlainObject = v => v != null && typeof v === 'object' && !Array.isArray(v);
+
+// recursively rebuild plain objects/arrays, dropping prototype-pollution keys
+function stripDanger(v) {
+  if (Array.isArray(v)) return v.map(stripDanger);
+  if (isPlainObject(v)) {
+    const out = {};
+    for (const k of Object.keys(v)) if (!DANGER_KEYS.has(k)) out[k] = stripDanger(v[k]);
+    return out;
+  }
+  return v;
+}
+
+// parse + validate an untrusted backup file into a well-formed state (throws on garbage)
+function sanitizeImport(text) {
+  let raw;
+  try { raw = JSON.parse(text); } catch { throw new Error('Not a valid backup file'); }
+  if (!isPlainObject(raw)) throw new Error('Not a valid backup file');
+  const data = stripDanger(raw);
+  const out = emptyState();
+  for (const key of Object.keys(out)) {
+    const want = out[key], got = data[key];
+    if (Array.isArray(want)) { if (Array.isArray(got)) out[key] = got; }
+    else if (isPlainObject(want)) { if (isPlainObject(got)) out[key] = got; }
+    else if (typeof got === typeof want) out[key] = got; // version: number
+  }
+  if (Array.isArray(data.moveLog)) out.moveLog = data.moveLog; // lazily-added key, preserve if valid
+  return out;
 }
 
 const isFirstRun = !hasLS || localStorage.getItem(KEY) == null;
@@ -913,6 +950,7 @@ export const store = {
   isFirstRun,
   updateSettings: mutate(patch => { Object.assign(state.settings, patch); }),
   exportJSON() { return JSON.stringify(state, null, 2); },
-  importJSON: mutate(text => { state = JSON.parse(text); }),
+  importJSON: mutate(text => { state = sanitizeImport(text); }),
+  sanitizeImport, // exported for tests
   resetAll: mutate(() => { state = emptyState(); persistNow(); }),
 };

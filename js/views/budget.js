@@ -1,6 +1,6 @@
 import { store } from '../store.js';
 import { openModal, closeModal, toast, navigate } from '../app.js';
-import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, ICONS } from '../util.js';
+import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, raw, ICONS } from '../util.js';
 import { CATEGORY_TEMPLATES } from '../seed.js';
 
 // module-local UI state — survives re-render since render() rebuilds root.innerHTML each time
@@ -81,12 +81,12 @@ function catRow(c, groupHidden) {
     <td class="chev-cell"></td>
     <td class="chk-cell"><input type="checkbox" class="row-chk" data-act="toggle-check" data-id="${c.id}" ${checked ? 'checked' : ''}></td>
     <td class="cat-name-cell">
-      <span class="cat-name-btn" data-act="open-cat" data-id="${c.id}">${c.name}</span>${c.target?.snoozed ? ' <span class="snooze-tag">💤</span>' : ''}
+      <span class="cat-name-btn" data-act="open-cat" data-id="${c.id}">${c.name}</span>${c.target?.snoozed ? raw(' <span class="snooze-tag">💤</span>') : ''}
       <div class="target-bar"><div class="target-bar-fill ${fundBarClass(c)}" style="width:${Math.max(0, Math.min(100, pct))}%"></div></div>
     </td>
     <td class="num assigned-cell" data-act="edit-assigned" data-id="${c.id}">
       ${editing
-        ? `<input class="assigned-input" data-id="${c.id}" type="text" value="${fmtExact(c.assigned).replace('$', '')}">`
+        ? h`<input class="assigned-input" data-id="${c.id}" type="text" value="${fmtExact(c.assigned).replace('$', '')}">`
         : h`<span class="assigned-val">${fmt(c.assigned)}</span>`}
     </td>
     <td class="num muted">${fmt(c.activity)}</td>
@@ -109,14 +109,14 @@ function groupRows(g, filterIds) {
       <td class="chev-cell"><button class="chevron-btn" data-act="toggle-group" data-id="${g.id}">${collapsed ? '▸' : '▾'}</button></td>
       <td class="chk-cell"><input type="checkbox" class="row-chk" data-act="toggle-check-group" data-id="${g.id}" ${allChecked ? 'checked' : ''}></td>
       <td class="group-name-cell">
-        <span class="group-name">${g.name}${g.hidden ? ' <span class="muted">(hidden)</span>' : ''}</span>
+        <span class="group-name">${g.name}${g.hidden ? raw(' <span class="muted">(hidden)</span>') : ''}</span>
         <button class="add-cat-btn" data-act="add-cat" data-id="${g.id}" title="Add category">+</button>
       </td>
       <td class="num">${fmt(totals.assigned)}</td>
       <td class="num muted">${fmt(totals.activity)}</td>
       <td class="num">${fmt(totals.available)}</td>
     </tr>
-    ${collapsed ? '' : cats.map(c => catRow(c, g.hidden)).join('')}
+    ${collapsed ? '' : cats.map(c => catRow(c, g.hidden))}
   </tbody>`;
 }
 
@@ -158,7 +158,7 @@ function autoAssignRows(md) {
       <span class="auto-row-label">${label}</span>
       <span class="auto-row-amt">${fmt(amt)}</span>
     </button>`;
-  }).join('');
+  });
 }
 
 // ---------- header: month nav / note / RTA card / assign popover ----------
@@ -190,7 +190,7 @@ function assignPopover(md) {
       <button class="assign-tab ${assignTab === 'manual' ? 'active' : ''}" data-act="assign-tab-manual">Manually</button>
     </div>
     ${assignTab === 'auto'
-      ? `<div class="auto-rows">${autoAssignRows(md)}</div>`
+      ? h`<div class="auto-rows">${autoAssignRows(md)}</div>`
       : h`<div class="manual-assign">
           <div class="form-row">
             <label for="manual-amount">Amount</label>
@@ -212,7 +212,7 @@ function monthPickerPopover(month) {
     const hasData = monthsWithData.has(mm);
     const label = new Date(y, i, 1).toLocaleDateString('en-AU', { month: 'short' });
     return h`<a class="mp-cell ${isCurrent ? 'current' : ''} ${hasData ? 'has-data' : ''}" href="#/budget/${mm}">${label}</a>`;
-  }).join('');
+  });
   return h`<div class="popover month-picker-popover" hidden>
     <div class="mp-year">
       <button class="mp-year-btn" data-act="mp-year-prev">‹</button>
@@ -258,13 +258,13 @@ function filterChips() {
   ];
   const views = store.state.focusedViews;
   return h`<div class="chip-row">
-    ${chips.map(([k, label]) => h`<button class="chip ${activeFilter === k ? 'active' : ''}" data-act="set-filter" data-id="${k}">${label}</button>`).join('')}
+    ${chips.map(([k, label]) => h`<button class="chip ${activeFilter === k ? 'active' : ''}" data-act="set-filter" data-id="${k}">${label}</button>`)}
     <div class="chip-fv-wrap">
       <button class="chip chip-fv ${activeFocusedViewId ? 'active' : ''}" data-act="toggle-fv-menu">${activeFocusedViewId ? views.find(v => v.id === activeFocusedViewId)?.name || 'View' : 'Views'} ▾</button>
       <div class="fv-menu" hidden>
-        ${views.map(v => `<button data-act="pick-fv" data-id="${v.id}">${v.name}</button>`).join('')}
+        ${views.map(v => h`<button data-act="pick-fv" data-id="${v.id}">${v.name}</button>`)}
         <button data-act="new-fv">＋ New Focused View…</button>
-        ${activeFocusedViewId ? `<button data-act="clear-focused-view">✕ Clear View</button>` : ''}
+        ${activeFocusedViewId ? raw('<button data-act="clear-focused-view">✕ Clear View</button>') : ''}
       </div>
     </div>
   </div>`;
@@ -300,10 +300,10 @@ function recentMovesPopover() {
     const from = m.type === 'move' ? catName(m.fromCatId) : 'Ready to Assign';
     const to = m.type === 'move' ? catName(m.toCatId) : catName(m.toCatId);
     return h`<div class="recent-row"><span class="recent-date">${m.date}</span><span class="recent-desc">${from} → ${to}</span><span class="recent-amt">${fmt(m.amount)}</span></div>`;
-  }).join('');
+  });
   return h`<div class="popover recent-popover" hidden>
     <h3>Recent Moves</h3>
-    ${moves.length ? rows : `<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`}
+    ${moves.length ? rows : raw(`<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`)}
   </div>`;
 }
 
@@ -347,7 +347,7 @@ function costToBeMeCard(md) {
 function autoAssignCard(md) {
   return h`<div class="insp-card">
     <button class="insp-card-head" data-act="toggle-autoassign-card">⚡ Auto-Assign ${autoAssignOpen ? '▾' : '▸'}</button>
-    ${autoAssignOpen ? `<div class="insp-card-body auto-rows">${autoAssignRows(md)}</div>` : ''}
+    ${autoAssignOpen ? h`<div class="insp-card-body auto-rows">${autoAssignRows(md)}</div>` : ''}
   </div>`;
 }
 
@@ -357,7 +357,7 @@ function futureMonthsCard() {
   return h`<div class="insp-card">
     <button class="insp-card-head" data-act="toggle-future">Assigned in Future Months ${futureOpen ? '▾' : '▸'} ${fmt(total)}</button>
     ${futureOpen ? h`<div class="insp-card-body">
-      ${months.length ? months.map(m => h`<div class="insp-row"><span>${monthLabel(m)}</span><span>${fmt(Object.values(store.state.budget[m]).reduce((a, b) => a + b, 0))}</span></div>`).join('') : `<p class="muted">Nothing assigned ahead of ${monthLabel(curMonth)} yet.</p>`}
+      ${months.length ? months.map(m => h`<div class="insp-row"><span>${monthLabel(m)}</span><span>${fmt(Object.values(store.state.budget[m]).reduce((a, b) => a + b, 0))}</span></div>`) : h`<p class="muted">Nothing assigned ahead of ${monthLabel(curMonth)} yet.</p>`}
     </div>` : ''}
   </div>`;
 }
@@ -395,7 +395,7 @@ function targetCard(cat) {
     <div class="insp-card-body">
       <div class="insp-label">Target</div>
       <div class="segmented">
-        ${segs.map(([k, label]) => h`<button class="seg-btn ${cadence === k ? 'active' : ''}" data-act="set-target-cadence" data-id="${k}">${label}</button>`).join('')}
+        ${segs.map(([k, label]) => h`<button class="seg-btn ${cadence === k ? 'active' : ''}" data-act="set-target-cadence" data-id="${k}">${label}</button>`)}
       </div>
       <div class="form-row">
         <label for="insp-target-amount">I need</label>
@@ -404,13 +404,13 @@ function targetCard(cat) {
       ${cadence === 'weekly' ? h`<div class="form-row">
         <label for="insp-target-every">Every</label>
         <select id="insp-target-every">
-          ${WEEKDAYS.map((wd, i) => `<option value="${i}" ${t.weekday === i ? 'selected' : ''}>${wd}</option>`).join('')}
+          ${WEEKDAYS.map((wd, i) => h`<option value="${i}" ${t.weekday === i ? 'selected' : ''}>${wd}</option>`)}
         </select>
       </div>` : ''}
       ${cadence === 'monthly' ? h`<div class="form-row">
         <label for="insp-target-every">Every</label>
         <select id="insp-target-every">
-          ${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${((t.dayOfMonth || 1) === i + 1) ? 'selected' : ''}>Day ${i + 1}</option>`).join('')}
+          ${Array.from({ length: 28 }, (_, i) => h`<option value="${i + 1}" ${((t.dayOfMonth || 1) === i + 1) ? 'selected' : ''}>Day ${i + 1}</option>`)}
         </select>
       </div>` : ''}
       ${(cadence === 'yearly' || cadence === 'custom') ? h`<div class="form-row">
@@ -498,7 +498,7 @@ export function render(root, { month }) {
             <th class="chk-cell"><input type="checkbox" class="row-chk" data-act="toggle-check-all" ${headerAllChecked ? 'checked' : ''}></th>
             <th>CATEGORY</th><th class="num">ASSIGNED</th><th class="num">ACTIVITY</th><th class="num">AVAILABLE</th>
           </tr></thead>
-          ${md.groups.map(g => groupRows(g, filterIds)).join('')}
+          ${md.groups.map(g => groupRows(g, filterIds))}
         </table>
       </div>
       <div class="inspector-wrap">${[inspector(md)]}</div>
@@ -888,9 +888,9 @@ function moveListRows(catId, overspent, allCats, filterText) {
     .map(c => h`<button class="mm-row" data-mm-id="${c.id}">
       <span class="mm-row-name">${c.name}</span>
       <span class="pill ${c.pillClass}">${fmt(c.available)}</span>
-    </button>`)
-    .join('');
-  return rtaRow + catRows;
+    </button>`);
+  // returns a Safe so the non-h consumer (list.innerHTML in wireMoveMoney) also works
+  return h`${rtaRow}${catRows}`;
 }
 
 function openMovePopover(root, anchorEl, catId, md) {
@@ -981,7 +981,7 @@ function openTemplateModal() {
       ${CATEGORY_TEMPLATES.map((t, i) => h`<label class="template-item">
         <input type="checkbox" data-tpl-idx="${i}">
         <span>${t.name}</span>
-      </label>`).join('')}
+      </label>`)}
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="tpl-cancel">Cancel</button>
@@ -1012,7 +1012,7 @@ function openNewFocusedViewModal(root, md) {
       ${cats.map(c => h`<label class="fv-cat-item">
         <input type="checkbox" data-fv-cat="${c.id}">
         <span>${c.groupName} : ${c.name}</span>
-      </label>`).join('')}
+      </label>`)}
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="fv-cancel">Cancel</button>
@@ -1093,13 +1093,13 @@ function hideDropIndicator(tr) {
 
 // ================= mobile Plan view (YNAB parity) =================
 const M_ICONS = {
-  chevDown: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>`,
-  chevRight: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>`,
-  views: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/></svg>`,
-  pencil: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/></svg>`,
-  trash: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>`,
-  dots: `<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4.6" r="1.95"/><circle cx="12" cy="12" r="1.95"/><circle cx="12" cy="19.4" r="1.95"/></svg>`,
-  plusCircle: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+  chevDown: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>`),
+  chevRight: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>`),
+  views: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/></svg>`),
+  pencil: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/></svg>`),
+  trash: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>`),
+  dots: raw(`<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4.6" r="1.95"/><circle cx="12" cy="12" r="1.95"/><circle cx="12" cy="19.4" r="1.95"/></svg>`),
+  plusCircle: raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`),
 };
 function progressBarsOn() { return store.state.settings.progressBars !== false; }
 
@@ -1135,7 +1135,7 @@ function mGroupHeader(g, bars) {
         <div class="m-col"><span class="m-col-label">Available</span><span class="m-col-amt">${fmt(totals.available)}</span></div>`;
   return h`<div class="m-group ${collapsed ? 'collapsed' : ''}" data-act="toggle-group" data-id="${g.id}">
     <span class="m-group-chev">${collapsed ? [M_ICONS.chevRight] : [M_ICONS.chevDown]}</span>
-    <span class="m-group-name">${g.name}${g.hidden ? ' <span class="muted">(hidden)</span>' : ''}</span>
+    <span class="m-group-name">${g.name}${g.hidden ? raw(' <span class="muted">(hidden)</span>') : ''}</span>
     ${right}
   </div>`;
 }
@@ -1171,8 +1171,8 @@ function renderMobile(root, md) {
     let cats = filterIds ? g.categories.filter(c => filterIds.has(c.id)) : g.categories;
     cats = cats.filter(passesFilter);
     if (!cats.length) return '';
-    return mGroupHeader(g, bars) + (collapsed ? '' : cats.map(c => mCatRow(c, bars)).join(''));
-  }).join('');
+    return [mGroupHeader(g, bars), collapsed ? '' : cats.map(c => mCatRow(c, bars))];
+  });
 
   root.innerHTML = h`<div class="budget-view budget-mobile bars-${bars ? 'on' : 'off'}">
     <div class="m-head mobile-page-head">
@@ -1200,8 +1200,10 @@ function openViewsSheet(root, md) {
   const fvs = store.state.focusedViews;
   const row = (kind, id, label, on) => h`<button class="m-view-row ${on ? 'active' : ''}" data-act="pick-view" data-kind="${kind}" data-id="${id}">
     <span class="m-radio ${on ? 'on' : ''}"></span><span class="m-view-label">${label}</span></button>`;
-  const rows = filters.map(([id, label]) => row('filter', id, label, !activeFocusedViewId && activeFilter === id)).join('')
-    + fvs.map(v => row('fv', v.id, v.name, activeFocusedViewId === v.id)).join('');
+  const rows = [
+    filters.map(([id, label]) => row('filter', id, label, !activeFocusedViewId && activeFilter === id)),
+    fvs.map(v => row('fv', v.id, v.name, activeFocusedViewId === v.id)),
+  ];
   const sheet = openModal(h`<div class="sheet-handle"></div>
     <h2 class="sheet-title">Views</h2>
     <div class="m-views-btns">
@@ -1234,8 +1236,8 @@ function openEditViewsSheet(root, md) {
   const fvs = store.state.focusedViews;
   const rows = fvs.length
     ? fvs.map(v => h`<div class="m-menu-row"><span class="m-menu-label">${v.name}</span>
-        <button class="link-btn danger-text" data-act="del-fv" data-id="${v.id}">Delete</button></div>`).join('')
-    : `<p class="muted" style="padding:8px 2px">No saved views yet. Tap New to create one.</p>`;
+        <button class="link-btn danger-text" data-act="del-fv" data-id="${v.id}">Delete</button></div>`)
+    : raw(`<p class="muted" style="padding:8px 2px">No saved views yet. Tap New to create one.</p>`);
   const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Edit Views</h2>
     <div class="m-menu">${rows}</div>`);
   sheet.classList.add('bottom-sheet', 'ss-sheet');
@@ -1314,7 +1316,7 @@ function openPlanCategoryActions(root, category) {
       <span class="plan-delete-icon" aria-hidden="true">${M_ICONS.trash}</span>
       <h2 id="plan-delete-title">Delete ${category.name}?</h2>
       <p>Transactions in this category will become uncategorised. Any money budgeted here will return to Ready to Assign.</p>
-      ${category.available ? `<div class="plan-delete-balance"><span>Available now</span><strong>${fmt(category.available)}</strong></div>` : ''}
+      ${category.available ? h`<div class="plan-delete-balance"><span>Available now</span><strong>${fmt(category.available)}</strong></div>` : ''}
       <div class="modal-actions">
         <button class="btn secondary" data-category-act="cancel-delete">Keep category</button>
         <button class="btn danger" data-category-act="confirm-delete">Delete</button>
@@ -1347,7 +1349,7 @@ function openEditPlanSheet(root, md) {
         <span>${category.name}</span>
         <span class="edit-plan-target ${category.target ? '' : 'empty'}">${targetLabel}</span>
       </button>`;
-    }).join('');
+    });
     return h`<section class="edit-plan-group">
       <div class="edit-plan-group-head">
         <h3>${group.name}</h3>
@@ -1358,7 +1360,7 @@ function openEditPlanSheet(root, md) {
       </div>
       <div class="edit-plan-card">${categories}</div>
     </section>`;
-  }).join('');
+  });
   const sheet = openModal(h`<div class="edit-plan-screen">
     <div class="edit-plan-hero">
       <div class="edit-plan-topbar">
@@ -1446,9 +1448,9 @@ function openRecentMovesSheet() {
     const from = m.type === 'move' ? catName(m.fromCatId) : 'Ready to Assign';
     const to = catName(m.toCatId);
     return h`<div class="recent-row"><span class="recent-date">${m.date}</span><span class="recent-desc">${from} → ${to}</span><span class="recent-amt">${fmt(m.amount)}</span></div>`;
-  }).join('');
+  });
   const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Recent Moves</h2>
-    <div class="m-recent">${moves.length ? rows : `<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`}</div>`);
+    <div class="m-recent">${moves.length ? rows : raw(`<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`)}</div>`);
   sheet.classList.add('bottom-sheet', 'ss-sheet');
 }
 
@@ -1550,9 +1552,9 @@ function categorySheetTarget() {
   const segs = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly'], ['custom', 'Custom']];
   let everyField;
   if (cadence === 'weekly') everyField = h`<div class="form-row"><label for="tgt-every">Every</label>
-    <select id="tgt-every">${WEEKDAYS.map((wd, i) => `<option value="${i}" ${(t.weekday ?? 1) === i ? 'selected' : ''}>${wd}</option>`).join('')}</select></div>`;
+    <select id="tgt-every">${WEEKDAYS.map((wd, i) => h`<option value="${i}" ${(t.weekday ?? 1) === i ? 'selected' : ''}>${wd}</option>`)}</select></div>`;
   else if (cadence === 'monthly') everyField = h`<div class="form-row"><label for="tgt-every">Every</label>
-    <select id="tgt-every">${Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}" ${((t.dayOfMonth || 1) === i + 1) ? 'selected' : ''}>Day ${i + 1}</option>`).join('')}</select></div>`;
+    <select id="tgt-every">${Array.from({ length: 28 }, (_, i) => h`<option value="${i + 1}" ${((t.dayOfMonth || 1) === i + 1) ? 'selected' : ''}>Day ${i + 1}</option>`)}</select></div>`;
   else everyField = h`<div class="form-row"><label for="tgt-every">${cadence === 'custom' ? 'By' : 'Every'}</label>
     <input id="tgt-every" type="month" value="${t.targetDate || ''}"></div>`;
   const refillField = cadence !== 'custom' ? h`<div class="form-row"><label for="tgt-refill">Next month I want to</label>
@@ -1563,7 +1565,7 @@ function categorySheetTarget() {
   return h`
     <h2 class="sheet-title">${cat.name}</h2>
     <div class="segmented tgt-tabs">
-      ${segs.map(([k, label]) => h`<button class="seg-btn ${cadence === k ? 'active' : ''}" data-act="tgt-tab" data-id="${k}">${label}</button>`).join('')}
+      ${segs.map(([k, label]) => h`<button class="seg-btn ${cadence === k ? 'active' : ''}" data-act="tgt-tab" data-id="${k}">${label}</button>`)}
     </div>
     <div class="sheet-card">
       <div class="form-row"><label for="tgt-amount">I need</label>
@@ -1641,7 +1643,7 @@ function openCoverPicker(root, anchorEl, over, md) {
   const rows = over.map(c => h`<button class="mm-row" data-cover-id="${c.id}">
     <span class="mm-row-name">${c.name}</span>
     <span class="pill ${c.pillClass}">${fmt(c.available)}</span>
-  </button>`).join('');
+  </button>`);
   const body = h`<div class="move-money-body">
     <h2>Cover overspending in:</h2>
     <div class="mm-list">${rows}</div>

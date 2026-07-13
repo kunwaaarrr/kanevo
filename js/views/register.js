@@ -1,6 +1,6 @@
 import { store, INFLOW } from '../store.js';
 import { openModal, closeModal, toast, navigate } from '../app.js';
-import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMonths, ICONS } from '../util.js';
+import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, raw, debounce, addMonths, ICONS } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
 import { parseStatement, buildTxns } from '../lib/csv.js';
 
@@ -90,12 +90,12 @@ export function renderAccountsOverview(root) {
         <span class="accounts-row-name">${account.name}</span>
         <span class="accounts-row-balance ${balance < 0 ? 'neg-text' : 'pos-text'}">${fmt(balance)}</span>
       </button>`;
-    }).join('');
+    });
     return h`<section class="accounts-group">
       <div class="accounts-group-head"><h2>${group.label}</h2><span class="${total < 0 ? 'neg-text' : ''}">${fmt(total)}</span></div>
       <div class="accounts-card">${rows}</div>
     </section>`;
-  }).join('');
+  });
 
   root.innerHTML = h`<div class="accounts-overview">
     <header class="accounts-overview-head mobile-page-head">
@@ -105,13 +105,13 @@ export function renderAccountsOverview(root) {
         <button id="accounts-more" class="accounts-head-icon accounts-head-more mobile-head-action" aria-label="More account options">${ICONS.moreVertical}</button>
       </div>
     </header>
-    ${introHidden ? '' : `<section class="accounts-intro">
+    ${introHidden ? '' : raw(`<section class="accounts-intro">
       <button id="accounts-intro-close" class="accounts-intro-close" aria-label="Dismiss">×</button>
       <div class="accounts-intro-icon" aria-hidden="true">◉</div>
       <h2>Private by design</h2>
       <p>Your balances and transactions stay on this device until you choose otherwise.</p>
       <button id="accounts-intro-action" class="accounts-intro-action">See how local data works</button>
-    </section>`}
+    </section>`)}
     <div class="accounts-groups">${groupHtml}</div>
     <div class="accounts-overview-actions">
       <button id="accounts-add-bottom" class="accounts-wide-action"><span aria-hidden="true">${ICONS.addCircle}</span> Add Account</button>
@@ -131,7 +131,7 @@ export function renderAccountsOverview(root) {
   root.querySelector('#accounts-more').onclick = openAccountsMore;
   root.querySelector('#accounts-intro-action')?.addEventListener('click', () => {
     const modal = openModal(h`<h2>Your data stays local</h2>
-      <p class="muted">Sapient Spend stores your plan in this browser, works offline, and only exports data when you choose to create a backup.</p>
+      <p class="muted">Kanevo stores your plan in this browser, works offline, and only exports data when you choose to create a backup.</p>
       <div class="modal-actions"><button class="btn" id="local-info-close">Got it</button></div>`);
     modal.querySelector('#local-info-close').onclick = closeModal;
   });
@@ -152,7 +152,7 @@ function accountGlyph(account) {
 
 function openBankConnectionsInfo() {
   const modal = openModal(h`<h2>Bank Connections</h2>
-    <p class="muted">Secure bank syncing is planned. For now, Sapient Spend remains local-first and you can import or enter transactions manually.</p>
+    <p class="muted">Secure bank syncing is planned. For now, Kanevo remains local-first and you can import or enter transactions manually.</p>
     <div class="modal-actions"><button class="btn" id="bank-info-close">Got it</button></div>`);
   modal.querySelector('#bank-info-close').onclick = closeModal;
 }
@@ -208,13 +208,13 @@ export function renderSpendingOverview(root) {
       <span><strong>${scheduled.length}</strong><b class="spending-scheduled-chevron ${spendingScheduledOpen ? 'open' : ''}" aria-hidden="true">${ICONS.chevronDown}</b></span>
     </button>` : ''}
     ${spendingScheduledOpen ? h`<section class="spending-scheduled-panel">
-      <div class="spending-scheduled-list">${scheduled.map(item => renderSchedCard(item, null)).join('')}</div>
+      <div class="spending-scheduled-list">${scheduled.map(item => renderSchedCard(item, null))}</div>
     </section>` : ''}
     ${unclearedCount ? h`<button class="spending-uncleared ${spendingOnlyUncleared ? 'active' : ''}" id="spending-uncleared">
       <span>${spendingOnlyUncleared ? 'Showing' : 'Show'} <strong>${unclearedCount}</strong> uncleared transaction${unclearedCount === 1 ? '' : 's'}</span>
       <span aria-hidden="true">›</span>
     </button>` : ''}
-    <div class="spending-feed">${filtered.length ? spendingFeedHtml(filtered) : '<div class="spending-empty">No transactions match this view.</div>'}</div>
+    <div class="spending-feed">${filtered.length ? spendingFeedHtml(filtered) : raw('<div class="spending-empty">No transactions match this view.</div>')}</div>
   </div>`;
 
   root.querySelector('#spending-search-toggle').onclick = () => {
@@ -258,8 +258,8 @@ function spendingFeedHtml(transactions) {
   }
   return groups.map(group => h`<section class="spending-date-group">
     <div class="mobile-date-head">${fmtDate(group.date)}</div>
-    <div class="mobile-date-card">${group.rows.map(transaction => renderMobileRow(transaction, { spending: true })).join('')}</div>
-  </section>`).join('');
+    <div class="mobile-date-card">${group.rows.map(transaction => renderMobileRow(transaction, { spending: true }))}</div>
+  </section>`);
 }
 
 function spendingPayee(transaction) {
@@ -312,16 +312,16 @@ export function render(root, { accountId }) {
     <div class="reg-head view-head">
       <div class="reg-head-main">
         <div class="reg-title-row">
-          ${account ? `<button class="fav-star ${account.favorite ? 'active' : ''}" id="fav-toggle" title="Favorite">${account.favorite ? '★' : '☆'}</button>` : ''}
+          ${account ? h`<button class="fav-star ${account.favorite ? 'active' : ''}" id="fav-toggle" title="Favorite">${account.favorite ? '★' : '☆'}</button>` : ''}
           <div class="view-title">${account ? account.name : 'All Accounts'}</div>
         </div>
         ${account ? renderSubline(account) : ''}
         ${account ? renderNote(account) : ''}
       </div>
       <div class="reg-head-actions">
-        ${account ? `<button class="icon-btn" id="edit-account-btn" title="Edit account">✏️</button>` : ''}
-        ${account ? `<button class="btn" id="reconcile-btn">Reconcile</button>` : ''}
-        ${isMobile() ? `<div class="view-menu-wrap view-menu-wrap-mobile">
+        ${account ? raw(`<button class="icon-btn" id="edit-account-btn" title="Edit account">✏️</button>`) : ''}
+        ${account ? raw(`<button class="btn" id="reconcile-btn">Reconcile</button>`) : ''}
+        ${isMobile() ? h`<div class="view-menu-wrap view-menu-wrap-mobile">
           <button class="icon-btn view-menu-trigger-mobile" id="view-menu-btn" title="View options">⋮</button>
           ${viewMenuOpen ? renderViewMenu(true) : ''}
         </div>` : ''}
@@ -345,17 +345,17 @@ export function render(root, { accountId }) {
       <button class="link-btn" id="undo-btn" ${store.canUndo() ? '' : 'disabled'}><span>↺</span><span>Undo</span></button>
       <button class="link-btn" id="redo-btn" disabled><span>↻</span><span>Redo</span></button>
       <div class="reg-toolbar-spacer"></div>
-      ${!isMobile() ? `<div class="view-menu-wrap">
+      ${!isMobile() ? h`<div class="view-menu-wrap">
         <button class="link-btn" id="view-menu-btn"><span>View</span><span class="caret">▾</span></button>
         ${viewMenuOpen ? renderViewMenu(false) : ''}
       </div>` : ''}
       <div class="reg-search-wrap">
         <span class="reg-search-ico">${ICONS.search}</span>
-        <input class="reg-search" id="reg-search" type="search" placeholder="Search ${esc(account ? account.name : 'All Accounts')}" value="${esc(search)}">
+        <input class="reg-search" id="reg-search" type="search" placeholder="Search ${account ? account.name : 'All Accounts'}" value="${search}">
       </div>
     </div>
 
-    ${unapprovedCount ? `<button class="approval-banner" id="approval-banner">${unapprovedCount} transaction${unapprovedCount === 1 ? '' : 's'} need approval</button>` : ''}
+    ${unapprovedCount ? h`<button class="approval-banner" id="approval-banner">${unapprovedCount} transaction${unapprovedCount === 1 ? '' : 's'} need approval</button>` : ''}
 
     ${selectedIds.size ? renderBulkBar() : ''}
 
@@ -379,7 +379,7 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
   const reconTitle = account.lastReconciled ? `Balance verified ${fmtDate(account.lastReconciled)}` : 'Balance not verified yet';
   const reconCopy = account.lastReconciled
     ? 'On that date, you confirmed the cleared balance here matched your bank. Verify it again whenever you want to confirm your records are still accurate.'
-    : `Compare the cleared balance of ${fmt(bal.cleared)} here with the balance in your bank app. If they match, mark it verified. Sapient Spend does not access your bank or move any money.`;
+    : `Compare the cleared balance of ${fmt(bal.cleared)} here with the balance in your bank app. If they match, mark it verified. Kanevo does not access your bank or move any money.`;
   const txLabel = `${filtered.length} transaction${filtered.length === 1 ? '' : 's'}`;
 
   root.innerHTML = h`<div class="mobile-account-detail">
@@ -425,7 +425,7 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
       </section>
       <button id="redo-btn" hidden disabled>Redo</button>
 
-      ${unapprovedCount ? `<button class="mobile-account-approval" id="approval-banner"><span><strong>${unapprovedCount}</strong> transaction${unapprovedCount === 1 ? '' : 's'} need approval</span><span aria-hidden="true">›</span></button>` : ''}
+      ${unapprovedCount ? h`<button class="mobile-account-approval" id="approval-banner"><span><strong>${unapprovedCount}</strong> transaction${unapprovedCount === 1 ? '' : 's'} need approval</span><span aria-hidden="true">›</span></button>` : ''}
 
       ${scheduled.length ? renderScheduledSection(scheduled, accountId) : ''}
 
@@ -534,8 +534,8 @@ function wireBulkBar(root, accountId) {
 
 // ---------- scheduled section ----------
 // 16px stroke icons for the mobile card's edit/delete — ICONS (util.js) has no pencil/trash, so inline them.
-const SCHED_ICO_EDIT = '<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19.5 3 20.5l1-4L16.5 3.5z"/></svg>';
-const SCHED_ICO_DEL = '<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l.9 12.1a1 1 0 0 0 1 .9h7.2a1 1 0 0 0 1-.9L18 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>';
+const SCHED_ICO_EDIT = raw('<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19.5 3 20.5l1-4L16.5 3.5z"/></svg>');
+const SCHED_ICO_DEL = raw('<svg class="sched-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l.9 12.1a1 1 0 0 0 1 .9h7.2a1 1 0 0 0 1-.9L18 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>');
 
 // Desktop keeps the existing 7-column grid row; mobile gets a compact folded card. Both keep the
 // outer .sched-row + data-id and the .sched-enter/.sched-edit/.sched-del classes wireScheduled() binds.
@@ -545,7 +545,7 @@ function renderSchedRow(s, accountId) {
   return h`<div class="sched-row" data-id="${s.id}">
     <span class="sched-freq">${FREQ_LABEL[s.frequency] || s.frequency}</span>
     <span class="sched-date">${fmtDate(s.nextDate)}</span>
-    ${!accountId ? `<span class="sched-acct">${acc ? acc.name : ''}</span>` : ''}
+    ${!accountId ? h`<span class="sched-acct">${acc ? acc.name : ''}</span>` : ''}
     <span class="sched-payee">${payee ? payee.name : '(no payee)'}</span>
     <span class="sched-memo muted">${s.memo || ''}</span>
     <span class="sched-amount ${s.amount > 0 ? 'pos-text' : ''}">${fmt(s.amount)}</span>
@@ -569,7 +569,7 @@ function renderSchedCard(s, accountId) {
       <div class="sched-card-info">
         <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
         <div class="sched-card-schedule"><span>${frequency}</span><strong>Next: ${shortDate}</strong></div>
-        ${context ? `<div class="sched-card-meta">${context}</div>` : ''}
+        ${context ? h`<div class="sched-card-meta">${context}</div>` : ''}
       </div>
       <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
     </div>
@@ -589,7 +589,7 @@ function renderScheduledSection(scheduled, accountId) {
     <button class="sched-head" id="sched-toggle">
       <span class="sched-caret">${scheduledOpen ? '▾' : '▸'}</span> Scheduled (${scheduled.length})
     </button>
-    <div class="sched-list" ${scheduledOpen ? '' : 'hidden'}>${rows.join('') || '<div class="muted sched-empty">Nothing upcoming.</div>'}</div>
+    <div class="sched-list" ${scheduledOpen ? '' : 'hidden'}>${rows.length ? rows : raw('<div class="muted sched-empty">Nothing upcoming.</div>')}</div>
   </div>`;
 }
 
@@ -635,14 +635,14 @@ function openScheduledEditModal(s) {
   const accounts = store.state.accounts.filter(a => !a.closed);
   openModal(h`<h2>Edit Scheduled Transaction</h2>
     <div class="form-row"><label>Account</label>
-      <select id="sc-account">${accounts.map(a => `<option value="${a.id}" ${a.id === s.accountId ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>
+      <select id="sc-account">${raw(accounts.map(a => `<option value="${a.id}" ${a.id === s.accountId ? 'selected' : ''}>${esc(a.name)}</option>`).join(''))}</select>
     </div>
-    <div class="form-row"><label>Payee</label><input id="sc-payee" type="text" value="${esc(store.getPayee(s.payeeId)?.name || '')}"></div>
-    <div class="form-row"><label>Memo</label><input id="sc-memo" type="text" value="${esc(s.memo || '')}"></div>
+    <div class="form-row"><label>Payee</label><input id="sc-payee" type="text" value="${store.getPayee(s.payeeId)?.name || ''}"></div>
+    <div class="form-row"><label>Memo</label><input id="sc-memo" type="text" value="${s.memo || ''}"></div>
     <div class="form-row"><label>Amount</label><input id="sc-amount" type="text" value="${fmtExact(s.amount)}"></div>
     <div class="form-row"><label>Next Date</label><input id="sc-date" type="date" value="${s.nextDate}"></div>
     <div class="form-row"><label>Frequency</label>
-      <select id="sc-freq">${Object.entries(FREQ_LABEL).map(([k, v]) => `<option value="${k}" ${k === s.frequency ? 'selected' : ''}>${v}</option>`).join('')}</select>
+      <select id="sc-freq">${raw(Object.entries(FREQ_LABEL).map(([k, v]) => `<option value="${k}" ${k === s.frequency ? 'selected' : ''}>${v}</option>`).join(''))}</select>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="sc-cancel">Cancel</button>
@@ -685,8 +685,8 @@ function wireHead(root, account, accountId) {
 
 function openEditAccountModal(account) {
   openModal(h`<h2>Edit Account</h2>
-    <div class="form-row"><label>Name</label><input id="ea-name" type="text" value="${esc(account.name)}"></div>
-    <div class="form-row"><label>Note</label><textarea id="ea-note" rows="3">${esc(account.note || '')}</textarea></div>
+    <div class="form-row"><label>Name</label><input id="ea-name" type="text" value="${account.name}"></div>
+    <div class="form-row"><label>Note</label><textarea id="ea-note" rows="3">${account.note || ''}</textarea></div>
     <div class="modal-actions">
       <button class="btn danger" id="ea-close" style="margin-right:auto">Close Account</button>
       <button class="btn secondary" id="ea-cancel">Cancel</button>
@@ -713,7 +713,7 @@ function openReconcileModal(accountId) {
   const bal = store.accountBalances(accountId);
   openModal(h`<div class="reconcile-modal-content"><h2>Verify your balance</h2>
     <p class="reconcile-explainer">Look at this account in your bank app. Does its cleared balance match <strong>${fmt(bal.cleared)}</strong> here?</p>
-    <p class="muted reconcile-help">If it matches, Sapient Spend records that you verified these cleared transactions. It does not connect to or change anything at your bank.</p>
+    <p class="muted reconcile-help">If it matches, Kanevo records that you verified these cleared transactions. It does not connect to or change anything at your bank.</p>
     <div class="modal-actions reconcile-choice-actions">
       <button class="btn secondary" id="rec-no">No, balances differ</button>
       <button class="btn" id="rec-yes">Yes, they match</button>
@@ -809,7 +809,7 @@ export function openFileImportModal(accountId, initialFile) {
     <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file"></div>
     <div id="fi-csv" hidden>
       <div class="form-row"><label>Into account</label>
-        <select id="fi-account">${accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>
+        <select id="fi-account">${raw(accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join(''))}</select>
       </div>
       <div id="fi-mapping"></div>
       <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
@@ -829,8 +829,8 @@ export function openFileImportModal(accountId, initialFile) {
       const renderCsv = () => {
         const width = Math.max(...csv.rows.slice(csv.dataStart, csv.dataStart + 5).map(r => r.length), 0);
         modal.querySelector('#fi-mapping').innerHTML = ROLES.map(([role, label]) => h`<div class="form-row"><label>${label}</label>
-          <select data-role="${role}"><option value="">—</option>${Array.from({ length: width }, (_, c) =>
-            `<option value="${c}" ${csv.columns[role] === c ? 'selected' : ''}>${esc(colLabel(c))}</option>`).join('')}</select></div>`).join('');
+          <select data-role="${role}"><option value="">—</option>${raw(Array.from({ length: width }, (_, c) =>
+            `<option value="${c}" ${csv.columns[role] === c ? 'selected' : ''}>${esc(colLabel(c))}</option>`).join(''))}</select></div>`).join('');
         modal.querySelectorAll('#fi-mapping select').forEach(sel => sel.onchange = () => {
           csv.columns[sel.dataset.role] = sel.value === '' ? undefined : +sel.value;
           renderPreview();
@@ -841,8 +841,8 @@ export function openFileImportModal(accountId, initialFile) {
       const renderPreview = () => {
         const { txns, skipped } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
         modal.querySelector('#fi-preview').innerHTML = txns.length
-          ? h`<table class="fi-preview-table" style="width:100%;font-size:13px;margin:6px 0"><tbody>${txns.slice(0, 5).map(t =>
-              `<tr><td>${esc(fmtDate(t.date))}</td><td>${esc(t.payeeName || '—')}</td><td style="text-align:right">${esc(fmtExact(t.amount))}</td></tr>`).join('')}</tbody></table>
+          ? h`<table class="fi-preview-table" style="width:100%;font-size:13px;margin:6px 0"><tbody>${raw(txns.slice(0, 5).map(t =>
+              `<tr><td>${esc(fmtDate(t.date))}</td><td>${esc(t.payeeName || '—')}</td><td style="text-align:right">${esc(fmtExact(t.amount))}</td></tr>`).join(''))}</tbody></table>
             <p class="muted" style="font-size:13px">${txns.length} transaction${txns.length === 1 ? '' : 's'} ready${skipped ? ` · ${skipped} row${skipped === 1 ? '' : 's'} skipped (no date/amount)` : ''}</p>`
           : h`<p class="muted" style="font-size:13px">No transactions detected — check the column mapping above.</p>`;
       };
@@ -910,16 +910,16 @@ function renderTable(txs, accountId) {
         <th class="col-check"><input type="checkbox" id="select-all-cb" ${allChecked ? 'checked' : ''}></th>
         <th class="col-flag"></th>
         <th class="col-clip">📷</th>
-        ${showAccount ? '<th>Account</th>' : ''}
+        ${showAccount ? raw('<th>Account</th>') : ''}
         <th class="col-date" id="date-sort-th">Date <span class="sort-caret">${sortDir === 'asc' ? '▴' : '▾'}</span></th>
         <th>Payee</th><th>Category</th>
-        ${showMemoCol ? '<th>Memo</th>' : ''}
+        ${showMemoCol ? raw('<th>Memo</th>') : ''}
         <th class="num">Outflow</th><th class="num">Inflow</th>
         <th class="col-clr">ⓒ</th>
       </tr></thead>
-      <tbody>${rows.join('')}</tbody>
+      <tbody>${rows}</tbody>
     </table>
-    ${!txs.length && editingId !== 'new' ? '<div class="empty-state">No transactions.</div>' : ''}
+    ${!txs.length && editingId !== 'new' ? raw('<div class="empty-state">No transactions.</div>') : ''}
   </div>`;
 }
 
@@ -928,19 +928,19 @@ function renderTable(txs, accountId) {
 function flagIcon(flag) {
   const path = 'M1.5 4.5h8l3.5 4.25-3.5 4.25h-8Z';
   if (!flag) {
-    return `<svg class="flag-ico flag-ico-none" viewBox="0 0 14 17.5" width="14" height="17.5">
+    return raw(`<svg class="flag-ico flag-ico-none" viewBox="0 0 14 17.5" width="14" height="17.5">
       <path d="${path}" stroke-width="1.3" stroke-linejoin="round"/>
-    </svg>`;
+    </svg>`);
   }
-  return `<svg class="flag-ico flag-ico-${flag}" viewBox="0 0 14 17.5" width="14" height="17.5">
+  return raw(`<svg class="flag-ico flag-ico-${flag}" viewBox="0 0 14 17.5" width="14" height="17.5">
     <path d="${path}"/>
-  </svg>`;
+  </svg>`);
 }
 
 function clearedIcon(t) {
-  if (t.cleared === 'reconciled') return `<span class="clr-icon clr-reconciled" title="Reconciled">🔒</span>`;
-  if (t.cleared === 'cleared') return `<span class="clr-icon clr-cleared" data-clr="1" title="Cleared">Ⓒ</span>`;
-  return `<span class="clr-icon clr-uncleared" data-clr="1" title="Uncleared">Ⓒ</span>`;
+  if (t.cleared === 'reconciled') return raw(`<span class="clr-icon clr-reconciled" title="Reconciled">🔒</span>`);
+  if (t.cleared === 'cleared') return raw(`<span class="clr-icon clr-cleared" data-clr="1" title="Cleared">Ⓒ</span>`);
+  return raw(`<span class="clr-icon clr-uncleared" data-clr="1" title="Uncleared">Ⓒ</span>`);
 }
 
 function renderReadRow(t, showAccount) {
@@ -953,18 +953,18 @@ function renderReadRow(t, showAccount) {
     <td class="col-check" data-action="check"><input type="checkbox" class="row-cb" ${selectedIds.has(t.id) ? 'checked' : ''}></td>
     <td class="col-flag flag-cell" data-action="flag">${flagIcon(t.flag)}</td>
     <td class="col-clip" data-action="clip">${(t.attachments && t.attachments.length) ? '📷' : ''}</td>
-    ${showAccount ? `<td>${acc ? acc.name : ''}</td>` : ''}
+    ${showAccount ? h`<td>${acc ? acc.name : ''}</td>` : ''}
     <td>${fmtDate(t.date)}</td>
-    <td>${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}${isMatch ? ' <span class="match-badge">MATCH</span>' : ''}</td>
-    <td>${cat || ''}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</td>
-    ${showMemoCol ? `<td class="muted">${t.memo || ''}</td>` : ''}
+    <td>${!t.approved ? raw('<span class="unapproved-dot"></span>') : ''}${payeeName}${isMatch ? raw(' <span class="match-badge">MATCH</span>') : ''}</td>
+    <td>${cat || ''}${cat && t.autoCategorized && !t.approved ? raw(' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}</td>
+    ${showMemoCol ? h`<td class="muted">${t.memo || ''}</td>` : ''}
     <td class="num neg-text">${t.amount < 0 ? fmt(-t.amount) : ''}</td>
     <td class="num pos-text">${t.amount > 0 ? fmt(t.amount) : ''}</td>
     <td class="col-clr" data-action="cleared">${clearedIcon(t)}</td>
-    ${!t.approved ? `<td class="approve-actions">
+    ${!t.approved ? raw(`<td class="approve-actions">
         <button class="icon-btn approve-btn" title="Approve">✓</button>
         <button class="icon-btn reject-btn" title="Reject">✕</button>
-      </td>` : ''}
+      </td>`) : ''}
   </tr>`;
 }
 
@@ -989,7 +989,7 @@ function categoryOptionsHtml(selectedId, isInflow, month) {
     }
     opts.push('</optgroup>');
   }
-  return `<option value="">Select category...</option>${opts.join('')}`;
+  return raw(`<option value="">Select category...</option>${opts.join('')}`);
 }
 
 function categoryName(id) {
@@ -1019,7 +1019,7 @@ function renderCategoryPopover(selectedId, isInflow, month) {
     }
   }
   return h`<div class="cat-popover" id="cat-popover">
-    <div class="cat-pop-list">${rows.join('')}</div>
+    <div class="cat-pop-list">${raw(rows.join(''))}</div>
     <button type="button" class="cat-pop-split-btn" id="cat-pop-split-btn">Split (Multiple Categories)</button>
   </div>`;
 }
@@ -1030,7 +1030,7 @@ function renderFlagPopover(selectedFlag) {
   for (const f of FLAGS) {
     rows.push(`<div class="flag-pop-item ${f === selectedFlag ? 'selected' : ''}" data-flag="${f}">${flagIcon(f)}<span>${f[0].toUpperCase()}${f.slice(1)}</span></div>`);
   }
-  return h`<div class="flag-popover" id="flag-popover">${rows.join('')}</div>`;
+  return h`<div class="flag-popover" id="flag-popover">${raw(rows.join(''))}</div>`;
 }
 
 function otherOpenAccounts(excludeId) {
@@ -1059,28 +1059,28 @@ function renderEditRow(id, st, accountId) {
             ${datePopoverOpen ? renderDatePopover(st.date) : ''}
           </div>
           <div class="ef-field ef-payee">
-            <input type="text" id="ef-payee" placeholder="Payee" value="${esc(st.payeeText)}" autocomplete="off">
+            <input type="text" id="ef-payee" placeholder="Payee" value="${st.payeeText}" autocomplete="off">
             <div class="autocomplete-list" id="ef-payee-ac" hidden></div>
           </div>
           <div class="ef-field ef-category">
             ${renderCategoryDropdown(st, mainAmount, month, isSplit)}
           </div>
-          <div class="ef-field ef-memo"><input type="text" id="ef-memo" placeholder="Memo" value="${esc(st.memo)}" ${isSplit ? 'disabled' : ''}></div>
-          <div class="ef-field ef-outflow"><input type="text" id="ef-outflow" placeholder="Outflow" value="${esc(st.outflow)}"></div>
-          <div class="ef-field ef-inflow"><input type="text" id="ef-inflow" placeholder="Inflow" value="${esc(st.inflow)}"></div>
+          <div class="ef-field ef-memo"><input type="text" id="ef-memo" placeholder="Memo" value="${st.memo}" ${isSplit ? 'disabled' : ''}></div>
+          <div class="ef-field ef-outflow"><input type="text" id="ef-outflow" placeholder="Outflow" value="${st.outflow}"></div>
+          <div class="ef-field ef-inflow"><input type="text" id="ef-inflow" placeholder="Inflow" value="${st.inflow}"></div>
           <div class="ef-field ef-cleared"><label class="ef-cleared-label"><input type="checkbox" id="ef-cleared" ${st.cleared ? 'checked' : ''}> Cleared</label></div>
           <div class="ef-field ef-attach">
             <label class="btn secondary sm">📷 Attach<input type="file" id="ef-file" accept="image/*" capture hidden></label>
           </div>
         </div>
-        ${st.attachments.length ? `<div class="ef-attachments">${st.attachments.map((a, i) => `<img src="${a}" class="ef-thumb" data-idx="${i}">`).join('')}</div>` : ''}
+        ${st.attachments.length ? h`<div class="ef-attachments">${st.attachments.map((a, i) => h`<img src="${a}" class="ef-thumb" data-idx="${i}">`)}</div>` : ''}
         <div class="ef-split-block" id="ef-split-block">
           ${isSplit ? renderSplitRows(st, mainAmount, month) : ''}
         </div>
         <div class="edit-form-actions">
-          ${isSplit ? `<span class="split-remaining ${remaining !== 0 ? 'neg-text' : 'pos-text'}">Remaining: ${fmt(remaining)}</span>` : ''}
+          ${isSplit ? h`<span class="split-remaining ${remaining !== 0 ? 'neg-text' : 'pos-text'}">Remaining: ${fmt(remaining)}</span>` : ''}
           <div class="ef-spacer"></div>
-          ${id !== 'new' ? `<button class="btn danger sm" id="ef-delete">Delete</button>` : ''}
+          ${id !== 'new' ? raw(`<button class="btn danger sm" id="ef-delete">Delete</button>`) : ''}
           <button class="btn secondary" id="ef-cancel">Cancel</button>
           <button class="btn" id="ef-save">Save</button>
           <button class="btn" id="ef-save-another">Save and add another</button>
@@ -1108,8 +1108,8 @@ function renderDatePopover(dateStr) {
   }
   return h`<div class="date-popover" id="date-popover">
     <div class="cal-nav"><button type="button" id="cal-prev">‹</button><span>${MONTH_NAMES[m - 1]} ${y}</span><button type="button" id="cal-next">›</button></div>
-    <div class="cal-grid cal-dow">${DOW.map(d => `<div class="cal-cell cal-dow-cell">${d}</div>`).join('')}</div>
-    <div class="cal-grid">${cells.join('')}</div>
+    <div class="cal-grid cal-dow">${DOW.map(d => h`<div class="cal-cell cal-dow-cell">${d}</div>`)}</div>
+    <div class="cal-grid">${raw(cells.join(''))}</div>
     <div class="cal-repeat">
       <label>Repeat:</label>
       <select id="cal-repeat-select">
@@ -1127,9 +1127,9 @@ function renderDatePopover(dateStr) {
 }
 
 function renderCategoryDropdown(st, mainAmount, month, isSplit) {
-  if (isSplit) return `<input type="text" value="Split (Multiple Categories)" disabled>`;
+  if (isSplit) return raw(`<input type="text" value="Split (Multiple Categories)" disabled>`);
   const label = st.categoryId ? categoryName(st.categoryId) : 'Select category...';
-  return h`<input type="text" id="ef-category-trigger" readonly value="${esc(label)}" placeholder="Select category...">
+  return h`<input type="text" id="ef-category-trigger" readonly value="${label}" placeholder="Select category...">
     ${categoryPopoverOpen ? renderCategoryPopover(st.categoryId, mainAmount > 0, month) : ''}`;
 }
 
@@ -1137,10 +1137,10 @@ function renderSplitRows(st, mainAmount, month) {
   const rows = st.subtransactions.map((s, i) => h`<div class="split-row" data-idx="${i}">
     <select class="split-cat">${categoryOptionsHtml(s.categoryId, mainAmount > 0, month)}</select>
     <input type="text" class="split-amount" value="${s.amount ? fmtExact(Math.abs(s.amount)) : ''}" placeholder="$0.00">
-    <input type="text" class="split-memo" value="${esc(s.memo || '')}" placeholder="Memo">
+    <input type="text" class="split-memo" value="${s.memo || ''}" placeholder="Memo">
     <button class="icon-btn split-del" title="Remove">✕</button>
   </div>`);
-  return `<div class="split-rows">${rows.join('')}</div><button class="btn secondary sm" id="split-add-row">+ Add split</button>`;
+  return h`<div class="split-rows">${rows}</div><button class="btn secondary sm" id="split-add-row">+ Add split</button>`;
 }
 
 function wireTable(root, txs, accountId) {
@@ -1363,7 +1363,7 @@ function wireEditRow(root, row, accountId) {
       html += `<div class="ac-group-label">Saved Payees</div>`;
       for (const p of suggestions) { html += `<div class="ac-item" data-i="${i}">${esc(p.label)}</div>`; items.push(p); i++; }
     }
-    acEl.innerHTML = html;
+    acEl.innerHTML = raw(html);
     acEl.hidden = false;
     autocompleteOpen = true;
     acEl.querySelectorAll('.ac-item').forEach(el => {
@@ -1501,7 +1501,7 @@ function openAttachmentGallery(txId) {
   if (!t) return;
   const renderGallery = () => h`<h2>Attachments</h2>
     <div class="gallery-grid">${t.attachments.map((a, i) =>
-      `<div class="gallery-item"><img src="${a}"><button class="icon-btn gallery-del" data-idx="${i}">🗑️ Delete</button></div>`).join('')}</div>
+      h`<div class="gallery-item"><img src="${a}"><button class="icon-btn gallery-del" data-idx="${i}">🗑️ Delete</button></div>`)}</div>
     <div class="modal-actions"><button class="btn secondary" id="gal-close">Close</button></div>`;
   const modal = openModal(renderGallery(), {
     onOpen: m => bind(m),
@@ -1525,7 +1525,7 @@ function openAttachmentGallery(txId) {
 
 // ---------- mobile list ----------
 function renderMobileList(txs, accountId) {
-  if (!txs.length) return '<div class="empty-state">No transactions.</div>';
+  if (!txs.length) return raw('<div class="empty-state">No transactions.</div>');
   const groups = [];
   let lastDate = null;
   for (const t of txs) {
@@ -1535,8 +1535,8 @@ function renderMobileList(txs, accountId) {
   return h`<div class="reg-mobile-list ${compactRows ? 'compact' : ''}">${groups.map(g => h`
     <div class="mobile-date-group">
       <div class="mobile-date-head">${fmtDate(g.date)}</div>
-      <div class="mobile-date-card">${g.items.map(t => renderMobileRow(t)).join('')}</div>
-    </div>`).join('')}</div>`;
+      <div class="mobile-date-card">${g.items.map(t => renderMobileRow(t))}</div>
+    </div>`)}</div>`;
 }
 
 function renderMobileRow(t, { spending = false } = {}) {
@@ -1551,8 +1551,8 @@ function renderMobileRow(t, { spending = false } = {}) {
   return h`<div class="mobile-row ${!t.approved ? 'unapproved-row' : ''}" data-id="${t.id}" data-spending-tx="${spending ? t.id : ''}">
     <div class="mobile-row-main">
       <div class="mobile-row-left">
-        <div class="mobile-payee">${!t.approved ? '<span class="unapproved-dot"></span>' : ''}${payeeName}</div>
-        <div class="mobile-sub">${categoryPill}${memo}${!t.approved ? '<span class="mobile-approval-badge">Needs approval</span>' : ''}${cat && t.autoCategorized && !t.approved ? ' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>' : ''}</div>
+        <div class="mobile-payee">${!t.approved ? raw('<span class="unapproved-dot"></span>') : ''}${payeeName}</div>
+        <div class="mobile-sub">${categoryPill}${memo}${!t.approved ? raw('<span class="mobile-approval-badge">Needs approval</span>') : ''}${cat && t.autoCategorized && !t.approved ? raw(' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}</div>
       </div>
       <div class="mobile-row-side">
         <div class="mobile-row-right">
@@ -1610,7 +1610,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
         <span class="txe-row-label">Payee</span>
         <span class="txe-row-value ${!payeeText ? 'txe-placeholder' : ''}">${payeeText || 'Choose Payee'}</span>
       </span>
-      ${suggestedHint ? '<span class="txe-suggested-badge" title="Suggested from your location">📍</span>' : ''}
+      ${suggestedHint ? raw('<span class="txe-suggested-badge" title="Suggested from your location">📍</span>') : ''}
       <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
@@ -1625,7 +1625,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
   function rowAccount() {
     return h`<button type="button" class="txe-row" id="txe-row-account">
       <span class="txe-row-ico">${ICONS.accounts}</span>
-      <span class="txe-row-body"><span class="txe-row-label">Account</span><span class="txe-row-value">${esc(accountName(accountId))}</span></span>
+      <span class="txe-row-body"><span class="txe-row-label">Account</span><span class="txe-row-value">${accountName(accountId)}</span></span>
       <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
@@ -1640,7 +1640,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     return h`<div class="txe-row txe-row-input">
       <span class="txe-row-ico">${ICONS.edit}</span>
       <span class="txe-row-body"><span class="txe-row-label">Memo</span>
-        <input type="text" id="txe-memo" class="txe-inline-input" value="${esc(memo)}" placeholder="Add a memo">
+        <input type="text" id="txe-memo" class="txe-inline-input" value="${memo}" placeholder="Add a memo">
       </span>
     </div>`;
   }
@@ -1680,10 +1680,10 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     const rows = [];
     if (q && !exact) rows.push(`<div class="txe-list-item txe-new-payee" data-new="1">⊕ New payee: "${esc(payeeQuery.trim())}"</div>`);
     for (const p of filtered) rows.push(`<div class="txe-list-item ${p.id === payeeId ? 'selected' : ''}" data-payee="${p.id}">${esc(p.name)}</div>`);
-    return rows.join('') || '<div class="txe-list-empty muted">No payees yet.</div>';
+    return raw(rows.join('') || '<div class="txe-list-empty muted">No payees yet.</div>');
   }
   function payeePanelHtml() {
-    return h`<input type="text" class="txe-search" id="txe-payee-search" placeholder="Search or add a payee" value="${esc(payeeQuery)}">
+    return h`<input type="text" class="txe-search" id="txe-payee-search" placeholder="Search or add a payee" value="${payeeQuery}">
       <div class="txe-list" id="txe-payee-list">${payeeListItemsHtml()}</div>`;
   }
 
@@ -1708,10 +1708,10 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
         rows.push(`<div class="txe-cat-item ${c.id === categoryId ? 'selected' : ''}" data-cat="${c.id}"><span>${esc(c.name)}</span><span class="txe-cat-amt muted">${avail}</span></div>`);
       }
     }
-    return rows.join('') || '<div class="txe-list-empty muted">No matches.</div>';
+    return raw(rows.join('') || '<div class="txe-list-empty muted">No matches.</div>');
   }
   function categoryPanelHtml() {
-    return h`<input type="text" class="txe-search" id="txe-cat-search" placeholder="Search categories" value="${esc(categoryQuery)}">
+    return h`<input type="text" class="txe-search" id="txe-cat-search" placeholder="Search categories" value="${categoryQuery}">
       <div class="txe-list" id="txe-cat-list">${categoryListItemsHtml()}</div>`;
   }
 
@@ -1721,9 +1721,9 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     const off = accs.filter(a => !a.onBudget);
     const row = a => {
       const bal = store.accountBalances(a.id).working;
-      return `<div class="txe-list-item ${a.id === accountId ? 'selected' : ''}" data-acct="${a.id}"><span>${esc(a.name)}</span><span class="txe-acct-bal ${bal < 0 ? 'neg-text' : 'pos-text'}">${fmt(bal)}</span></div>`;
+      return raw(`<div class="txe-list-item ${a.id === accountId ? 'selected' : ''}" data-acct="${a.id}"><span>${esc(a.name)}</span><span class="txe-acct-bal ${bal < 0 ? 'neg-text' : 'pos-text'}">${fmt(bal)}</span></div>`);
     };
-    return h`<div class="txe-list">${onB.map(row).join('')}${off.length ? `<div class="txe-cat-group-label">Tracking</div>${off.map(row).join('')}` : ''}</div>`;
+    return h`<div class="txe-list">${onB.map(row)}${off.length ? h`<div class="txe-cat-group-label">Tracking</div>${off.map(row)}` : ''}</div>`;
   }
 
   function datePanelHtml() {
@@ -1739,19 +1739,19 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
       cells.push(`<button type="button" class="cal-cell cal-day ${iso === cur ? 'selected' : ''} ${iso === today ? 'today' : ''}" data-date="${iso}">${d}</button>`);
     }
     return h`<div class="cal-nav"><button type="button" id="txe-cal-prev">‹</button><span>${MONTH_NAMES[m - 1]} ${y}</span><button type="button" id="txe-cal-next">›</button></div>
-      <div class="cal-grid cal-dow">${DOW.map(d => `<div class="cal-cell cal-dow-cell">${d}</div>`).join('')}</div>
-      <div class="cal-grid">${cells.join('')}</div>`;
+      <div class="cal-grid cal-dow">${DOW.map(d => h`<div class="cal-cell cal-dow-cell">${d}</div>`)}</div>
+      <div class="cal-grid">${raw(cells.join(''))}</div>`;
   }
 
   function flagPanelHtml() {
     const rows = [`<div class="txe-list-item txe-flag-item ${!flag ? 'selected' : ''}" data-flag="">${flagIcon(null)}<span>None</span></div>`];
     for (const f of FLAGS) rows.push(`<div class="txe-list-item txe-flag-item ${f === flag ? 'selected' : ''}" data-flag="${f}">${flagIcon(f)}<span>${f[0].toUpperCase()}${f.slice(1)}</span></div>`);
-    return h`<div class="txe-list">${rows.join('')}</div>`;
+    return h`<div class="txe-list">${raw(rows.join(''))}</div>`;
   }
 
   function repeatPanelHtml() {
     const options = [['none', 'Never repeat'], ['weekly', 'Weekly'], ['fortnightly', 'Fortnightly'], ['monthly', 'Monthly'], ['every2months', 'Every 2 months'], ['quarterly', 'Every 3 months'], ['twiceayear', 'Every 6 months'], ['yearly', 'Yearly']];
-    return h`<div class="txe-list">${options.map(([value, label]) => h`<button class="txe-list-item ${recurring === value ? 'selected' : ''}" data-repeat="${value}"><span>${label}</span>${recurring === value ? '<b>✓</b>' : ''}</button>`).join('')}</div>`;
+    return h`<div class="txe-list">${options.map(([value, label]) => h`<button class="txe-list-item ${recurring === value ? 'selected' : ''}" data-repeat="${value}"><span>${label}</span>${recurring === value ? raw('<b>✓</b>') : ''}</button>`)}</div>`;
   }
 
   function renderPanel() {
@@ -1793,7 +1793,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
         <div class="txe-card">${rowPayee()}${rowCategory()}${rowAccount()}${rowDate()}</div>
         <div class="txe-card">${rowMemo()}</div>
         <div class="txe-card">${rowCleared()}${rowFlag()}${rowRepeat()}</div>
-        ${editing ? '<button type="button" class="txe-delete-row" id="txe-delete">Delete Transaction</button>' : ''}
+        ${editing ? raw('<button type="button" class="txe-delete-row" id="txe-delete">Delete Transaction</button>') : ''}
       </div>
       <div class="txe-footer"><button type="button" class="btn txe-save" id="txe-save">✓ Save</button></div>
       ${panel ? renderPanel() : ''}
@@ -1940,14 +1940,14 @@ export function openAddAccountModal() {
   const form = type => h`<h2>Add Account</h2>
     <div class="form-row"><label>Name</label><input id="aa-name" type="text" placeholder="e.g. Everyday Checking"></div>
     <div class="form-row"><label>Type</label>
-      <select id="aa-type">${Object.entries(TYPE_GROUPS).map(([g, opts]) =>
-        `<optgroup label="${g}">${opts.map(([v, l]) => `<option value="${v}" ${v === type ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`).join('')}</select>
+      <select id="aa-type">${raw(Object.entries(TYPE_GROUPS).map(([g, opts]) =>
+        `<optgroup label="${g}">${opts.map(([v, l]) => `<option value="${v}" ${v === type ? 'selected' : ''}>${l}</option>`).join('')}</optgroup>`).join(''))}</select>
       <div class="muted note-hint">Bank syncing via Basiq coming soon. Accounts are local for now.</div>
     </div>
     <div class="form-row"><label>Current Balance</label><input id="aa-balance" type="text" placeholder="$0.00"></div>
-    ${LOAN_TYPES.has(type) ? `
+    ${LOAN_TYPES.has(type) ? raw(`
     <div class="form-row"><label>Interest Rate (% APR)</label><input id="aa-rate" type="text" placeholder="e.g. 5.49"></div>
-    <div class="form-row"><label>Minimum Payment</label><input id="aa-minpay" type="text" placeholder="$0.00"></div>` : ''}
+    <div class="form-row"><label>Minimum Payment</label><input id="aa-minpay" type="text" placeholder="$0.00"></div>`) : ''}
     <div class="form-row"><label>Date</label><input id="aa-date" type="date" value="${todayISO()}"></div>
     <div class="modal-actions">
       <button class="btn secondary" id="aa-cancel">Cancel</button>

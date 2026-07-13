@@ -50,7 +50,7 @@ export function render(root, params) {
         <section class="settings-card">
           <h2 class="settings-card-title">Appearance</h2>
           <div class="settings-option-block">
-            <div class="settings-option-head"><span class="settings-row-icon" aria-hidden="true">${ICONS.settings}</span><span><strong>Theme</strong><small>Choose how Sapient Spend looks</small></span></div>
+            <div class="settings-option-head"><span class="settings-row-icon" aria-hidden="true">${ICONS.settings}</span><span><strong>Theme</strong><small>Choose how Kanevo looks</small></span></div>
             <div class="settings-segmented" role="radiogroup" aria-label="Theme">
               <label><input type="radio" name="disp-theme" value="light" ${theme === 'light' ? 'checked' : ''}><span>Light</span></label>
               <label><input type="radio" name="disp-theme" value="dark" ${theme === 'dark' ? 'checked' : ''}><span>Dark</span></label>
@@ -104,8 +104,8 @@ export function render(root, params) {
 
         <section class="settings-card">
           <h2 class="settings-card-title">About</h2>
-          <div class="settings-row settings-about-row"><span class="settings-app-mark" aria-hidden="true">S</span><span class="settings-row-copy"><strong>Sapient Spend</strong><small>Local-first, private, and available offline</small></span><span class="settings-version">v1</span></div>
-          <a class="settings-action-row" href="https://github.com/kunwaaarrr/sapient-spend" target="_blank" rel="noopener"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">★</span><span class="settings-row-copy"><strong>View the project</strong><small>Source code and feedback on GitHub</small></span><span class="settings-chevron" aria-hidden="true">›</span></a>
+          <div class="settings-row settings-about-row"><span class="settings-app-mark" aria-hidden="true">K</span><span class="settings-row-copy"><strong>Kanevo</strong><small>Local-first, private, and available offline</small></span><span class="settings-version">v1</span></div>
+          <a class="settings-action-row" href="https://github.com/kunwaaarrr/kanevo" target="_blank" rel="noopener"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">★</span><span class="settings-row-copy"><strong>View the project</strong><small>Source code and feedback on GitHub</small></span><span class="settings-chevron" aria-hidden="true">›</span></a>
         </section>
 
       </div>
@@ -124,7 +124,7 @@ export function render(root, params) {
     r.onchange = e => store.updateSettings({ balanceStyle: e.target.value }));
 
   root.querySelector('#set-export').onclick = () => {
-    download(`sapientspend-backup-${new Date().toISOString().slice(0, 10)}.json`, store.exportJSON());
+    download(`kanevo-backup-${new Date().toISOString().slice(0, 10)}.json`, store.exportJSON());
   };
   root.querySelector('#set-import').onchange = e => {
     const file = e.target.files[0];
@@ -139,7 +139,7 @@ export function render(root, params) {
     file.text().then(text => {
       store.importJSON(text);
       toast('Budget imported');
-    });
+    }).catch(() => toast('That file isn’t a valid backup'));
   };
   root.querySelector('#set-reset').onclick = () => {
     if (!confirm('Reset ALL data? This cannot be undone.')) return;
