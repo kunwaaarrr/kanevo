@@ -34,6 +34,30 @@ store.deleteGroup(disposableGroup);
 assert.equal(store.readyToAssign(M1), 70000, 'deleted group assignment returns to RTA');
 assert.equal(store.state.budget[M1]?.[disposableCategory], undefined, 'deleted group budget key is removed');
 
+// deleting into another category preserves assignments and recategorises affected transactions
+const movedGroup = store.addGroup('Move Me');
+const movedA = store.addCategory(movedGroup, 'A');
+const movedB = store.addCategory(movedGroup, 'B');
+store.assign(M1, movedA, 10000);
+store.assign(M1, movedB, 5000);
+const movedTx = store.addTransaction({ accountId: chk, date: '2026-01-08', categoryId: movedA, amount: -2500 });
+const rtaBeforeMoveDelete = store.readyToAssign(M1);
+store.deleteGroup(movedGroup, rent);
+assert.equal(store.readyToAssign(M1), rtaBeforeMoveDelete, 'moving deleted-group assignments preserves RTA');
+assert.equal(store.state.budget[M1][rent], 45000, 'deleted-group assignments move to destination category');
+assert.equal(store.state.transactions.find(tx => tx.id === movedTx).categoryId, rent, 'deleted-group transactions move to destination category');
+
+// groups and categories retain user-defined drag order, including cross-group moves
+const orderGroupA = store.addGroup('Order A');
+const orderGroupB = store.addGroup('Order B');
+const orderCatA = store.addCategory(orderGroupA, 'First');
+const orderCatB = store.addCategory(orderGroupB, 'Second');
+store.moveGroup(orderGroupB, 0);
+assert.equal(store.state.categoryGroups.slice().sort((a, b) => a.sortOrder - b.sortOrder)[0].id, orderGroupB, 'group order is persisted');
+store.moveCategory(orderCatA, orderGroupB, 0);
+const movedOrder = store.state.categories.filter(category => category.groupId === orderGroupB).sort((a, b) => a.sortOrder - b.sortOrder);
+assert.deepEqual(movedOrder.map(category => category.id), [orderCatA, orderCatB], 'category can be reordered into another group');
+
 // ---- 2. Carryover: positive carries, negative does not ----
 reset();
 const a2 = store.addAccount({ name: 'C', type: 'checking', balance: 0, date: '2026-01-01' });

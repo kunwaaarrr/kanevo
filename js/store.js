@@ -793,6 +793,41 @@ function _autoAssign(month) {
   return total;
 }
 
+function _removeCategories(categoryIds, replacementCategoryId = null) {
+  const ids = new Set(categoryIds);
+  const replacement = replacementCategoryId
+    && !ids.has(replacementCategoryId)
+    && state.categories.some(c => c.id === replacementCategoryId)
+    ? replacementCategoryId
+    : null;
+
+  for (const tx of state.transactions) {
+    if (ids.has(tx.categoryId)) tx.categoryId = replacement;
+    if (tx.subtransactions) {
+      for (const sub of tx.subtransactions) if (ids.has(sub.categoryId)) sub.categoryId = replacement;
+    }
+  }
+  for (const scheduled of state.scheduled) if (ids.has(scheduled.categoryId)) scheduled.categoryId = replacement;
+  for (const payee of state.payees) if (ids.has(payee.lastCategoryId)) payee.lastCategoryId = replacement;
+
+  for (const month of Object.keys(state.budget)) {
+    const budget = state.budget[month];
+    let moved = 0;
+    for (const id of ids) {
+      moved += budget[id] || 0;
+      delete budget[id];
+    }
+    if (replacement && moved) budget[replacement] = (budget[replacement] || 0) + moved;
+  }
+
+  for (const view of state.focusedViews) {
+    const containedDeletedCategory = view.categoryIds.some(id => ids.has(id));
+    view.categoryIds = view.categoryIds.filter(id => !ids.has(id));
+    if (replacement && containedDeletedCategory && !view.categoryIds.includes(replacement)) view.categoryIds.push(replacement);
+  }
+  state.categories = state.categories.filter(c => !ids.has(c.id));
+}
+
 // ---------- public store ----------
 export const store = {
   get state() { return state; },
@@ -818,17 +853,9 @@ export const store = {
   }),
   renameGroup: mutate((id, name) => { state.categoryGroups.find(g => g.id === id).name = name; }),
   hideGroup: mutate(id => { state.categoryGroups.find(g => g.id === id).hidden = true; }),
-  deleteGroup: mutate(id => {
-    // move its categories out is not possible without a target group; delete empty, else reassign txns null + delete cats
+  deleteGroup: mutate((id, replacementCategoryId = null) => {
     const categoryIds = state.categories.filter(c => c.groupId === id).map(c => c.id);
-    for (const cid of categoryIds) {
-      for (const tx of state.transactions) {
-        if (tx.categoryId === cid) tx.categoryId = null;
-        if (tx.subtransactions) for (const s of tx.subtransactions) if (s.categoryId === cid) s.categoryId = null;
-      }
-      for (const m of Object.keys(state.budget)) delete state.budget[m][cid];
-    }
-    state.categories = state.categories.filter(c => c.groupId !== id);
+    _removeCategories(categoryIds, replacementCategoryId);
     state.categoryGroups = state.categoryGroups.filter(g => g.id !== id);
   }),
   addCategory: mutate((groupId, name) => {
@@ -840,14 +867,7 @@ export const store = {
   }),
   updateCategory: mutate((id, patch) => { Object.assign(cat(id), patch); }),
   hideCategory: mutate(id => { cat(id).hidden = true; }),
-  deleteCategory: mutate(id => {
-    for (const tx of state.transactions) {
-      if (tx.categoryId === id) tx.categoryId = null;
-      if (tx.subtransactions) for (const s of tx.subtransactions) if (s.categoryId === id) s.categoryId = null;
-    }
-    state.categories = state.categories.filter(c => c.id !== id);
-    for (const m of Object.keys(state.budget)) delete state.budget[m][id];
-  }),
+  deleteCategory: mutate((id, replacementCategoryId = null) => _removeCategories([id], replacementCategoryId)),
   moveCategory: mutate((id, groupId, index) => {
     const c = cat(id); c.groupId = groupId;
     const siblings = state.categories.filter(x => x.groupId === groupId && x.id !== id).sort((a, b) => a.sortOrder - b.sortOrder);
