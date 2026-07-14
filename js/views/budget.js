@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { openModal, closeModal, toast, navigate } from '../app.js';
+import { openModal, closeModal, toast, navigate, confirmSheet } from '../app.js';
 import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, raw, ICONS } from '../util.js';
 import { CATEGORY_TEMPLATES } from '../seed.js';
 
@@ -86,7 +86,7 @@ function catRow(c, groupHidden) {
     </td>
     <td class="num assigned-cell" data-act="edit-assigned" data-id="${c.id}">
       ${editing
-        ? h`<input class="assigned-input" data-id="${c.id}" type="text" value="${fmtExact(c.assigned).replace('$', '')}">`
+        ? h`<input class="assigned-input" data-id="${c.id}" type="text" inputmode="decimal" value="${fmtExact(c.assigned).replace('$', '')}">`
         : h`<span class="assigned-val">${fmt(c.assigned)}</span>`}
     </td>
     <td class="num muted">${fmt(c.activity)}</td>
@@ -194,7 +194,7 @@ function assignPopover(md) {
       : h`<div class="manual-assign">
           <div class="form-row">
             <label for="manual-amount">Amount</label>
-            <input id="manual-amount" type="text" placeholder="0.00">
+            <input id="manual-amount" type="text" inputmode="decimal" placeholder="0.00">
           </div>
           <button class="btn" data-act="manual-assign-checked">Assign to checked categories</button>
           <div class="muted manual-hint">${checkedCats.size} categor${checkedCats.size === 1 ? 'y' : 'ies'} checked</div>
@@ -839,11 +839,15 @@ function applyAverage(md, mode) {
 
 // ---------- category popover ----------
 function openCategoryPopover(root, anchorEl, catId, md) {
-  root.querySelectorAll('.popover.cat-popover').forEach(p => p.remove());
+  root.querySelectorAll('.popover.budget-cat-popover').forEach(p => p.remove());
   const cat = md.groups.flatMap(g => g.categories).find(c => c.id === catId);
   const rect = anchorEl.getBoundingClientRect();
   const pop = document.createElement('div');
-  pop.className = 'popover cat-popover';
+  // "budget-view" here isn't a DOM-ancestor scope (this popover is appended to document.body,
+  // outside .budget-view) — it's a marker class so budget.css's ".popover.budget-view" rule
+  // still reaches it. "budget-cat-popover" (not "cat-popover") avoids colliding with register.css's
+  // unrelated .cat-popover (the transaction editor's category picker).
+  pop.className = 'popover budget-view budget-cat-popover';
   pop.style.left = rect.left + 'px';
   pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
   pop.innerHTML = h`<input class="pop-rename-input" type="text" value="${cat.name}">
@@ -859,8 +863,8 @@ function openCategoryPopover(root, anchorEl, catId, md) {
     if (e.key === 'Escape') pop.remove();
   };
   pop.querySelector('[data-pop-act="hide"]').onclick = () => { store.hideCategory(catId); pop.remove(); };
-  pop.querySelector('[data-pop-act="delete"]').onclick = () => {
-    if (confirm(`Delete category "${cat.name}"?`)) store.deleteCategory(catId);
+  pop.querySelector('[data-pop-act="delete"]').onclick = async () => {
+    if (await confirmSheet({ title: `Delete category "${cat.name}"?`, confirmLabel: 'Delete', danger: true })) store.deleteCategory(catId);
     pop.remove();
   };
   setTimeout(() => document.addEventListener('click', outsideCloser(pop), { once: true }));
@@ -903,7 +907,7 @@ function openMovePopover(root, anchorEl, catId, md) {
 
   const body = h`<div class="move-money-body">
     <h2>${overspent ? 'Cover this overspending from:' : 'Move money to:'}</h2>
-    <input class="mm-amount" id="mm-amount" type="text" value="${fmtExact(prefill).replace('$', '')}">
+    <input class="mm-amount" id="mm-amount" type="text" inputmode="decimal" value="${fmtExact(prefill).replace('$', '')}">
     <input class="mm-search" id="mm-search" type="text" placeholder="Filter categories…">
     <div class="mm-list" id="mm-list">${moveListRows(catId, overspent, allCats, '')}</div>
   </div>`;
@@ -915,7 +919,7 @@ function openMovePopover(root, anchorEl, catId, md) {
   } else {
     const rect = anchorEl.getBoundingClientRect();
     pop = document.createElement('div');
-    pop.className = 'popover move-money-popover';
+    pop.className = 'popover budget-view move-money-popover'; // marker class, see openCategoryPopover comment
     pop.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
     pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
     pop.innerHTML = body;
@@ -1668,7 +1672,8 @@ function openOverflowSheet(root, md) {
   const bars = progressBarsOn();
   const hideOn = store.state.settings.hideAmounts;
   const allCollapsed = collapsedGroups.size > 0;
-  const modal = openModal(h`<h2 class="mobile-options-title">Plan options</h2>
+  const modal = openModal(h`<div class="sheet-handle"></div>
+    <h2 class="mobile-options-title">Plan options</h2>
     <div class="mobile-options-menu">
       <button class="mobile-options-row" data-act="ov-recent"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.clock}</span>Recent moves</span></button>
       <button class="mobile-options-row" data-act="ov-undo"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.undo}</span>Undo last change</span></button>
@@ -1678,7 +1683,7 @@ function openOverflowSheet(root, md) {
       <button class="mobile-options-row" data-act="ov-hide"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.eye}</span>Hide amounts to share</span><span class="mobile-options-checkbox ${hideOn ? 'checked' : ''}" aria-hidden="true">✓</span></button>
       <button class="mobile-options-row" data-act="ov-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
-  modal.classList.add('mobile-options-modal');
+  modal.classList.add('bottom-sheet', 'ss-sheet');
   modal.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
@@ -1724,7 +1729,9 @@ let sheetTarget = null;      // draft target while editing (discarded on Cancel)
 function openCategoryDetailsSheet(catId) {
   sheetCatId = catId; sheetMode = 'details'; sheetTarget = null;
   const sheet = openModal('');
-  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  // "budget-view" marker: this sheet lives in #modal-root (not under .budget-view), but its
+  // target-editor mode uses the shared .segmented/.seg-btn classes — see budget.css.
+  sheet.classList.add('bottom-sheet', 'ss-sheet', 'budget-view');
   renderCategorySheet(sheet);
 }
 
@@ -1860,7 +1867,7 @@ function wireCategorySheet(sheet) {
   const note = sheet.querySelector('#sheet-note');
   if (note) note.addEventListener('change', () => store.updateCategory(sheetCatId, { note: note.value }));
 
-  sheet.onclick = e => {
+  sheet.onclick = async e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
     switch (act.dataset.act) {
@@ -1875,7 +1882,7 @@ function wireCategorySheet(sheet) {
         break;
       }
       case 'delete-target':
-        if (confirm('Delete this target?')) { store.setTarget(sheetCatId, null); renderCategorySheet(sheet); }
+        if (await confirmSheet({ title: 'Delete this target?', confirmLabel: 'Delete', danger: true })) { store.setTarget(sheetCatId, null); renderCategorySheet(sheet); }
         break;
       case 'sheet-move':
         openMovePopover(null, null, sheetCatId, store.monthData(curMonth));
@@ -1916,7 +1923,7 @@ function openCoverPicker(root, anchorEl, over, md) {
     document.querySelectorAll('.popover.move-money-popover').forEach(p => p.remove());
     const rect = anchorEl.getBoundingClientRect();
     pop = document.createElement('div');
-    pop.className = 'popover move-money-popover';
+    pop.className = 'popover budget-view move-money-popover'; // marker class, see openCategoryPopover comment
     pop.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
     pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
     pop.innerHTML = body;

@@ -25,7 +25,11 @@ const state = {
   mobileFiltersOpen: false,
   mobileMenuOpen: false,
   mobileMonthPicker: null,
+  touchedRange: false, // true once the user has explicitly changed the date range
 };
+// trends/net-worth read poorly as a single-month range (one bar, empty axis) — give them their
+// own default until the user picks a range themselves; other reports keep the This Month default.
+const DEFAULT_PRESET_BY_REPORT = { trends: 'Latest 3 Months', 'net-worth': 'Latest 3 Months' };
 
 function applyPreset(preset) {
   const now = thisMonth();
@@ -41,7 +45,6 @@ function applyPreset(preset) {
     state.from = first.slice(0, 7); state.to = now;
   }
 }
-if (!state._init) { applyPreset(state.preset); state._init = true; }
 
 function monthRange(from, to) {
   const months = [];
@@ -127,6 +130,7 @@ function bindFilterRow(root, rerender) {
     if (rangeIsSingleMonth) { state.from = addMonths(state.from, n); state.to = state.from; }
     else { state.from = addMonths(state.from, n); state.to = addMonths(state.to, n); }
     state.preset = 'Custom';
+    state.touchedRange = true;
     rerender();
   };
   root.querySelector('#month-prev').onclick = () => step(-1);
@@ -134,11 +138,11 @@ function bindFilterRow(root, rerender) {
   root.querySelector('#chip-date').onclick = () => { state.openPopover = state.openPopover === 'date' ? null : 'date'; rerender(); };
 
   const presetBtns = root.querySelectorAll('[data-preset]');
-  presetBtns.forEach(b => b.onclick = () => { applyPreset(b.dataset.preset); rerender(); });
+  presetBtns.forEach(b => b.onclick = () => { applyPreset(b.dataset.preset); state.touchedRange = true; rerender(); });
   const fromInput = root.querySelector('#from-month');
   const toInput = root.querySelector('#to-month');
-  if (fromInput) fromInput.onchange = e => { state.from = e.target.value; state.preset = 'Custom'; rerender(); };
-  if (toInput) toInput.onchange = e => { state.to = e.target.value; state.preset = 'Custom'; rerender(); };
+  if (fromInput) fromInput.onchange = e => { state.from = e.target.value; state.preset = 'Custom'; state.touchedRange = true; rerender(); };
+  if (toInput) toInput.onchange = e => { state.to = e.target.value; state.preset = 'Custom'; state.touchedRange = true; rerender(); };
 
   root.querySelectorAll('[data-dd]').forEach(b => {
     b.onclick = () => { state.openPopover = state.openPopover === b.dataset.dd ? null : b.dataset.dd; rerender(); };
@@ -266,7 +270,7 @@ function reflectOverview(root) {
         </div>
       </a>
       <a class="reflect-summary-card" href="#/reports/income-expense">
-        <div class="reflect-card-link-head"><strong><span aria-hidden="true">${ICONS.accounts}</span> Income vs Spending</strong><span aria-hidden="true">›</span></div>
+        <div class="reflect-card-link-head"><strong><span aria-hidden="true">${ICONS.accounts}</span> Income v Expense</strong><span aria-hidden="true">›</span></div>
         <p class="reflect-insight">${income >= totalSpending ? 'You are spending less than you brought in.' : 'Spending is currently ahead of income.'}</p>
         <div class="reflect-comparison-row"><span>Income</span><strong>${fmt(income)}</strong></div>
         <div class="reflect-comparison-track"><span class="income" style="width:${incomeWidth}%"></span></div>
@@ -291,8 +295,8 @@ function reflectOverview(root) {
       <section class="reflect-link-card reflect-tools-card">
         <h2>Planning tools</h2>
         <a href="#/fifty"><span><i aria-hidden="true">%</i><b>50/30/20</b><small>Compare your plan with a simple allocation guide</small></span><strong aria-hidden="true">›</strong></a>
-        <a href="#/forecast"><span><i aria-hidden="true">⌁</i><b>Forecast &amp; What-If</b><small>Project cash flow and test future changes</small></span><strong aria-hidden="true">›</strong></a>
-        <a href="#/what-if-v2"><span><i aria-hidden="true">◇</i><b>What If v2</b><small>A mobile-first forecast with adjustable assumptions</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/forecast"><span><i aria-hidden="true">⌁</i><b>Forecast</b><small>Detailed month-by-month cash flow projection</small></span><strong aria-hidden="true">›</strong></a>
+        <a href="#/what-if-v2"><span><i aria-hidden="true">◇</i><b>Quick What-If</b><small>Mobile-first, adjust assumptions on the go</small></span><strong aria-hidden="true">›</strong></a>
         <a href="#/loans"><span><i aria-hidden="true">↓</i><b>Loan Planner</b><small>Explore payoff timing and extra payments</small></span><strong aria-hidden="true">›</strong></a>
       </section>
     </main>
@@ -399,6 +403,7 @@ function wireMobileReport(root, active, rerender, exportAction) {
     state.from = addMonths(state.from, direction);
     state.to = single ? state.from : addMonths(state.to, direction);
     state.preset = 'Custom';
+    state.touchedRange = true;
     rerender();
   };
   root.querySelector('#mobile-month-prev').onclick = () => step(-1);
@@ -415,7 +420,7 @@ function wireMobileReport(root, active, rerender, exportAction) {
   root.querySelector('#mobile-filter-close')?.addEventListener('click', () => { state.mobileFiltersOpen = false; rerender(); });
   root.querySelector('#mobile-filter-save')?.addEventListener('click', () => { state.mobileFiltersOpen = false; rerender(); });
   root.querySelectorAll('[data-mobile-preset]').forEach(button => {
-    button.onclick = () => { applyPreset(button.dataset.mobilePreset); rerender(); };
+    button.onclick = () => { applyPreset(button.dataset.mobilePreset); state.touchedRange = true; rerender(); };
   });
   root.querySelectorAll('[data-mobile-month-open]').forEach(button => {
     button.onclick = () => { state.mobileMonthPicker = button.dataset.mobileMonthOpen; rerender(); };
@@ -424,7 +429,7 @@ function wireMobileReport(root, active, rerender, exportAction) {
     button.onclick = () => { const which = state.mobileMonthPicker; state[which] = addMonths(state[which], Number(button.dataset.mobileMonthYear) * 12); rerender(); };
   });
   root.querySelectorAll('[data-mobile-month-value]').forEach(button => {
-    button.onclick = () => { const which = state.mobileMonthPicker; state[which] = button.dataset.mobileMonthValue; state.preset = 'Custom'; state.mobileMonthPicker = null; rerender(); };
+    button.onclick = () => { const which = state.mobileMonthPicker; state[which] = button.dataset.mobileMonthValue; state.preset = 'Custom'; state.touchedRange = true; state.mobileMonthPicker = null; rerender(); };
   });
   root.querySelectorAll('[data-mobile-all]').forEach(button => {
     button.onclick = () => { const kind = button.dataset.mobileAll; setFilterList(kind, kind === 'accounts' ? (state.accountIds ? null : []) : (state.categoryIds ? null : [])); rerender(); };
@@ -676,7 +681,7 @@ function trendsSvg(byMonth, avg) {
   const gridlines = [];
   for (let v = 0; v <= yMax; v += step) {
     gridlines.push(`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" class="ln-grid"/>`);
-    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmt(v)}</text>`);
+    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmtAxisMoney(v)}</text>`);
   }
   const bars = byMonth.map((m, i) => {
     const cx = x(i);
@@ -765,7 +770,7 @@ function renderMobileNetWorthReport(root, series) {
         <span class="mobile-eyebrow">Net worth</span>
         <strong class="mobile-hero-value ${latest.netWorth < 0 ? 'neg-text' : ''}">${fmt(latest.netWorth)}</strong>
         <div class="mobile-net-pairs"><span><small>Assets</small><b>${fmt(latest.assets)}</b></span><span><small>Debts</small><b class="neg-text">${fmt(latest.liabilities)}</b></span></div>
-        <div class="mobile-change-pill ${change >= 0 ? 'positive' : 'negative'}">${fmt(change, { sign: true })} over this period</div>
+        <div class="mobile-change-pill ${change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral'}">${fmt(change, { sign: true })} over this period</div>
       </section>
       <section class="mobile-chart-card"><div class="mobile-section-title"><h2>Net worth history</h2></div>${netWorthSvg(series)}</section>
       <section class="mobile-list-section"><div class="mobile-section-title"><h2>Monthly history</h2></div><div class="mobile-data-card">${series.slice().reverse().map((item, index) => {
@@ -816,6 +821,16 @@ function netWorthSummary(series) {
   </div>`;
 }
 
+// compact axis label — "$400k" instead of fmt()'s "$400,000.00"; cents in, dollars out
+function fmtAxisMoney(cents) {
+  const abs = Math.abs(cents || 0);
+  const sign = cents < 0 ? '-' : '';
+  const short = n => Number.isInteger(n) ? n : n.toFixed(1);
+  if (abs >= 100_000_000) return `${sign}$${short(abs / 100_000_000)}m`;
+  if (abs >= 100_000) return `${sign}$${short(abs / 100_000)}k`;
+  return `${sign}$${Math.round(abs / 100)}`;
+}
+
 function niceStep(maxVal, ticks = 4) {
   const raw = maxVal / ticks || 1;
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -837,7 +852,7 @@ function netWorthSvg(series) {
   const gridlines = [];
   for (let v = 0; v <= yMax; v += step) {
     gridlines.push(`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" class="ln-grid"/>`);
-    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmt(v)}</text>`);
+    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmtAxisMoney(v)}</text>`);
   }
   const everyN = Math.ceil(n / 12);
   const xlabels = series.map((p, i) => i % everyN === 0
@@ -1131,6 +1146,7 @@ const TAB_FNS = {
 
 export function render(root, { report }) {
   state.report = report;
+  if (!state.touchedRange) applyPreset(DEFAULT_PRESET_BY_REPORT[report] || 'This Month');
   root.className = 'reflect-view';
   (TAB_FNS[report] || spendingReport)(root);
 }

@@ -12,9 +12,9 @@
 .fifty-head .month-group { display: flex; align-items: center; gap: 6px; }
 .fifty-head .month-label { font-size: 16px; font-weight: 700; padding: 2px 4px; }
 .fifty-head .month-nav-btn {
-  width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%;
+  width: 40px; height: 40px; flex: 0 0 40px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid var(--blue); color: var(--blue); font-size: 16px; font-weight: 700;
+  border: none; color: var(--blue); font-size: 20px; font-weight: 700;
 }
 .fifty-head .month-nav-btn:hover { background: var(--blue-light); }
 .fifty-head .head-spacer { flex: 1 1 0; min-width: 0; }

@@ -51,7 +51,7 @@ function rowControls(kind, id, base) {
   return h`<div class="fc-controls">
     <button class="fc-toggle ${off ? 'off' : ''}" data-act="toggle-off" data-kind="${kind}" data-id="${id}" title="${off ? 'Enable' : 'Disable'}">${off ? '○' : '●'}</button>
     ${isEditingThis
-      ? h`<input class="fc-edit-input" data-kind="${kind}" data-id="${id}" type="text" value="${fmtExact(base).replace('$', '')}">`
+      ? h`<input class="fc-edit-input" data-kind="${kind}" data-id="${id}" type="text" inputmode="decimal" value="${fmtExact(base).replace('$', '')}">`
       : h`<button class="fc-amt" data-act="edit-amt" data-kind="${kind}" data-id="${id}">${fmt(displayVal)}</button>`}
     <span class="fc-or">or</span>
     <span class="fc-stepper">
@@ -132,7 +132,7 @@ function head(fc) {
     <div class="fc-head-top">
       ${innerWidth < 768 ? raw('<a class="reflect-tool-back" href="#/reports/overview" aria-label="Back to Reflect">‹</a>') : ''}
       <div>
-        <span class="view-title">Forecast &amp; What-If</span>
+        <span class="view-title">Forecast</span>
         <div class="muted fc-subtitle">Projected from your last 3 months of income and spending. Adjust any row to test a what-if.</div>
       </div>
     </div>

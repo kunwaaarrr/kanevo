@@ -21,6 +21,10 @@ function simulate(balance, rate, payment) {
   return { points, months, totalInterest };
 }
 
+// Compact axis label ($400k not $400,000.00) — the full fmt() width clips past the SVG's left edge.
+const shortFmt = new Intl.NumberFormat('en-AU', { notation: 'compact', maximumFractionDigits: 1 });
+const shortCurrency = cents => `$${shortFmt.format((cents || 0) / 100)}`;
+
 function niceStep(maxVal, ticks = 4) {
   const raw = maxVal / ticks;
   const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
@@ -45,7 +49,7 @@ function burndownSvg(baseline, withExtra) {
   const gridlines = [];
   for (let v = 0; v <= yMax; v += step) {
     gridlines.push(`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" class="ln-grid"/>`);
-    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${fmt(v)}</text>`);
+    gridlines.push(`<text x="${padL - 8}" y="${(y(v) + 4).toFixed(1)}" class="ln-ylabel" text-anchor="end">${shortCurrency(v)}</text>`);
   }
   // stride years so labels keep ~50 viewBox-units apart (a 30yr mortgage would otherwise cram 30+ overlapping labels)
   const unitsPerYear = (12 / maxMonth) * plotW;
@@ -68,6 +72,7 @@ function accountCard(a) {
   const stats = store.loanStats(a.id, 0);
   const bal = store.accountBalances(a.id).working;
   return h`<a class="loan-card" href="#/loans/${a.id}">
+    <b class="loan-card-chevron" aria-hidden="true">›</b>
     <div class="loan-card-name">${a.name}</div>
     <div class="loan-card-bal neg-text">${fmt(bal)}</div>
     <div class="loan-card-row"><span class="muted">Rate</span><span>${a.loanInfo.interestRate}%</span></div>
@@ -112,7 +117,7 @@ function simResults(account, balance, rate, payment) {
           <div class="stat-label">Total Interest</div>
           <div class="stat-value">${fmt(base.totalInterest)} <span class="arrow">→</span> ${fmt(withExtra.totalInterest)}</div>
         </div>
-        <div class="stat-card savings-card">
+        <div class="stat-card savings-card${withExtra.interestSaved > 0 ? ' is-positive' : ''}">
           <div class="stat-label">Savings</div>
           <div class="stat-value">You'd save ${fmt(withExtra.interestSaved)} in interest and be debt-free ${monthsToYM(withExtra.timeSavedMonths)} sooner</div>
         </div>

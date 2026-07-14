@@ -292,6 +292,11 @@
 .mobile-clr { display: inline-flex; align-items: center; }
 .mobile-row-account { max-width: 120px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 11px; line-height: 1.1; }
 
+/* mobile approve/reject row — desktop's ✓/✗ approve-actions column has no mobile equivalent, so
+   unapproved rows get a full-width action row here, reusing the app's existing .btn green/danger look. */
+.mobile-row-approve-actions { display: flex; gap: 8px; margin-top: 9px; }
+.mobile-row-approve-actions .btn { flex: 1; min-height: 44px; height: auto; }
+
 /* compact rows (mobile "Compact rows" option) — ~30% shorter cards */
 .reg-mobile-list.compact .mobile-date-head { padding: 6px 12px 2px; font-size: 10px; }
 .reg-mobile-list.compact .mobile-row { padding: 6px 12px; }
@@ -305,7 +310,9 @@
 /* ================= mobile Spending overview ================= */
 .spending-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
 .spending-overview-head {
-  padding: 10px 14px 8px;
+  position: sticky; top: 0; z-index: 10;
+  padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
+  background: var(--app-cream);
 }
 .spending-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
 .spending-head-actions { gap: 8px; }
@@ -360,7 +367,9 @@
 /* ================= mobile Accounts overview ================= */
 .accounts-overview { min-height: 100%; background: var(--app-cream); padding-bottom: 26px; }
 .accounts-overview-head {
-  padding: 10px 14px 8px;
+  position: sticky; top: 0; z-index: 10;
+  padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
+  background: var(--app-cream);
 }
 .accounts-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
 .accounts-head-actions { gap: 8px; }
@@ -376,7 +385,8 @@
   text-align: center; color: var(--text);
 }
 .accounts-intro-close {
-  position: absolute; right: 10px; top: 7px; width: 30px; height: 30px;
+  /* right/top shifted so the 44px tap target keeps the × glyph at the same visual spot as the old 30px box */
+  position: absolute; right: 3px; top: 0; width: 44px; height: 44px;
   display: inline-flex; align-items: center; justify-content: center; color: var(--blue);
   font-size: 29px; font-weight: 300;
 }
@@ -557,7 +567,7 @@
   .sched-card .sched-enter span { font-size: 19px; line-height: 1; font-weight: 400; }
   .sched-card .sched-edit, .sched-card .sched-del {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; padding: 0; border-radius: 9px; color: var(--text-faint);
+    width: 44px; height: 44px; padding: 0; border-radius: 9px; color: var(--text-faint); /* icon (.sched-ico) stays 16px — only the tap area grows */
   }
   .sched-card .sched-edit:hover, .sched-card .sched-del:hover,
   .sched-card .sched-edit:active, .sched-card .sched-del:active { background: var(--bg-alt); color: var(--text-dim); }
@@ -578,7 +588,7 @@
 }
 .txe { display: flex; flex-direction: column; height: 100%; background: var(--bg); position: relative; }
 .txe-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; }
-.txe-close { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.txe-close { font-size: 20px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
 .txe-close:hover, .txe-close:active { background: rgba(0, 0, 0, .06); }
 .txe-title { font-size: 18px; font-weight: 700; }
 .txe-topbar-spacer { flex: 1; }

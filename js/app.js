@@ -22,7 +22,40 @@ export function openModal(html, { onOpen } = {}) {
   return modal;
 }
 export function closeModal() { modalRoot.hidden = true; modalRoot.innerHTML = ''; }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modalRoot.hidden) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!modalRoot.hidden) { closeModal(); return; }
+  document.querySelectorAll('.popover:not([hidden])').forEach(p => { p.hidden = true; }); // Escape closes open popovers too
+});
+
+// ---------- confirm sheet (in-app replacement for native confirm) ----------
+// Built on the existing modal layer. Resolves true only when the confirm button is tapped;
+// cancel / backdrop / Escape / any other dismissal resolve false.
+export function confirmSheet({ title, body = '', confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false }) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = val => {
+      if (done) return;
+      done = true;
+      document.removeEventListener('keydown', onKey, true);
+      closeModal();
+      resolve(val);
+    };
+    const onKey = e => { if (e.key === 'Escape') finish(false); };
+    const modal = openModal(h`<div class="confirm-sheet">
+      <h2>${title}</h2>
+      ${body ? h`<p class="muted confirm-body">${body}</p>` : ''}
+      <div class="modal-actions">
+        <button class="btn secondary confirm-cancel">${cancelLabel}</button>
+        <button class="btn ${danger ? 'danger' : ''} confirm-ok">${confirmLabel}</button>
+      </div>
+    </div>`);
+    modalRoot.querySelector('.modal-backdrop').onclick = () => finish(false); // openModal wired this to closeModal; take it over so it resolves
+    modal.querySelector('.confirm-cancel').onclick = () => finish(false);
+    modal.querySelector('.confirm-ok').onclick = () => finish(true);
+    document.addEventListener('keydown', onKey, true); // capture: settles the promise before the module-level Escape handler
+  });
+}
 
 // ---------- toast ----------
 const toastRoot = document.getElementById('toast-root');
@@ -194,6 +227,20 @@ document.addEventListener('click', event => {
     lastScrollTop = st;
   }, { passive: true });
 }
+
+// ---------- dismiss open popovers on outside tap ----------
+// popovers are plain elements toggled via [hidden] by view code with no backdrop; an outside tap
+// otherwise falls through to the row beneath AND leaves the popover open. Capture the first outside
+// tap, close every open popover, and swallow that tap so it can't also activate what's underneath.
+// A tap on a popover, on any [data-act] trigger (which re-toggles), or inside the modal layer is left alone.
+document.addEventListener('click', e => {
+  const open = document.querySelectorAll('.popover:not([hidden])');
+  if (!open.length) return;
+  if (e.target.closest('.popover, [data-act], #modal-root')) return;
+  open.forEach(p => { p.hidden = true; });
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
 
 // ---------- keep popovers inside the viewport ----------
 // menus anchor to their trigger and can bleed past the phone's right edge; nudge them back

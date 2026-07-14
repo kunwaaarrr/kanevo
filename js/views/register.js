@@ -1,5 +1,5 @@
 import { store, INFLOW } from '../store.js';
-import { openModal, closeModal, toast, navigate } from '../app.js';
+import { openModal, closeModal, toast, navigate, confirmSheet } from '../app.js';
 import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, raw, debounce, addMonths, ICONS } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
 import { parseStatement, buildTxns } from '../lib/csv.js';
@@ -246,6 +246,7 @@ export function renderSpendingOverview(root) {
       if (transaction) openAddTransactionModal(transaction.accountId, transaction.id);
     };
   });
+  wireMobileApproveReject(root, null, () => renderSpendingOverview(root));
   wireScheduled(root, null, () => renderSpendingOverview(root));
 }
 
@@ -524,8 +525,8 @@ function wireBulkBar(root, accountId) {
     toast('Approved');
   };
   const delBtn = root.querySelector('#bulk-delete');
-  if (delBtn) delBtn.onclick = () => {
-    if (!confirm(`Delete ${selectedIds.size} transaction(s)?`)) return;
+  if (delBtn) delBtn.onclick = async () => {
+    if (!(await confirmSheet({ title: `Delete ${selectedIds.size} transaction(s)?`, confirmLabel: 'Delete', danger: true }))) return;
     selectedIds.forEach(id => store.deleteTransaction(id));
     selectedIds.clear();
     toast('Deleted');
@@ -561,14 +562,13 @@ function renderSchedCard(s, accountId) {
   const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
   const acc = store.state.accounts.find(a => a.id === s.accountId);
   const frequency = FREQ_LABEL[s.frequency] || s.frequency;
-  const shortDate = s.nextDate ? `${s.nextDate.slice(8, 10)}/${s.nextDate.slice(5, 7)}/${s.nextDate.slice(2, 4)}` : '';
   const context = [acc?.name, s.memo].filter(Boolean).join(' · ');
   return h`<div class="sched-row sched-card" data-id="${s.id}">
     <div class="sched-card-top">
       <span class="sched-card-icon" aria-hidden="true">${ICONS.clock}</span>
       <div class="sched-card-info">
         <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
-        <div class="sched-card-schedule"><span>${frequency}</span><strong>Next: ${shortDate}</strong></div>
+        <div class="sched-card-schedule"><span>${frequency}</span><strong>Next: ${fmtDate(s.nextDate)}</strong></div>
         ${context ? h`<div class="sched-card-meta">${context}</div>` : ''}
       </div>
       <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
@@ -609,8 +609,10 @@ function wireScheduled(root, accountId, rerender = () => render(root, { accountI
       toast('Transaction entered');
       rerender();
     };
-    row.querySelector('.sched-del').onclick = () => {
-      if (confirm('Delete this scheduled transaction?')) { store.deleteScheduled(id); rerender(); }
+    row.querySelector('.sched-del').onclick = async () => {
+      if (!(await confirmSheet({ title: 'Delete this scheduled transaction?', confirmLabel: 'Delete', danger: true }))) return;
+      store.deleteScheduled(id);
+      rerender();
     };
     row.querySelector('.sched-edit').onclick = () => openScheduledEditModal(s);
   });
@@ -699,8 +701,8 @@ function openEditAccountModal(account) {
         closeModal();
         toast('Account updated');
       };
-      modal.querySelector('#ea-close').onclick = () => {
-        if (!confirm(`Close "${account.name}"? You can reopen it later from settings.`)) return;
+      modal.querySelector('#ea-close').onclick = async () => {
+        if (!(await confirmSheet({ title: `Close "${account.name}"?`, body: 'You can reopen it later from settings.', confirmLabel: 'Close Account', danger: true }))) return;
         store.closeAccount(account.id);
         closeModal();
         navigate('#/accounts');
@@ -768,7 +770,13 @@ function wireToolbar(root, accountId, account) {
   if (searchEl) searchEl.oninput = debounce(() => { search = searchEl.value; render(root, { accountId }); }, 200);
 
   const banner = root.querySelector('#approval-banner');
-  if (banner) banner.onclick = () => { filter = 'unapproved'; render(root, { accountId }); };
+  if (banner) banner.onclick = () => {
+    filter = 'unapproved';
+    render(root, { accountId });
+    // banner sits above the fold on mobile; nothing else signals the re-render happened, so
+    // scroll the (freshly re-rendered) list into view.
+    root.querySelector('.mobile-account-transactions, .reg-mobile-list, .reg-table-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const viewBtn = root.querySelector('#view-menu-btn');
   if (viewBtn) viewBtn.onclick = e => { e.stopPropagation(); viewMenuOpen = !viewMenuOpen; render(root, { accountId }); };
@@ -881,7 +889,7 @@ export function openFileImportModal(accountId, initialFile) {
           toast(`${inserted} imported${merged ? `, ${merged} matched to existing` : ''}${skipped ? `, ${skipped} already imported` : ''}`);
           return;
         }
-        if (!confirm('This will replace your current plan data. Continue?')) return;
+        if (!(await confirmSheet({ title: 'Replace your current plan data?', body: 'This will overwrite everything currently in Kanevo with the imported backup.', confirmLabel: 'Replace', danger: true }))) return;
         try {
           store.importJSON(await file.text());
           closeModal();
@@ -1136,7 +1144,7 @@ function renderCategoryDropdown(st, mainAmount, month, isSplit) {
 function renderSplitRows(st, mainAmount, month) {
   const rows = st.subtransactions.map((s, i) => h`<div class="split-row" data-idx="${i}">
     <select class="split-cat">${categoryOptionsHtml(s.categoryId, mainAmount > 0, month)}</select>
-    <input type="text" class="split-amount" value="${s.amount ? fmtExact(Math.abs(s.amount)) : ''}" placeholder="$0.00">
+    <input type="text" class="split-amount" inputmode="decimal" value="${s.amount ? fmtExact(Math.abs(s.amount)) : ''}" placeholder="$0.00">
     <input type="text" class="split-memo" value="${s.memo || ''}" placeholder="Memo">
     <button class="icon-btn split-del" title="Remove">✕</button>
   </div>`);
@@ -1178,7 +1186,11 @@ function wireTable(root, txs, accountId) {
     const approveBtn = row.querySelector('.approve-btn');
     if (approveBtn) approveBtn.onclick = e => { e.stopPropagation(); store.approveTransaction(id); };
     const rejectBtn = row.querySelector('.reject-btn');
-    if (rejectBtn) rejectBtn.onclick = e => { e.stopPropagation(); if (confirm('Delete this transaction?')) store.deleteTransaction(id); };
+    if (rejectBtn) rejectBtn.onclick = async e => {
+      e.stopPropagation();
+      if (!(await confirmSheet({ title: 'Delete this transaction?', confirmLabel: 'Delete', danger: true }))) return;
+      store.deleteTransaction(id);
+    };
     row.onclick = e => {
       if (e.target.closest('[data-action]') || e.target.closest('.approve-actions')) return;
       editingId = id;
@@ -1336,9 +1348,11 @@ function wireEditRow(root, row, accountId) {
   };
 
   row.querySelectorAll('.ef-thumb').forEach(img => {
-    img.onclick = () => {
+    img.onclick = async () => {
       const idx = +img.dataset.idx;
-      if (confirm('Remove this attachment?')) { editState.attachments.splice(idx, 1); render(root, { accountId }); }
+      if (!(await confirmSheet({ title: 'Remove this attachment?', confirmLabel: 'Remove', danger: true }))) return;
+      editState.attachments.splice(idx, 1);
+      render(root, { accountId });
     };
   });
 
@@ -1398,8 +1412,10 @@ function wireEditRow(root, row, accountId) {
   const saveAnotherBtn = row.querySelector('#ef-save-another');
   if (saveAnotherBtn) saveAnotherBtn.onclick = () => { sync(); saveEdit(root, id, accountId, { addAnother: true }); };
   const delBtn = row.querySelector('#ef-delete');
-  if (delBtn) delBtn.onclick = () => {
-    if (confirm('Delete this transaction?')) { store.deleteTransaction(id); editingId = null; editState = null; }
+  if (delBtn) delBtn.onclick = async () => {
+    if (!(await confirmSheet({ title: 'Delete this transaction?', confirmLabel: 'Delete', danger: true }))) return;
+    store.deleteTransaction(id);
+    editingId = null; editState = null;
   };
 }
 
@@ -1453,10 +1469,14 @@ function wireSplitRows(root, row, accountId) {
 
 function saveEdit(root, id, accountId, { addAnother }) {
   const st = editState;
+  // Single guard for the whole row (transfer or normal): both branches below re-derive their own
+  // signed amount from this same raw value, so this is the one place a $0 save gets blocked.
+  const rawAmount = st.outflow ? parseAmount(st.outflow) : parseAmount(st.inflow);
+  if (!rawAmount) { toast('Enter an amount'); return; }
   const doAfter = () => {
     if (repeatChoice !== 'none' && st.payeeText.trim()) {
       const payeeId = store.findOrCreatePayee(st.payeeText.trim()); // returns the id string
-      const amount = st.outflow ? -parseAmount(st.outflow) : parseAmount(st.inflow);
+      const amount = st.outflow ? -rawAmount : rawAmount;
       store.addScheduled({
         frequency: repeatChoice, nextDate: advanceDate(st.date, repeatChoice),
         accountId: st.accountId || accountId, payeeId, categoryId: st.categoryId, memo: st.memo, amount, flag: st.flag,
@@ -1471,18 +1491,18 @@ function saveEdit(root, id, accountId, { addAnother }) {
       editingId = null; editState = null;
     }
     render(root, { accountId });
+    toast(id === 'new' ? 'Transaction added' : 'Transaction updated');
   };
 
   if (st.transferAccountId) {
-    const amount = st.outflow ? parseAmount(st.outflow) : parseAmount(st.inflow);
     const fromAccountId = st.outflow ? (st.accountId || accountId) : st.transferAccountId;
     const toAccountId = st.outflow ? st.transferAccountId : (st.accountId || accountId);
-    store.addTransfer({ fromAccountId, toAccountId, date: st.date, amount, memo: st.memo, categoryId: st.categoryId });
+    store.addTransfer({ fromAccountId, toAccountId, date: st.date, amount: rawAmount, memo: st.memo, categoryId: st.categoryId });
     doAfter();
     return;
   }
   const payeeId = st.payeeText.trim() ? store.findOrCreatePayee(st.payeeText.trim()) : null; // returns the id string
-  const amount = st.outflow ? -parseAmount(st.outflow) : parseAmount(st.inflow);
+  const amount = st.outflow ? -rawAmount : rawAmount;
   const tx = {
     accountId: st.accountId || accountId, date: st.date, payeeId,
     categoryId: st.subtransactions ? null : st.categoryId, memo: st.memo, amount,
@@ -1563,12 +1583,33 @@ function renderMobileRow(t, { spending = false } = {}) {
         ${accountLabel}
       </div>
     </div>
+    ${!t.approved ? h`<div class="mobile-row-approve-actions">
+      <button type="button" class="btn green sm" data-approve="${t.id}">✓ Approve</button>
+      <button type="button" class="btn danger sm" data-reject="${t.id}">✕ Reject</button>
+    </div>` : ''}
   </div>`;
 }
 
 function wireMobileList(root, txs, accountId) {
   root.querySelectorAll('.mobile-row').forEach(row => {
     row.onclick = () => openAddTransactionModal(accountId, row.dataset.id);
+  });
+  wireMobileApproveReject(root, accountId);
+}
+
+// shared by the register mobile list and the Spending feed — desktop's ✓/✕ approve-actions column
+// has no mobile equivalent, so unapproved mobile rows get their own Approve/Reject row.
+function wireMobileApproveReject(root, accountId, rerender = () => render(root, { accountId })) {
+  root.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.onclick = e => { e.stopPropagation(); store.approveTransaction(btn.dataset.approve); rerender(); };
+  });
+  root.querySelectorAll('[data-reject]').forEach(btn => {
+    btn.onclick = async e => {
+      e.stopPropagation();
+      if (!(await confirmSheet({ title: 'Delete this transaction?', confirmLabel: 'Delete', danger: true }))) return;
+      store.deleteTransaction(btn.dataset.reject);
+      rerender();
+    };
   });
 }
 
@@ -1876,8 +1917,10 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     m.querySelector('#txe-cleared').onchange = e => { cleared = e.target.checked; };
 
     const delBtn = m.querySelector('#txe-delete');
-    if (delBtn) delBtn.onclick = () => {
-      if (confirm('Delete this transaction?')) { store.deleteTransaction(editing.id); closeModal(); }
+    if (delBtn) delBtn.onclick = async () => {
+      if (!(await confirmSheet({ title: 'Delete this transaction?', confirmLabel: 'Delete', danger: true }))) return;
+      store.deleteTransaction(editing.id);
+      closeModal();
     };
 
     m.querySelector('#txe-save').onclick = save;
@@ -1886,6 +1929,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
   }
 
   function save() {
+    if (!amountCents) { toast('Enter an amount'); return; }
     const name = payeeText.trim();
     // findOrCreatePayee already returns the payee's id (a string), not a payee object — no `.id` here.
     const payeeIdResolved = name ? store.findOrCreatePayee(name) : null;

@@ -19,6 +19,13 @@ const PRESETS = {
 const CLASS_LABEL = { need: 'Necessities', want: 'Wants', savings: 'Savings & debt repayment' };
 const CLASS_ORDER = ['need', 'want', 'savings'];
 
+// "Jul 2026" — short month + full year, matches the report pages' month-stepper format
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function monthLabelShort(month) {
+  const [y, m] = month.split('-').map(Number);
+  return `${MONTHS_SHORT[m - 1]} ${y}`;
+}
+
 function currentSplit() {
   return splitPreset === 'custom' ? customSplit : PRESETS[splitPreset];
 }
@@ -30,7 +37,7 @@ function header() {
     <span class="view-title">50/30/20</span>
     <div class="month-group">
       <a class="month-nav-btn" href="#/fifty/${addMonths(curMonth, -1)}">‹</a>
-      <span class="month-label">${monthLabel(curMonth)}</span>
+      <span class="month-label">${monthLabelShort(curMonth)}</span>
       <a class="month-nav-btn" href="#/fifty/${addMonths(curMonth, 1)}">›</a>
     </div>
     <div class="head-spacer"></div>
@@ -81,7 +88,7 @@ function targetsSection(data, split) {
     <p class="muted section-hint">A quick "what should I aim for" split, no history required. Edit the income below to try a different number.</p>
     <div class="calc-income-row">
       <label for="calc-income-input">Monthly income (after tax)</label>
-      <input id="calc-income-input" class="calc-income-input" type="text" value="${fmtExact(income).replace('$', '')}">
+      <input id="calc-income-input" class="calc-income-input" type="text" inputmode="decimal" value="${fmtExact(income).replace('$', '')}">
     </div>
     <div class="target-stats">
       ${CLASS_ORDER.map(cls => h`<div class="target-stat">

@@ -17,7 +17,8 @@
 /* ================= mobile Reflect overview ================= */
 .reflect-overview { min-height: 100%; background: var(--app-cream); }
 .reflect-overview-head {
-  padding: 10px 14px 8px;
+  position: sticky; top: 0; z-index: 28; background: var(--app-cream);
+  padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
 }
 .reflect-overview-head h1 { font-size: 23px; line-height: 1.15; font-weight: 600; letter-spacing: -.3px; }
 .reflect-overview-menu-wrap { position: relative; }
@@ -139,7 +140,9 @@
 .mobile-data-track > span { display: block; height: 100%; border-radius: inherit; }
 .mobile-chart-card { min-width: 0; max-width: 100%; padding: 14px 12px 10px; overflow: hidden; }
 .mobile-chart-card .mobile-section-title { margin-bottom: 8px; }
-.mobile-chart-card .trends-svg, .mobile-chart-card .nw-svg, .mobile-chart-card .aom-svg { min-width: 520px; width: 520px; }
+/* trends/net-worth stay responsive (width:100% from the shared rule above) so the wrapper below only
+   scrolls when a wide date range genuinely overflows it, instead of always forcing a scrollbar */
+.mobile-chart-card .aom-svg { min-width: 520px; width: 520px; }
 .mobile-chart-card { overflow-x: auto; }
 .mobile-month-row, .mobile-history-row, .mobile-simple-row { min-height: 58px; padding: 10px 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-subtle); }
 .mobile-month-row:last-child, .mobile-history-row:last-child, .mobile-simple-row:last-child { border-bottom: 0; }
@@ -156,6 +159,7 @@
 .mobile-change-pill { align-self: flex-start; margin-top: 11px; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .mobile-change-pill.positive { background: var(--pill-pos-bg); color: var(--pill-pos-text); }
 .mobile-change-pill.negative { background: var(--pill-neg-bg); color: var(--pill-neg-text); }
+.mobile-change-pill.neutral { background: var(--track); color: var(--text-2); }
 .mobile-income-hero p, .mobile-age-hero p { margin-top: 8px; color: var(--text-2); font-size: 12px; line-height: 1.4; }
 .mobile-compare-line { margin-top: 13px; display: flex; flex-direction: column; gap: 5px; }
 .mobile-compare-line > span { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
@@ -272,7 +276,8 @@
 .chip-ico { filter: grayscale(1) brightness(1.4); }
 
 /* ================= popovers ================= */
-.popover {
+/* scoped to Reflect — an unscoped .popover here used to leak z-index/padding into the budget view */
+.reflect-view .popover {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
   background: var(--bg); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 8px; width: 280px;
@@ -312,14 +317,16 @@
 .empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
 
 /* ================= segmented control ================= */
-.segmented { display: flex; gap: 2px; background: var(--track); border-radius: 999px; padding: 3px; }
+/* scoped to Reflect — an unscoped .segmented here used to leak its gap into the budget cadence toggle */
+.reflect-view .segmented { display: flex; gap: 2px; background: var(--track); border-radius: 999px; padding: 3px; }
 .segment-btn { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-dim); }
 .segment-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(20,30,70,.12); }
 
 /* ================= spending breakdown ================= */
 .spending-cards { display: flex; gap: 20px; align-items: stretch; }
 .total-spending-card, .spending-list-card { flex: 1; min-width: 0; }
-.donut-wrap { max-width: 260px; margin: 8px auto 0; }
+/* scoped to Reflect — an unscoped .donut-wrap here used to leak its width into the 50/30/20 view */
+.reflect-view .donut-wrap { max-width: 260px; margin: 8px auto 0; }
 .donut-svg { width: 100%; height: auto; display: block; }
 .donut-arc { transition: stroke-width .12s; cursor: pointer; }
 .donut-arc.dim { opacity: .3; }
@@ -432,6 +439,6 @@
   .report-tabs { padding: 0 14px; }
   .card { padding: 16px; }
   .filter-row { gap: 8px; }
-  .donut-wrap { max-width: 200px; }
+  .reflect-view .donut-wrap { max-width: 200px; }
   .card-big-amt { font-size: 22px; }
 }

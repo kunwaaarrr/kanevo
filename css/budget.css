@@ -85,12 +85,13 @@
   /* overflow must stay visible on desktop or absolutely-positioned menus (Views ▾) get clipped */
   display: flex; align-items: center; gap: 8px; padding: 10px 20px; flex-wrap: wrap;
 }
-.chip {
+/* scoped — bare .chip here used to leak into other views' filter chips */
+.budget-view .chip {
   border-radius: 5px; padding: 3px 12px; font-size: 12px; font-weight: 500; white-space: nowrap;
   background: var(--chip-bg); border: 1.5px solid transparent; color: var(--text);
 }
-.chip:hover { background: var(--track); }
-.chip.active { background: var(--chip-active-bg); border-color: var(--blue); }
+.budget-view .chip:hover { background: var(--track); }
+.budget-view .chip.active { background: var(--chip-active-bg); border-color: var(--blue); }
 /* z-index 41: the wrap must out-stack the toolbar row below, or its text paints over the open menu */
 .chip-fv-wrap { position: relative; z-index: 41; margin-left: auto; }
 .fv-menu {
@@ -121,11 +122,12 @@
 .recent-amt { font-weight: 600; }
 .toolbar-spacer { flex: 1; }
 .link-btn:disabled { pointer-events: none; }
-.icon-btn {
+/* scoped — bare .icon-btn here used to collide with register.css's own .icon-btn */
+.budget-view .icon-btn {
   padding: 6px 10px; border-radius: 6px; font-size: 15px; border: 1px solid var(--line); background: var(--bg);
 }
-.icon-btn:hover { background: var(--bg-alt); }
-.icon-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+.budget-view .icon-btn:hover { background: var(--bg-alt); }
+.budget-view .icon-btn.active { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
 
 /* ================= body / table ================= */
 .budget-body { display: flex; align-items: flex-start; }
@@ -220,21 +222,29 @@
 .insp-target-question { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
 .insp-target-hint { font-size: 13px; margin-bottom: 12px; }
 
-.segmented {
+/* scoped — bare .segmented/.seg-btn here used to leak into other views' segmented controls.
+   forecast.css's .fc-horizon has no base styling of its own and depends on this rule for its
+   horizon toggle (it only overrides padding) — kept in the selector list rather than silently
+   breaking it; that dependency belongs in forecast.css, not here. */
+.budget-view .segmented, .fc-horizon {
   display: flex; background: var(--track); border-radius: 999px; padding: 3px; margin: 10px 0;
 }
-.seg-btn { flex: 1; padding: 6px 0; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-2); }
-.seg-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.budget-view .seg-btn, .fc-horizon .seg-btn { flex: 1; padding: 6px 0; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.budget-view .seg-btn.active, .fc-horizon .seg-btn.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .snooze-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 12px 0; }
 .target-actions { display: flex; justify-content: space-between; align-items: center; }
 .target-actions-right { display: flex; gap: 8px; }
 
 /* ================= popovers ================= */
-.popover {
+/* scoped — bare .popover here used to leak z-index/padding into other views (reports.css hit the
+   same bug and now scopes its own .popover under .reflect-view). ".popover.budget-view" covers
+   the two popovers that portal to document.body outside the .budget-view tree — see budget.js.
+   z-index 55 must stay above #tabbar (40) and the mobile FAB (39). */
+.budget-view .popover, .popover.budget-view {
   position: absolute; z-index: 55; background: var(--bg); border-radius: 8px; box-shadow: var(--shadow);
   padding: 14px; width: 280px;
 }
-.cat-popover .pop-rename-input {
+.budget-cat-popover .pop-rename-input {
   width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px;
 }
 .pop-actions { display: flex; justify-content: space-between; }
@@ -367,10 +377,11 @@
   .edit-plan-add-group { align-self: flex-start; min-height: 42px; display: inline-flex; align-items: center; gap: 7px; padding: 0 9px; color: var(--text-dim); font-size: 14px; font-weight: 650; }
   .edit-plan-add-group > span { color: var(--blue); font-size: 20px; font-weight: 400; line-height: 1; }
   .edit-plan-add-group:hover { color: var(--blue); }
-  .edit-plan-group-head { min-height: 38px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 38px; align-items: center; gap: 4px; padding: 0 2px 6px; }
+  .edit-plan-group-head { min-height: 38px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 44px; align-items: center; gap: 4px; padding: 0 2px 6px; }
   .edit-plan-group-name { min-width: 0; text-align: left; }
   .edit-plan-group-name > span { display: block; overflow: hidden; color: var(--text); font-size: 16px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-  .edit-plan-more { width: 38px; height: 38px; flex: 0 0 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--text-faint); }
+  /* 44px tap area (icon stays 19px) — was a 38px box, under the 44px touch-target minimum */
+  .edit-plan-more { width: 44px; height: 44px; flex: 0 0 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--text-faint); }
   .edit-plan-more:hover { background: var(--bg); color: var(--text-dim); }
   .edit-plan-more .ico { width: 19px; height: 19px; }
   .edit-plan-drag { width: 28px; height: 38px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-faint); cursor: grab; touch-action: none; }
@@ -378,7 +389,7 @@
   .edit-plan-drag .ico { width: 17px; height: 17px; }
   .edit-plan-card { overflow: hidden; border-radius: 18px; background: var(--bg); }
   .edit-plan-cat {
-    min-height: 54px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 38px; align-items: center; gap: 4px;
+    min-height: 54px; display: grid; grid-template-columns: 28px minmax(0, 1fr) 44px; align-items: center; gap: 4px;
     padding: 4px 8px 4px 7px; border-bottom: 1px solid var(--line-subtle); text-align: left;
   }
   .edit-plan-cat-main { min-width: 0; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
@@ -386,7 +397,7 @@
   .edit-plan-target { flex-shrink: 0; color: var(--text-dim); font-size: 12px; font-weight: 600; }
   .edit-plan-target.empty { color: var(--text-faint); font-weight: 600; }
   .edit-plan-cat .edit-plan-more:hover { background: var(--bg-alt); }
-  .edit-plan-add-row { width: auto; min-height: 30px; display: inline-flex; align-items: center; gap: 4px; margin: 6px 8px 8px; padding: 0 7px; border-radius: 9px; color: var(--text-faint); font-size: 11.5px; font-weight: 600; text-align: left; }
+  .edit-plan-add-row { width: auto; min-height: 44px; display: inline-flex; align-items: center; gap: 4px; margin: 6px 8px 8px; padding: 0 7px; border-radius: 9px; color: var(--text-faint); font-size: 11.5px; font-weight: 600; text-align: left; }
   .edit-plan-add-row > span { color: var(--text-faint); font-size: 15px; font-weight: 400; line-height: 1; }
   .edit-plan-add-row:hover { background: var(--bg-alt); color: var(--text-dim); }
   .edit-plan-empty { padding: 26px 18px; border-radius: 17px; background: var(--bg); color: var(--text-2); font-size: 13px; line-height: 1.45; text-align: center; }
@@ -455,9 +466,16 @@
 
   /* ---- top bar ---- */
   .budget-mobile { min-height: 100%; padding-bottom: 72px; background: var(--app-cream); }
-  .m-head { padding: 10px 14px 8px; }
+  /* sticky to match the secondary pages (e.g. register.css's .spending-overview-head); the
+     safe-area term clears the notch under viewport-fit=cover. z-index 10: above scrolling
+     rows (unset/auto), below popovers (55) and #modal-root (51+). */
+  .m-head {
+    position: sticky; top: 0; z-index: 10;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
+    background: var(--app-cream);
+  }
   .m-month-wrap { position: relative; }
-  .m-month { display: flex; align-items: center; gap: 8px; font-size: 23px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
+  .m-month { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 23px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
   .m-month-chev { width: 20px; height: 23px; background: transparent; color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
   .m-month-chev .ico { width: 17px; height: 17px; stroke-width: 2.3; }
   .m-month-wrap .month-picker-popover {
@@ -471,6 +489,13 @@
   .m-month-wrap .month-picker-popover .mp-cell { height: 54px; border-radius: 14px; color: var(--text-2); font-size: 17px; font-weight: 500; }
   .m-month-wrap .month-picker-popover .mp-cell:hover { background: var(--bg-alt); }
   .m-month-wrap .month-picker-popover .mp-cell.current { background: var(--bg-alt); color: var(--text); font-weight: 700; }
+  /* has-data cells were only bold (from the base .mp-cell.has-data rule) — the higher-specificity
+     mobile .mp-cell override above resets font-weight to 500, silently swallowing that cue. */
+  .m-month-wrap .month-picker-popover .mp-cell.has-data { position: relative; }
+  .m-month-wrap .month-picker-popover .mp-cell.has-data::after {
+    content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 5px; height: 5px; border-radius: 50%; background: var(--blue);
+  }
   .m-head-actions { gap: 8px; }
   .m-icon { color: var(--text); }
   .m-icon .ico { width: 22px; height: 22px; }

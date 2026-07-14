@@ -311,6 +311,10 @@ html, body { overflow-x: clip; }
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
+/* confirm sheet — in-app replacement for native confirm(); touch-target buttons */
+.confirm-sheet .confirm-body { margin-bottom: 4px; white-space: pre-wrap; }
+.confirm-sheet .modal-actions .btn { min-height: 44px; }
+
 /* toast */
 #toast-root { position: fixed; bottom: calc(var(--tabbar-h) + 14px); left: 50%; transform: translateX(-50%); z-index: 60; }
 .toast {
@@ -325,6 +329,7 @@ html, body { overflow-x: clip; }
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--bg);
   position: sticky; top: 0; z-index: 10;
+  padding-top: calc(14px + env(safe-area-inset-top)); /* clear the notch/status bar under viewport-fit=cover */
 }
 .view-title { font-size: 18px; font-weight: 800; }
 .muted { color: var(--text-dim); }
@@ -341,7 +346,7 @@ html, body { overflow-x: clip; }
   #tabbar { display: flex; }
   #view { padding-bottom: calc(var(--tabbar-h) + 12px); background: var(--app-cream); }
   #mobile-transaction-btn { display: flex; }
-  .view-head { padding: 10px 12px; }
+  .view-head { padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top)); }
   #toast-root { bottom: calc(var(--tabbar-h) + 14px); }
 
   .profile-view { min-height: 100%; background: var(--app-cream); }

@@ -18,13 +18,13 @@ export function render(root) {
       </section>
 
       <section class="profile-card">
-        <a class="profile-row" href="#/settings"><span class="profile-row-icon">${ICONS.eye}</span><span><strong>Privacy &amp; data</strong><small>Privacy mode, backups and local data</small></span><b aria-hidden="true">›</b></a>
-        <a class="profile-row" href="#/settings"><span class="profile-row-icon">${ICONS.download}</span><span><strong>Bank connections</strong><small>Imports and future bank syncing</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="#/settings/privacy"><span class="profile-row-icon">${ICONS.eye}</span><span><strong>Privacy &amp; data</strong><small>Privacy mode, backups and local data</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="#/settings/bank-connections"><span class="profile-row-icon">${ICONS.download}</span><span><strong>Bank connections</strong><small>Imports and future bank syncing</small></span><b aria-hidden="true">›</b></a>
       </section>
 
       <section class="profile-card">
-        <a class="profile-row" href="https://github.com/kunwaaarrr/kanevo" target="_blank" rel="noopener"><span class="profile-row-icon">${ICONS.flag}</span><span><strong>Help &amp; feedback</strong><small>Support and feature requests</small></span><b aria-hidden="true">›</b></a>
-        <a class="profile-row" href="#/settings"><span class="profile-row-icon profile-about-icon">K</span><span><strong>About Kanevo</strong><small>Version, privacy promise and project details</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="https://github.com/kunwaaarrr/kanevo/issues" target="_blank" rel="noopener"><span class="profile-row-icon">${ICONS.flag}</span><span><strong>Help &amp; feedback</strong><small>Support and feature requests</small></span><b aria-hidden="true">›</b></a>
+        <a class="profile-row" href="#/settings/about"><span class="profile-row-icon profile-about-icon">K</span><span><strong>About Kanevo</strong><small>Version, privacy promise and project details</small></span><b aria-hidden="true">›</b></a>
       </section>
     </main>
   </div>`;
