@@ -21,17 +21,7 @@ function isoAdd(iso, days) { return new Date(new Date(iso + 'T00:00:00').getTime
 function firstOfMonth(month) { return month + '-01'; }
 
 // ---------- category templates (also exported) ----------
-// general-purpose default structure for someone budgeting from scratch — kept separate
-// from the event templates below and listed first so it's the one-tap "obvious" choice.
-export const STARTER_TEMPLATE = { name: '⭐ Starter Budget (Recommended)', emoji: '⭐', groups: [
-  { name: '🏠 Immediate Obligations', categories: ['🏠 Rent/Mortgage', '⚡ Electric', '💧 Water', '🌐 Internet', '🛒 Groceries', '🚗 Transport', '📱 Phone'] },
-  { name: '🧾 True Expenses', categories: ['🚙 Insurance', '🔧 Car Maintenance', '🏥 Medical', '📺 Subscriptions', '👕 Clothing'] },
-  { name: '✨ Quality of Life', categories: ['🍜 Dining Out', '🎬 Entertainment', '💪 Fitness', '✈️ Holiday'] },
-  { name: '💰 Savings', categories: ['🚨 Emergency Fund', '📈 Investments'] },
-]};
-
 export const CATEGORY_TEMPLATES = [
-  STARTER_TEMPLATE,
   { name: 'New Baby', emoji: '👶', groups: [
     { name: '👶 New Baby', categories: ['🍼 Formula & Feeding', '🧷 Diapers', '👕 Baby Clothes', '🛏️ Nursery', '🏥 Medical', '🧸 Toys'] },
   ]},
@@ -52,6 +42,100 @@ export const COMMON_CATEGORIES = [
   '📺 Subscriptions', '💪 Fitness', '👕 Clothing', '🏥 Medical', '🎬 Entertainment',
   '🎁 Gifts', '💰 Savings',
 ];
+
+// guided setup — a couple of quick questions that tailor group/category suggestions
+export const SETUP_QUESTIONS = [
+  { id: 'life', title: 'What applies to you?', hint: 'Tap all that fit.', options: [
+    { id: 'rentOrMortgage', label: '🏠 Rent or mortgage' },
+    { id: 'car',             label: '🚗 Own a car' },
+    { id: 'publicTransport', label: '🚌 Public transport' },
+    { id: 'pets',            label: '🐾 Pets' },
+    { id: 'kids',            label: '👶 Kids' },
+    { id: 'creditCards',     label: '💳 Credit cards' },
+    { id: 'debt',            label: '🏦 Loan or debt' },
+    { id: 'subscriptions',   label: '📺 Subscriptions' },
+    { id: 'fitness',         label: '🏋️ Gym / fitness' },
+    { id: 'eatingOut',       label: '🍽️ Eating out' },
+    { id: 'travel',          label: '✈️ Travel' },
+    { id: 'hobbies',         label: '🎮 Hobbies' },
+  ]},
+  { id: 'savings', title: 'Saving for anything?', hint: 'Optional.', optional: true, options: [
+    { id: 'emergency',   label: '🚨 Emergency fund' },
+    { id: 'bigPurchase', label: '🎯 Big purchase' },
+    { id: 'holiday',     label: '🏖️ Holiday' },
+    { id: 'investing',   label: '📈 Investing' },
+  ]},
+];
+
+// suggestion rules. `when`: 'always' | answerId | [answerIds] (any-of). group shows if its
+// `when` matches; a category chip shows if its `when` matches. Group shown only if it ends up
+// with >=1 visible category.
+export const PLAN_SUGGESTIONS = [
+  { group: '🏠 Immediate Obligations', when: 'always', categories: [
+    { name: '🏠 Rent/Mortgage', when: 'rentOrMortgage' },
+    { name: '⚡ Electricity', when: 'always' },
+    { name: '💧 Water', when: 'always' },
+    { name: '🌐 Internet', when: 'always' },
+    { name: '📱 Phone', when: 'always' },
+    { name: '🛒 Groceries', when: 'always' },
+  ]},
+  { group: '🚗 Transport', when: ['car', 'publicTransport'], categories: [
+    { name: '⛽ Fuel', when: 'car' },
+    { name: '🅿️ Parking', when: 'car' },
+    { name: '🔧 Car Maintenance', when: 'car' },
+    { name: '🛡️ Car Insurance', when: 'car' },
+    { name: '🚌 Public Transport', when: 'publicTransport' },
+  ]},
+  { group: '🐾 Pets', when: 'pets', categories: [
+    { name: '🍖 Pet Food', when: 'pets' }, { name: '🏥 Vet', when: 'pets' }, { name: '✂️ Grooming', when: 'pets' },
+  ]},
+  { group: '👶 Kids', when: 'kids', categories: [
+    { name: '🧸 Childcare', when: 'kids' }, { name: '🎒 School', when: 'kids' }, { name: '⚽ Activities', when: 'kids' }, { name: '👕 Kids Clothing', when: 'kids' },
+  ]},
+  { group: '💳 Credit Card Payments', when: 'creditCards', categories: [
+    { name: '💳 Credit Card', when: 'creditCards' },
+  ]},
+  { group: '🏦 Debt Payments', when: 'debt', categories: [
+    { name: '🏦 Loan Repayment', when: 'debt' },
+  ]},
+  { group: '✨ Quality of Life', when: 'always', categories: [
+    { name: '🍽️ Dining Out', when: 'eatingOut' },
+    { name: '☕ Coffee', when: 'eatingOut' },
+    { name: '📺 Subscriptions', when: 'subscriptions' },
+    { name: '🏋️ Fitness', when: 'fitness' },
+    { name: '🎮 Hobbies', when: 'hobbies' },
+    { name: '🎬 Entertainment', when: 'always' },
+    { name: '🛍️ Shopping', when: 'always' },
+  ]},
+  { group: '✈️ Travel', when: 'travel', categories: [
+    { name: '✈️ Flights', when: 'travel' }, { name: '🏨 Accommodation', when: 'travel' }, { name: '🗺️ Activities', when: 'travel' },
+  ]},
+  { group: '💰 Savings', when: ['emergency', 'bigPurchase', 'holiday', 'investing'], categories: [
+    { name: '🚨 Emergency Fund', when: 'emergency' },
+    { name: '🎯 Big Purchase', when: 'bigPurchase' },
+    { name: '🏖️ Holiday Fund', when: 'holiday' },
+    { name: '📈 Investments', when: 'investing' },
+  ]},
+];
+
+function whenMatches(when, selected) {
+  if (when === 'always') return true;
+  if (Array.isArray(when)) return when.some(id => selected.has(id));
+  return selected.has(when);
+}
+
+// given a Set/array of selected answer ids, return the tailored plan:
+// [{ group, categories: [names...] }] — only matching groups/categories, groups with >=1 category.
+export function buildSuggestedPlan(selectedIds) {
+  const selected = selectedIds instanceof Set ? selectedIds : new Set(selectedIds);
+  const plan = [];
+  for (const g of PLAN_SUGGESTIONS) {
+    if (!whenMatches(g.when, selected)) continue;
+    const categories = g.categories.filter(c => whenMatches(c.when, selected)).map(c => c.name);
+    if (categories.length) plan.push({ group: g.group, categories });
+  }
+  return plan;
+}
 
 // ---------- demo dataset builder ----------
 function buildDemo() {

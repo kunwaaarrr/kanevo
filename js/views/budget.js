@@ -1,7 +1,7 @@
 import { store } from '../store.js';
 import { openModal, closeModal, toast, navigate, confirmSheet } from '../app.js';
 import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, raw, ICONS } from '../util.js';
-import { CATEGORY_TEMPLATES, STARTER_TEMPLATE, COMMON_CATEGORIES } from '../seed.js';
+import { CATEGORY_TEMPLATES, COMMON_CATEGORIES, SETUP_QUESTIONS, buildSuggestedPlan } from '../seed.js';
 
 // module-local UI state — survives re-render since render() rebuilds root.innerHTML each time
 const collapsedGroups = new Set();
@@ -1006,6 +1006,109 @@ function openTemplateModal() {
   };
 }
 
+// ---------- guided "Set up with suggestions" wizard ----------
+// Lives as an overlay layer inside the Edit Plan sheet's host (same trick as openPlanEditor /
+// openPlanCategoryActions), so it never tears down the Edit Plan sheet underneath it.
+let setupStep = 1;             // 1: questions, 2: tailored plan
+let setupAnswers = new Set();  // selected SETUP_QUESTIONS option ids
+let setupGroups = [];          // [{ group, allCategories, included, selected: Set }]
+
+function openSetupWizard(root) {
+  const host = document.querySelector('#modal-root .edit-plan-modal');
+  if (!host) return;
+  host.querySelector('.plan-editor-layer')?.remove();
+  setupStep = 1; setupAnswers = new Set(); setupGroups = [];
+  const layer = document.createElement('div');
+  layer.className = 'plan-editor-layer plan-setup-layer';
+  const render = () => { layer.innerHTML = setupStep === 2 ? setupStep2Html() : setupStep1Html(); };
+  layer.onclick = event => {
+    event.stopPropagation();
+    if (event.target === layer) { layer.remove(); return; }
+    const act = event.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'setup-cancel':
+        layer.remove();
+        break;
+      case 'setup-toggle': {
+        const id = act.dataset.id;
+        setupAnswers.has(id) ? setupAnswers.delete(id) : setupAnswers.add(id);
+        render();
+        break;
+      }
+      case 'setup-next':
+        setupGroups = buildSuggestedPlan(setupAnswers).map(g => ({
+          group: g.group, included: true, allCategories: g.categories, selected: new Set(g.categories),
+        }));
+        setupStep = 2;
+        render();
+        break;
+      case 'setup-back':
+        setupStep = 1;
+        render();
+        break;
+      case 'setup-toggle-group':
+        setupGroups[+act.dataset.idx].included = !setupGroups[+act.dataset.idx].included;
+        render();
+        break;
+      case 'setup-toggle-cat': {
+        const g = setupGroups[+act.dataset.idx];
+        const cat = act.dataset.cat;
+        g.selected.has(cat) ? g.selected.delete(cat) : g.selected.add(cat);
+        render();
+        break;
+      }
+      case 'setup-apply':
+        setupGroups.filter(g => g.included && g.selected.size).forEach(g => {
+          const gid = store.addGroup(g.group);
+          g.selected.forEach(catName => store.addCategory(gid, catName));
+        });
+        store.resuggestPending();
+        layer.remove();
+        openEditPlanSheet(root, store.monthData(curMonth));
+        break;
+    }
+  };
+  host.append(layer);
+  render();
+}
+
+function setupStep1Html() {
+  return h`<div class="plan-editor-card plan-setup-card" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+    <h2 id="setup-title">Set up with suggestions</h2>
+    ${SETUP_QUESTIONS.map(q => h`<div class="setup-question">
+      <div class="setup-question-title">${q.title}</div>
+      <div class="setup-question-hint muted">${q.hint}</div>
+      <div class="plan-suggestions-row">
+        ${q.options.map(o => h`<button type="button" class="plan-suggestion-chip ${setupAnswers.has(o.id) ? 'active' : ''}" data-act="setup-toggle" data-id="${o.id}">${o.label}</button>`)}
+      </div>
+    </div>`)}
+    <div class="modal-actions">
+      <button type="button" class="btn secondary" data-act="setup-cancel">Cancel</button>
+      <button type="button" class="btn" data-act="setup-next">See suggestions</button>
+    </div>
+  </div>`;
+}
+
+function setupStep2Html() {
+  return h`<div class="plan-editor-card plan-setup-card" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+    <h2 id="setup-title">Your tailored plan</h2>
+    ${setupGroups.length ? setupGroups.map((g, i) => h`<div class="setup-group">
+      <div class="setup-group-head">
+        <span class="setup-group-name">${g.group}</span>
+        <button type="button" class="plan-suggestion-chip ${g.included ? 'active' : ''}" data-act="setup-toggle-group" data-idx="${i}">${g.included ? 'Included' : 'Skipped'}</button>
+      </div>
+      ${g.included ? h`<div class="plan-suggestions-row">
+        ${g.allCategories.map(cat => h`<button type="button" class="plan-suggestion-chip ${g.selected.has(cat) ? 'active' : ''}" data-act="setup-toggle-cat" data-idx="${i}" data-cat="${cat}">${cat}</button>`)}
+      </div>` : ''}
+    </div>`) : h`<p class="muted">Nothing matched — go back and pick a few options.</p>`}
+    <div class="modal-actions">
+      <button type="button" class="link-btn" data-act="setup-back">‹ Back</button>
+      <button type="button" class="btn" data-act="setup-apply">Add to my plan</button>
+    </div>
+  </div>`;
+}
+
 function openNewFocusedViewModal(root, md) {
   const cats = md.groups.flatMap(g => g.categories.map(c => ({ ...c, groupName: g.name })));
   const body = h`<h2>New Focused View</h2>
@@ -1646,11 +1749,14 @@ function openEditPlanSheet(root, md) {
     <div class="edit-plan-groups">
       <div class="edit-plan-groups-actions">
         <button class="edit-plan-add-group" data-act="plan-new-group"><span aria-hidden="true">＋</span>Add group</button>
-        <button class="link-btn" data-act="plan-from-template">Start from Template…</button>
+        <div class="edit-plan-groups-links">
+          <button class="link-btn" data-act="plan-setup-suggestions">✨ Set up with suggestions</button>
+          <button class="link-btn" data-act="plan-from-template">Start from Template…</button>
+        </div>
       </div>
       ${groups.length ? groups : h`<div class="edit-plan-empty">
         <p>Start by adding a group, then add categories inside it.</p>
-        <button class="btn" data-act="plan-use-starter">✨ Use Starter Budget</button>
+        <button class="btn" data-act="plan-setup-suggestions">✨ Set up with suggestions</button>
       </div>`}
     </div>
   </div>`);
@@ -1669,13 +1775,8 @@ function openEditPlanSheet(root, md) {
       });
     } else if (act.dataset.act === 'plan-from-template') {
       openTemplateModal();
-    } else if (act.dataset.act === 'plan-use-starter') {
-      STARTER_TEMPLATE.groups.forEach(g => {
-        const groupId = store.addGroup(g.name);
-        (g.categories || []).forEach(catName => store.addCategory(groupId, catName));
-      });
-      store.resuggestPending();
-      openEditPlanSheet(root, store.monthData(curMonth));
+    } else if (act.dataset.act === 'plan-setup-suggestions') {
+      openSetupWizard(root);
     } else if (act.dataset.act === 'plan-open-group') {
       const group = md.groups.find(item => item.id === act.dataset.id);
       openPlanGroupActions(root, group, act);
