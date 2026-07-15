@@ -292,20 +292,23 @@
 .mobile-clr { display: inline-flex; align-items: center; }
 .mobile-row-account { max-width: 120px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 11px; line-height: 1.1; }
 
-/* mobile approve/reject row — desktop's ✓/✗ approve-actions column has no mobile equivalent, so
-   unapproved rows get an action row here. Styled to the app's pill language (soft tinted pills,
-   rounded like the Available/RTA pills) rather than loud solid button blocks. */
-.mobile-row-approve-actions { display: flex; gap: 8px; margin-top: 10px; }
-.mobile-row-approve-actions button {
-  flex: 1; min-height: 42px; border: 0; border-radius: 999px; cursor: pointer;
-  font-size: 13px; font-weight: 700; letter-spacing: .01em;
+/* mobile approve/edit row — desktop's ✓/✗ approve-actions column has no mobile equivalent, so
+   unapproved rows in the Spending feed (and the generic mobile list) get an action row here.
+   Same button shape as the grouped pending-review cards below: solid Transaction-button green for
+   Approve, neutral outline for Edit. Delete lives inside the transaction editor, not on this card. */
+.mobile-row-approve-actions,
+.pending-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+.pending-approve-btn, .pending-edit-btn {
+  flex: 1; min-height: 44px; border: 0; border-radius: 12px; cursor: pointer;
+  font-size: 14px; font-weight: 700;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  -webkit-tap-highlight-color: transparent; transition: background .12s, color .12s;
+  -webkit-tap-highlight-color: transparent; transition: background .12s, transform .06s;
 }
-.mobile-approve-btn { background: var(--pill-pos-bg); color: var(--green-dark); }
-.mobile-approve-btn:active { background: var(--green); color: #fff; }
-.mobile-reject-btn { background: var(--track); color: var(--text-dim); }
-.mobile-reject-btn:active { background: var(--pill-neg-bg); color: var(--red-dark); }
+.pending-approve-btn { background: var(--green); color: #fff; box-shadow: 0 3px 9px rgba(20,30,70,.16); }
+.pending-approve-btn:active { background: var(--green-dark); transform: translateY(1px); }
+.pending-edit-btn { background: var(--bg); color: var(--text); border: 1px solid var(--line); }
+.pending-edit-btn:active { background: var(--bg-alt); }
+.pending-edit-btn .ico { width: 15px; height: 15px; }
 
 /* compact rows (mobile "Compact rows" option) — ~30% shorter cards */
 .reg-mobile-list.compact .mobile-date-head { padding: 6px 12px 2px; font-size: 10px; }
@@ -509,6 +512,22 @@
 .mobile-account-approval { width: 100%; min-height: 48px; margin-top: 11px; padding: 10px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--chip-active-bg); color: var(--blue-dark); text-align: left; font-size: 13px; }
 .mobile-account-approval strong { display: inline-flex; min-width: 24px; height: 24px; margin-right: 5px; padding: 0 7px; align-items: center; justify-content: center; border-radius: 999px; background: var(--blue); color: var(--on-brand); }
 .mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
+/* grouped pending review — one card per merchant instead of one per row */
+.pending-section { margin-top: 15px; }
+.pending-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
+.pending-section-head h2 { font-size: 14px; font-weight: 750; color: var(--text); }
+.pending-nudge { margin-bottom: 10px; padding: 12px 13px; border-radius: 14px; background: var(--chip-active-bg); color: var(--blue-dark); }
+.pending-nudge p { font-size: 12px; line-height: 1.45; }
+.pending-nudge button { margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg); color: var(--blue-dark); font-size: 12px; font-weight: 700; }
+.pending-nudge button:active { background: var(--bg-alt); }
+.pending-list { display: flex; flex-direction: column; gap: 9px; }
+.pending-card { padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+.pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.pending-card-info { min-width: 0; }
+.pending-card-payee { font-weight: 700; font-size: 14.5px; }
+.pending-card-sub { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+.pending-card-amt { flex-shrink: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pending-card-count { padding: 2px 7px; border-radius: 999px; background: var(--track); color: var(--text-dim); font-size: 11px; font-weight: 700; }
 .mobile-account-detail .sched-section { margin-top: 15px; border: 0; background: transparent; }
 .mobile-account-detail .sched-head { padding: 0 2px 8px; color: var(--text); font-size: 14px; }
 .mobile-account-detail .sched-list { padding: 0; gap: 9px; }

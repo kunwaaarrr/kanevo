@@ -1,7 +1,7 @@
 import { store } from '../store.js';
 import { openModal, closeModal, toast, navigate, confirmSheet } from '../app.js';
 import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, raw, ICONS } from '../util.js';
-import { CATEGORY_TEMPLATES } from '../seed.js';
+import { CATEGORY_TEMPLATES, STARTER_TEMPLATE, COMMON_CATEGORIES } from '../seed.js';
 
 // module-local UI state — survives re-render since render() rebuilds root.innerHTML each time
 const collapsedGroups = new Set();
@@ -555,7 +555,7 @@ function wireEvents(root, md) {
       }
       case 'add-cat': {
         const name = prompt('New category name:');
-        if (name && name.trim()) store.addCategory(id, name.trim());
+        if (name && name.trim()) { store.addCategory(id, name.trim()); store.resuggestPending(); }
         break;
       }
       case 'edit-assigned':
@@ -681,7 +681,7 @@ function wireEvents(root, md) {
         break;
       case 'new-group': {
         const name = prompt('New group name:');
-        if (name && name.trim()) store.addGroup(name.trim());
+        if (name && name.trim()) { store.addGroup(name.trim()); store.resuggestPending(); }
         break;
       }
       case 'from-template':
@@ -1001,6 +1001,7 @@ function openTemplateModal() {
         (g.categories || []).forEach(catName => store.addCategory(groupId, catName));
       });
     });
+    store.resuggestPending();
     closeModal();
   };
 }
@@ -1264,7 +1265,7 @@ function openEditViewsSheet(root, md) {
 }
 
 // ---------- Edit Plan sheet (pencil) ----------
-function openPlanEditor(root, { title, label, value = '', inputMode = 'text', onSave }) {
+function openPlanEditor(root, { title, label, value = '', inputMode = 'text', onSave, suggestions }) {
   const host = document.querySelector('#modal-root .edit-plan-modal');
   if (!host) return;
   host.querySelector('.plan-editor-layer')?.remove();
@@ -1274,6 +1275,10 @@ function openPlanEditor(root, { title, label, value = '', inputMode = 'text', on
     <h2 id="plan-editor-title">${title}</h2>
     <label for="plan-editor-input">${label}</label>
     <input id="plan-editor-input" type="text" inputmode="${inputMode}" value="${value}" autocomplete="off">
+    ${suggestions ? h`<div class="plan-suggestions">
+      <span class="plan-suggestions-label">Suggestions</span>
+      <div class="plan-suggestions-row">${suggestions.map(name => h`<button type="button" class="plan-suggestion-chip" data-suggest="${name}">${name}</button>`)}</div>
+    </div>` : ''}
     <div class="modal-actions">
       <button class="btn secondary" id="plan-editor-cancel">Cancel</button>
       <button class="btn" id="plan-editor-save">Save</button>
@@ -1291,6 +1296,8 @@ function openPlanEditor(root, { title, label, value = '', inputMode = 'text', on
   layer.onclick = event => {
     event.stopPropagation();
     if (event.target === layer) dismiss();
+    const chip = event.target.closest('[data-suggest]');
+    if (chip) { input.value = chip.dataset.suggest; save(); }
   };
   layer.querySelector('#plan-editor-cancel').onclick = dismiss;
   layer.querySelector('#plan-editor-save').onclick = save;
@@ -1637,8 +1644,14 @@ function openEditPlanSheet(root, md) {
       </div>
     </div>
     <div class="edit-plan-groups">
-      <button class="edit-plan-add-group" data-act="plan-new-group"><span aria-hidden="true">＋</span>Add group</button>
-      ${groups.length ? groups : h`<div class="edit-plan-empty">Start by adding a group, then add categories inside it.</div>`}
+      <div class="edit-plan-groups-actions">
+        <button class="edit-plan-add-group" data-act="plan-new-group"><span aria-hidden="true">＋</span>Add group</button>
+        <button class="link-btn" data-act="plan-from-template">Start from Template…</button>
+      </div>
+      ${groups.length ? groups : h`<div class="edit-plan-empty">
+        <p>Start by adding a group, then add categories inside it.</p>
+        <button class="btn" data-act="plan-use-starter">✨ Use Starter Budget</button>
+      </div>`}
     </div>
   </div>`);
   sheet.classList.add('edit-plan-modal');
@@ -1647,10 +1660,22 @@ function openEditPlanSheet(root, md) {
     if (!act) return;
     if (act.dataset.act === 'plan-close') closeModal();
     else if (act.dataset.act === 'plan-new-group') {
-      openPlanEditor(root, { title: 'New category group', label: 'Group name', onSave: name => store.addGroup(name) });
+      openPlanEditor(root, { title: 'New category group', label: 'Group name', onSave: name => { store.addGroup(name); store.resuggestPending(); } });
     } else if (act.dataset.act === 'plan-add-cat') {
       const groupId = act.dataset.id;
-      openPlanEditor(root, { title: 'Add category', label: 'Category name', onSave: name => store.addCategory(groupId, name) });
+      openPlanEditor(root, {
+        title: 'Add category', label: 'Category name', suggestions: COMMON_CATEGORIES,
+        onSave: name => { store.addCategory(groupId, name); store.resuggestPending(); },
+      });
+    } else if (act.dataset.act === 'plan-from-template') {
+      openTemplateModal();
+    } else if (act.dataset.act === 'plan-use-starter') {
+      STARTER_TEMPLATE.groups.forEach(g => {
+        const groupId = store.addGroup(g.name);
+        (g.categories || []).forEach(catName => store.addCategory(groupId, catName));
+      });
+      store.resuggestPending();
+      openEditPlanSheet(root, store.monthData(curMonth));
     } else if (act.dataset.act === 'plan-open-group') {
       const group = md.groups.find(item => item.id === act.dataset.id);
       openPlanGroupActions(root, group, act);

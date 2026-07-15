@@ -1,5 +1,5 @@
 // ponytail: simple cache-first offline shell; bump VERSION on deploys
-const VERSION = 'kanevo-v51';
+const VERSION = 'kanevo-v52';
 const ASSETS = [
   './', 'index.html', 'manifest.json', 'fonts/figtree-var.woff2',
   'css/app.css', 'css/budget.css',

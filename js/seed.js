@@ -21,7 +21,17 @@ function isoAdd(iso, days) { return new Date(new Date(iso + 'T00:00:00').getTime
 function firstOfMonth(month) { return month + '-01'; }
 
 // ---------- category templates (also exported) ----------
+// general-purpose default structure for someone budgeting from scratch — kept separate
+// from the event templates below and listed first so it's the one-tap "obvious" choice.
+export const STARTER_TEMPLATE = { name: '⭐ Starter Budget (Recommended)', emoji: '⭐', groups: [
+  { name: '🏠 Immediate Obligations', categories: ['🏠 Rent/Mortgage', '⚡ Electric', '💧 Water', '🌐 Internet', '🛒 Groceries', '🚗 Transport', '📱 Phone'] },
+  { name: '🧾 True Expenses', categories: ['🚙 Insurance', '🔧 Car Maintenance', '🏥 Medical', '📺 Subscriptions', '👕 Clothing'] },
+  { name: '✨ Quality of Life', categories: ['🍜 Dining Out', '🎬 Entertainment', '💪 Fitness', '✈️ Holiday'] },
+  { name: '💰 Savings', categories: ['🚨 Emergency Fund', '📈 Investments'] },
+]};
+
 export const CATEGORY_TEMPLATES = [
+  STARTER_TEMPLATE,
   { name: 'New Baby', emoji: '👶', groups: [
     { name: '👶 New Baby', categories: ['🍼 Formula & Feeding', '🧷 Diapers', '👕 Baby Clothes', '🛏️ Nursery', '🏥 Medical', '🧸 Toys'] },
   ]},
@@ -34,6 +44,13 @@ export const CATEGORY_TEMPLATES = [
   { name: 'Holiday Season', emoji: '🎄', groups: [
     { name: '🎄 Holiday Season', categories: ['🎁 Gifts', '🍗 Food & Feast', '🎄 Decorations', '✈️ Travel', '🎉 Parties'] },
   ]},
+];
+
+// tap-to-add palette for the "add category" flows — common categories most budgets need.
+export const COMMON_CATEGORIES = [
+  '🛒 Groceries', '🍜 Dining Out', '⛽ Fuel/Transport', '🏠 Rent', '💡 Utilities',
+  '📺 Subscriptions', '💪 Fitness', '👕 Clothing', '🏥 Medical', '🎬 Entertainment',
+  '🎁 Gifts', '💰 Savings',
 ];
 
 // ---------- demo dataset builder ----------

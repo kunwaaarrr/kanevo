@@ -246,7 +246,7 @@ export function renderSpendingOverview(root) {
       if (transaction) openAddTransactionModal(transaction.accountId, transaction.id);
     };
   });
-  wireMobileApproveReject(root, null, () => renderSpendingOverview(root));
+  wireMobileApproveEdit(root, null, () => renderSpendingOverview(root));
   wireScheduled(root, null, () => renderSpendingOverview(root));
 }
 
@@ -376,6 +376,7 @@ export function render(root, { accountId }) {
 }
 
 function renderMobileAccountDetail(root, { account, accountId, bal, filtered, scheduled, unapprovedCount }) {
+  const pending = store.pendingGroups(accountId);
   const typeLabel = TYPE_LABEL[account.type] || account.type;
   const reconTitle = account.lastReconciled ? `Balance verified ${fmtDate(account.lastReconciled)}` : 'Balance not verified yet';
   const reconCopy = account.lastReconciled
@@ -428,6 +429,8 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
 
       ${unapprovedCount ? h`<button class="mobile-account-approval" id="approval-banner"><span><strong>${unapprovedCount}</strong> transaction${unapprovedCount === 1 ? '' : 's'} need approval</span><span aria-hidden="true">›</span></button>` : ''}
 
+      ${renderPendingSection(pending)}
+
       ${scheduled.length ? renderScheduledSection(scheduled, accountId) : ''}
 
       <section class="mobile-account-transactions">
@@ -436,7 +439,7 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
           <span aria-hidden="true">${ICONS.search}</span>
           <input class="reg-search" id="reg-search" type="search" aria-label="Search ${account.name}" placeholder="Search transactions" value="${search}">
         </label>
-        ${renderMobileList(filtered, accountId)}
+        ${renderMobileList(filtered, accountId, { showApproveActions: false })}
       </section>
     </div>
   </div>`;
@@ -444,6 +447,7 @@ function renderMobileAccountDetail(root, { account, accountId, bal, filtered, sc
   root.querySelector('#mobile-account-back').onclick = () => navigate('#/accounts');
   wireHead(root, account, accountId);
   wireToolbar(root, accountId, account);
+  wirePendingSection(root, accountId, pending, () => render(root, { accountId }));
   wireScheduled(root, accountId);
   wireBulkBar(root, accountId);
   wireMobileList(root, filtered, accountId);
@@ -1544,7 +1548,7 @@ function openAttachmentGallery(txId) {
 }
 
 // ---------- mobile list ----------
-function renderMobileList(txs, accountId) {
+function renderMobileList(txs, accountId, { showApproveActions = true } = {}) {
   if (!txs.length) return raw('<div class="empty-state">No transactions.</div>');
   const groups = [];
   let lastDate = null;
@@ -1555,11 +1559,11 @@ function renderMobileList(txs, accountId) {
   return h`<div class="reg-mobile-list ${compactRows ? 'compact' : ''}">${groups.map(g => h`
     <div class="mobile-date-group">
       <div class="mobile-date-head">${fmtDate(g.date)}</div>
-      <div class="mobile-date-card">${g.items.map(t => renderMobileRow(t))}</div>
+      <div class="mobile-date-card">${g.items.map(t => renderMobileRow(t, { showApproveActions }))}</div>
     </div>`)}</div>`;
 }
 
-function renderMobileRow(t, { spending = false } = {}) {
+function renderMobileRow(t, { spending = false, showApproveActions = true } = {}) {
   const payee = t.payeeId ? store.getPayee(t.payeeId) : null;
   const payeeName = t.transferAccountId ? transferPayeeLabel(t) : (payee ? payee.name : '(no payee)');
   const cat = t.subtransactions ? 'Split' : (t.categoryId === INFLOW ? 'Ready to Assign' : (t.categoryId ? store.state.categories.find(c => c.id === t.categoryId)?.name : ''));
@@ -1583,9 +1587,9 @@ function renderMobileRow(t, { spending = false } = {}) {
         ${accountLabel}
       </div>
     </div>
-    ${!t.approved ? h`<div class="mobile-row-approve-actions">
-      <button type="button" class="mobile-approve-btn" data-approve="${t.id}">✓ Approve</button>
-      <button type="button" class="mobile-reject-btn" data-reject="${t.id}">Reject</button>
+    ${!t.approved && showApproveActions ? h`<div class="mobile-row-approve-actions">
+      <button type="button" class="pending-approve-btn" data-approve="${t.id}">Approve</button>
+      <button type="button" class="pending-edit-btn" data-edit="${t.id}">${ICONS.edit}<span>Edit</span></button>
     </div>` : ''}
   </div>`;
 }
@@ -1594,21 +1598,121 @@ function wireMobileList(root, txs, accountId) {
   root.querySelectorAll('.mobile-row').forEach(row => {
     row.onclick = () => openAddTransactionModal(accountId, row.dataset.id);
   });
-  wireMobileApproveReject(root, accountId);
+  wireMobileApproveEdit(root, accountId);
 }
 
 // shared by the register mobile list and the Spending feed — desktop's ✓/✕ approve-actions column
-// has no mobile equivalent, so unapproved mobile rows get their own Approve/Reject row.
-function wireMobileApproveReject(root, accountId, rerender = () => render(root, { accountId })) {
+// has no mobile equivalent, so unapproved mobile rows get their own Approve/Edit row (delete lives
+// inside the transaction editor, opened by Edit — not here).
+function wireMobileApproveEdit(root, accountId, rerender = () => render(root, { accountId })) {
   root.querySelectorAll('[data-approve]').forEach(btn => {
     btn.onclick = e => { e.stopPropagation(); store.approveTransaction(btn.dataset.approve); rerender(); };
   });
-  root.querySelectorAll('[data-reject]').forEach(btn => {
-    btn.onclick = async e => {
-      e.stopPropagation();
-      if (!(await confirmSheet({ title: 'Delete this transaction?', confirmLabel: 'Delete', danger: true }))) return;
-      store.deleteTransaction(btn.dataset.reject);
+  root.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.onclick = e => { e.stopPropagation(); openAddTransactionModal(accountId, btn.dataset.edit); };
+  });
+}
+
+// ---------- mobile pending review (grouped unapproved-transaction cards) ----------
+// Account detail's chronological list hides its per-row approve actions (renderMobileList's
+// showApproveActions: false) in favor of this: one card per merchant instead of one per row, so
+// a 1,000-row import with 400 repeats becomes a handful of cards. Spending feed (cross-account,
+// pendingGroups needs a single accountId) keeps the per-row Approve/Edit from renderMobileRow.
+function pendingCategoryLabel(g) {
+  if (g.categoryId === INFLOW) return 'Ready to Assign';
+  if (g.categoryId) return categoryName(g.categoryId);
+  return g.count > 1 && !g.allSameCategory ? 'Mixed categories' : 'Uncategorised';
+}
+
+function renderPendingCard(g) {
+  const label = pendingCategoryLabel(g);
+  const showAuto = g.categoryId && g.autoCategorized;
+  return h`<div class="pending-card">
+    <div class="pending-card-top">
+      <div class="pending-card-info">
+        <div class="pending-card-payee">${g.payeeName}</div>
+        <div class="pending-card-sub">
+          <span class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}">${label}</span>
+          ${showAuto ? raw('<span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}
+        </div>
+      </div>
+      <div class="pending-card-amt">
+        ${g.count > 1 ? h`<span class="pending-card-count">×${g.count}</span>` : ''}
+        <span class="${g.totalAmount > 0 ? 'pos-text' : 'neg-text'}">${fmt(g.totalAmount)}</span>
+      </div>
+    </div>
+    <div class="pending-card-actions">
+      <button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>
+      <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>
+    </div>
+  </div>`;
+}
+
+function renderPendingNudge() {
+  return h`<div class="pending-nudge">
+    <p>It's a good idea to add categories now so we can auto-sort these — but you can always add them later after importing.</p>
+    <button type="button" id="pending-nudge-btn">Add categories</button>
+  </div>`;
+}
+
+function renderPendingSection(groups) {
+  if (!groups.length) return '';
+  const noCategories = !store.state.categories.some(c => !c.hidden);
+  return h`<section class="pending-section">
+    <div class="pending-section-head">
+      <h2>Pending review</h2>
+      <button type="button" class="link-btn" id="pending-autosort">Auto-sort</button>
+    </div>
+    ${noCategories ? renderPendingNudge() : ''}
+    <div class="pending-list">${groups.map(renderPendingCard)}</div>
+  </section>`;
+}
+
+// Lightweight category-list modal for a multi-row group: sets the category on every member,
+// leaves them pending so the user can then Approve. (Singleton groups skip this — Edit opens the
+// full transaction editor instead.)
+function openPendingCategoryPicker(g, onDone) {
+  const rows = [];
+  if (g.totalAmount > 0) rows.push(`<div class="txe-cat-item" data-cat="${INFLOW}"><span>Ready to Assign</span></div>`);
+  for (const grp of store.state.categoryGroups.filter(x => !x.hidden)) {
+    const cats = store.state.categories.filter(c => c.groupId === grp.id && !c.hidden);
+    if (!cats.length) continue;
+    rows.push(`<div class="txe-cat-group-label">${esc(grp.name)}</div>`);
+    for (const c of cats) rows.push(`<div class="txe-cat-item" data-cat="${c.id}"><span>${esc(c.name)}</span></div>`);
+  }
+  const modal = openModal(h`<h2>Categorize ${g.payeeName}</h2>
+    <p class="muted" style="margin-bottom:10px">Sets the category on all ${g.count} transactions. They stay pending until you approve.</p>
+    <div class="txe-list">${raw(rows.join('') || '<div class="txe-list-empty muted">No categories yet.</div>')}</div>
+    <div class="modal-actions"><button class="btn secondary" id="cp-cancel">Cancel</button></div>`);
+  modal.querySelector('#cp-cancel').onclick = closeModal;
+  modal.querySelectorAll('[data-cat]').forEach(item => {
+    item.onclick = () => { store.categorizeGroup(g.memberIds, item.dataset.cat); closeModal(); onDone(); };
+  });
+}
+
+function wirePendingSection(root, accountId, groups, rerender) {
+  root.querySelector('#pending-autosort')?.addEventListener('click', () => {
+    const n = store.resuggestPending();
+    toast(n ? `Sorted ${n} transaction${n === 1 ? '' : 's'}` : 'Nothing new to sort');
+    rerender();
+  });
+  root.querySelector('#pending-nudge-btn')?.addEventListener('click', () => navigate('#/budget'));
+  root.querySelectorAll('[data-approve-group]').forEach(btn => {
+    btn.onclick = () => {
+      const g = groups.find(x => x.key === btn.dataset.approveGroup);
+      if (!g) return;
+      if (g.memberIds.length === 1) store.approveTransaction(g.memberIds[0]);
+      else store.approveGroup(g.memberIds);
+      toast(`Approved ${g.count} from ${g.payeeName}`);
       rerender();
+    };
+  });
+  root.querySelectorAll('[data-edit-group]').forEach(btn => {
+    btn.onclick = () => {
+      const g = groups.find(x => x.key === btn.dataset.editGroup);
+      if (!g) return;
+      if (g.memberIds.length === 1) openAddTransactionModal(accountId, g.memberIds[0]);
+      else openPendingCategoryPicker(g, rerender);
     };
   });
 }

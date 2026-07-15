@@ -700,6 +700,32 @@ function _importTransactions(accountId, bankTxns) {
   return { inserted, merged, skipped };
 }
 
+// group an account's unapproved txns by normalized payee name, for bulk approve/categorize UI
+function pendingGroups(accountId) {
+  const groups = new Map();
+  for (const tx of state.transactions) {
+    if (tx.accountId !== accountId || tx.approved) continue;
+    if (tx.transferAccountId && tx.amount > 0) continue; // incoming leg is the hidden twin — skip so a transfer isn't double-counted
+    const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
+    const key = payee ? `p:${payee.name.toLowerCase().trim()}` : `tx:${tx.id}`;
+    let g = groups.get(key);
+    if (!g) {
+      g = {
+        key, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
+        count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
+        autoCategorized: true, memberIds: [], sampleDate: tx.date,
+      };
+      groups.set(key, g);
+    } else if (g.categoryId !== tx.categoryId) {
+      g.categoryId = null; g.allSameCategory = false;
+    }
+    g.count++; g.totalAmount += tx.amount; g.memberIds.push(tx.id);
+    if (tx.date > g.sampleDate) g.sampleDate = tx.date;
+    if (!tx.autoCategorized) g.autoCategorized = false;
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count || (a.payeeName < b.payeeName ? -1 : a.payeeName > b.payeeName ? 1 : 0));
+}
+
 function matchCandidates(accountId) {
   const out = [];
   for (const imp of state.transactions) {
@@ -931,6 +957,45 @@ export const store = {
   reconcileAccount: mutate(_reconcileAccount),
   importTransactions: mutate(_importTransactions),
   matchCandidates,
+  pendingGroups,
+  // approve every member of a pending group; teaches the payee for each, same as approveTransaction
+  approveGroup: mutate(memberIds => {
+    for (const id of memberIds) {
+      const tx = state.transactions.find(t => t.id === id);
+      if (!tx) continue;
+      tx.approved = true;
+      if (tx.payeeId && tx.categoryId && !tx.transferAccountId) {
+        const p = getPayee(tx.payeeId);
+        if (p) p.lastCategoryId = tx.categoryId;
+      }
+    }
+  }),
+  // user-assign a category to every member of a pending group; no longer a guess, and teaches the payee
+  categorizeGroup: mutate((memberIds, categoryId) => {
+    for (const id of memberIds) {
+      const tx = state.transactions.find(t => t.id === id);
+      if (!tx) continue;
+      tx.categoryId = categoryId;
+      delete tx.autoCategorized;
+      if (tx.payeeId) {
+        const p = getPayee(tx.payeeId);
+        if (p) p.lastCategoryId = categoryId;
+      }
+    }
+  }),
+  // re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category is added)
+  resuggestPending: mutate(() => {
+    const model = trainClassifier(state);
+    let changed = 0;
+    for (const tx of state.transactions) {
+      if (tx.approved) continue;
+      if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
+      const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
+      const catId = (payee && payee.lastCategoryId) || suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo);
+      if (catId != null && catId !== tx.categoryId) { tx.categoryId = catId; tx.autoCategorized = true; changed++; }
+    }
+    return changed;
+  }),
 
   // scheduled
   addScheduled: mutate(s => { const full = { id: uid(), ...s }; state.scheduled.push(full); return full.id; }),
