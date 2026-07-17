@@ -1,6 +1,6 @@
 // store.js — data layer + budget engine. Money is integer cents. Import-safe in Node.
 import { uid, todayISO, thisMonth, addMonths, monthsBetween, daysBetween, debounce } from './util.js';
-import { trainClassifier, suggestCategory } from './lib/categorize.js';
+import { trainClassifier, suggestCategory, normalizeMerchant } from './lib/categorize.js';
 
 export const INFLOW = 'inflow';
 const KEY = 'kanevo/v1';
@@ -585,9 +585,25 @@ function findOrCreatePayee(name) {
   if (!p) { p = { id: uid(), name, lastCategoryId: null, lat: null, lng: null }; state.payees.push(p); }
   return p.id;
 }
+// cross-payee suggestion fallback: another payee normalizing to the same merchant
+// that HAS a taught category (e.g. "Woolworths 1234" teaches "Woolworths 5678").
+// Deterministic pick: first match in payees array (insertion order == teach order
+// for the common case; no separate "taught at" timestamp exists to do better).
+function findNormalizedMatch(name) {
+  const norm = normalizeMerchant(name);
+  for (const p of state.payees) if (p.lastCategoryId != null && normalizeMerchant(p.name) === norm) return p.lastCategoryId;
+  return null;
+}
 function payeeSuggestions(prefix) {
   prefix = String(prefix || '').toLowerCase();
   return state.payees.filter(p => p.name.toLowerCase().includes(prefix)).map(p => p.name);
+}
+// payees the app has learned a category for (taught via approve/categorize), sorted by name
+function learnedPayees() {
+  return state.payees
+    .filter(p => p.lastCategoryId != null)
+    .map(p => ({ id: p.id, name: p.name, categoryId: p.lastCategoryId, category: cat(p.lastCategoryId) || null }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 function nearestPayee(lat, lng) {
   let best = null, bestD = Infinity;
@@ -687,7 +703,7 @@ function _importTransactions(accountId, bankTxns) {
     } else {
       const payeeId = b.payeeName ? findOrCreatePayee(b.payeeName) : null;
       const catId = payeeId
-        ? (getPayee(payeeId).lastCategoryId || suggestCategory(state, b.payeeName, b.amount, model, b.memo))
+        ? (getPayee(payeeId).lastCategoryId || findNormalizedMatch(b.payeeName) || suggestCategory(state, b.payeeName, b.amount, model, b.memo))
         : null;
       _addTransaction({
         accountId, date: b.date, payeeId, categoryId: catId, memo: b.memo || '',
@@ -707,7 +723,7 @@ function pendingGroups(accountId) {
     if (tx.accountId !== accountId || tx.approved) continue;
     if (tx.transferAccountId && tx.amount > 0) continue; // incoming leg is the hidden twin — skip so a transfer isn't double-counted
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
-    const key = payee ? `p:${payee.name.toLowerCase().trim()}` : `tx:${tx.id}`;
+    const key = payee ? `p:${normalizeMerchant(payee.name)}` : `tx:${tx.id}`;
     let g = groups.get(key);
     if (!g) {
       g = {
@@ -723,7 +739,10 @@ function pendingGroups(accountId) {
     if (tx.date > g.sampleDate) g.sampleDate = tx.date;
     if (!tx.autoCategorized) g.autoCategorized = false;
   }
-  return [...groups.values()].sort((a, b) => b.count - a.count || (a.payeeName < b.payeeName ? -1 : a.payeeName > b.payeeName ? 1 : 0));
+  // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
+  const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);
+  return [...groups.values()].sort((a, b) =>
+    tier(a) - tier(b) || b.count - a.count || (a.payeeName < b.payeeName ? -1 : a.payeeName > b.payeeName ? 1 : 0));
 }
 
 function matchCandidates(accountId) {
@@ -794,6 +813,32 @@ function _reconcileAccount(accountId, actualBalanceCents) {
   }
   for (const t of state.transactions)
     if (t.accountId === accountId && t.cleared === 'cleared') t.cleared = 'reconciled';
+}
+
+// re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category
+// is added, or a payee's learned category changes). Shared body for the public mutation and internal callers.
+function _resuggestPending() {
+  const model = trainClassifier(state);
+  let changed = 0;
+  for (const tx of state.transactions) {
+    if (tx.approved) continue;
+    if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
+    const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
+    const catId = (payee && payee.lastCategoryId) || (payee && findNormalizedMatch(payee.name))
+      || suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo);
+    if (catId != null && catId !== tx.categoryId) { tx.categoryId = catId; tx.autoCategorized = true; changed++; }
+  }
+  return changed;
+}
+
+// set/clear a payee's learned category (the "Learned merchants" rule), then immediately
+// re-suggest pending txns so the change takes effect right away. Clearing (categoryId=null)
+// only stops FUTURE suggestions — it does not retroactively strip categories already applied.
+function _setPayeeCategory(payeeId, categoryId) {
+  const p = getPayee(payeeId);
+  if (!p) return;
+  p.lastCategoryId = categoryId ?? null;
+  _resuggestPending();
 }
 
 function _autoAssign(month) {
@@ -970,6 +1015,19 @@ export const store = {
       }
     }
   }),
+  // reverts a group/all-pending approve: un-approves the given tx ids and restores each affected
+  // payee's prior lastCategoryId from a snapshot the caller captured before approving. Scoped to
+  // one toast's closure (not the global undo stack) — no history, single level.
+  undoApprove: mutate(snapshot => {
+    for (const id of snapshot.memberIds) {
+      const tx = state.transactions.find(t => t.id === id);
+      if (tx) tx.approved = false;
+    }
+    for (const p of snapshot.payees) {
+      const payee = getPayee(p.id);
+      if (payee) payee.lastCategoryId = p.lastCategoryId;
+    }
+  }),
   // user-assign a category to every member of a pending group; no longer a guess, and teaches the payee
   categorizeGroup: mutate((memberIds, categoryId) => {
     for (const id of memberIds) {
@@ -984,18 +1042,7 @@ export const store = {
     }
   }),
   // re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category is added)
-  resuggestPending: mutate(() => {
-    const model = trainClassifier(state);
-    let changed = 0;
-    for (const tx of state.transactions) {
-      if (tx.approved) continue;
-      if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
-      const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
-      const catId = (payee && payee.lastCategoryId) || suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo);
-      if (catId != null && catId !== tx.categoryId) { tx.categoryId = catId; tx.autoCategorized = true; changed++; }
-    }
-    return changed;
-  }),
+  resuggestPending: mutate(_resuggestPending),
 
   // scheduled
   addScheduled: mutate(s => { const full = { id: uid(), ...s }; state.scheduled.push(full); return full.id; }),
@@ -1016,6 +1063,8 @@ export const store = {
     if (lat != null) p.lat = lat;
     if (lng != null) p.lng = lng;
   }),
+  learnedPayees,
+  setPayeeCategory: mutate(_setPayeeCategory),
 
   // focused views
   saveFocusedView: mutate((name, categoryIds) => {

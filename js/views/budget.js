@@ -1109,6 +1109,68 @@ function setupStep2Html() {
   </div>`;
 }
 
+// ---------- Learned merchants sheet (payee -> category rules) ----------
+// Same overlay-layer trick as openPlanEditor / openSetupWizard: lives inside the Edit Plan
+// sheet's host so it never tears the Edit Plan sheet down underneath it. The category-picker
+// step swaps the SAME layer's content (like openPlanCategoryActions' rename/delete swap) rather
+// than stacking a second layer.
+function openLearnedMerchantsSheet(root) {
+  const host = document.querySelector('#modal-root .edit-plan-modal');
+  if (!host) return;
+  host.querySelector('.plan-editor-layer')?.remove();
+  const layer = document.createElement('div');
+  layer.className = 'plan-editor-layer plan-setup-layer';
+  let pickerFor = null; // payeeId currently picking a category for, or null to show the list
+  const renderList = () => {
+    const rules = store.learnedPayees();
+    layer.innerHTML = h`<div class="plan-editor-card plan-setup-card" role="dialog" aria-modal="true" aria-labelledby="learned-title">
+      <h2 id="learned-title">Learned merchants</h2>
+      ${rules.length ? h`<div class="m-menu">
+        ${rules.map(rule => h`<div class="m-menu-row">
+          <span class="m-menu-label">${rule.name}</span>
+          <button type="button" class="pill pos" data-act="learned-pick" data-id="${rule.id}">${rule.category ? rule.category.name : '—'}</button>
+          <button type="button" class="link-btn danger-text" data-act="learned-forget" data-id="${rule.id}" aria-label="Forget ${rule.name}">✕</button>
+        </div>`)}
+      </div>` : h`<p class="muted">Nothing learned yet — approve some transactions.</p>`}
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" data-act="learned-close">Close</button>
+      </div>
+    </div>`;
+  };
+  // reuses planDeleteDestinations — the same category set already offered by the plan-delete
+  // "move assigned money to another category" picker — plus the .m-menu list styling.
+  const renderPicker = () => {
+    const payee = store.getPayee(pickerFor);
+    const cats = planDeleteDestinations([]);
+    layer.innerHTML = h`<div class="plan-editor-card plan-setup-card" role="dialog" aria-modal="true" aria-labelledby="learned-pick-title">
+      <h2 id="learned-pick-title">Category for ${payee.name}</h2>
+      <div class="m-menu">
+        ${cats.map(c => h`<button type="button" class="m-menu-row" data-pick-cat="${c.id}"><span class="m-menu-label">${c.name}</span></button>`)}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="link-btn" data-act="pick-back">‹ Back</button>
+      </div>
+    </div>`;
+  };
+  const render = () => (pickerFor ? renderPicker() : renderList());
+  layer.onclick = event => {
+    event.stopPropagation();
+    if (event.target === layer) { layer.remove(); return; }
+    const pick = event.target.closest('[data-pick-cat]');
+    if (pick) { store.setPayeeCategory(pickerFor, pick.dataset.pickCat); pickerFor = null; render(); return; }
+    const act = event.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'learned-close': layer.remove(); break;
+      case 'pick-back': pickerFor = null; render(); break;
+      case 'learned-pick': pickerFor = act.dataset.id; render(); break;
+      case 'learned-forget': store.setPayeeCategory(act.dataset.id, null); render(); break;
+    }
+  };
+  host.append(layer);
+  render();
+}
+
 function openNewFocusedViewModal(root, md) {
   const cats = md.groups.flatMap(g => g.categories.map(c => ({ ...c, groupName: g.name })));
   const body = h`<h2>New Focused View</h2>
@@ -1752,6 +1814,7 @@ function openEditPlanSheet(root, md) {
         <div class="edit-plan-groups-links">
           <button class="link-btn" data-act="plan-setup-suggestions">✨ Set up with suggestions</button>
           <button class="link-btn" data-act="plan-from-template">Start from Template…</button>
+          <button class="link-btn" data-act="plan-learned-merchants">Learned merchants</button>
         </div>
       </div>
       ${groups.length ? groups : h`<div class="edit-plan-empty">
@@ -1777,6 +1840,8 @@ function openEditPlanSheet(root, md) {
       openTemplateModal();
     } else if (act.dataset.act === 'plan-setup-suggestions') {
       openSetupWizard(root);
+    } else if (act.dataset.act === 'plan-learned-merchants') {
+      openLearnedMerchantsSheet(root);
     } else if (act.dataset.act === 'plan-open-group') {
       const group = md.groups.find(item => item.id === act.dataset.id);
       openPlanGroupActions(root, group, act);

@@ -1,7 +1,7 @@
 // Shell: router, sidebar, modal, toast. Views own everything inside #view.
 import { store } from './store.js';
 import { maybeSeed } from './seed.js';
-import { fmt, esc, h, raw, thisMonth, setHideAmounts, ICONS } from './util.js';
+import { fmt, esc, h, thisMonth, setHideAmounts, ICONS } from './util.js';
 import * as budgetView from './views/budget.js';
 import * as registerView from './views/register.js';
 import * as reportsView from './views/reports.js';
@@ -60,10 +60,14 @@ export function confirmSheet({ title, body = '', confirmLabel = 'Confirm', cance
 // ---------- toast ----------
 const toastRoot = document.getElementById('toast-root');
 let toastTimer;
-export function toast(msg, { undoable = false } = {}) {
-  toastRoot.innerHTML = h`<div class="toast">${msg}${undoable && store.canUndo() ? [raw('<button id="toast-undo">Undo</button>')] : ''}</div>`;
+// undoable: true wires the action button to the generic store.undo() stack (existing callers).
+// onAction: a scoped, caller-supplied undo (e.g. a category-approve snapshot) — takes priority
+// over undoable when both would apply. actionLabel lets a scoped action rename the button.
+export function toast(msg, { undoable = false, actionLabel = 'Undo', onAction = null } = {}) {
+  const showAction = onAction ? true : (undoable && store.canUndo());
+  toastRoot.innerHTML = h`<div class="toast">${msg}${showAction ? h`<button id="toast-undo">${actionLabel}</button>` : ''}</div>`;
   const btn = document.getElementById('toast-undo');
-  if (btn) btn.onclick = () => { store.undo(); toastRoot.innerHTML = ''; };
+  if (btn) btn.onclick = () => { (onAction || (() => store.undo()))(); toastRoot.innerHTML = ''; };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (toastRoot.innerHTML = ''), 4500);
 }

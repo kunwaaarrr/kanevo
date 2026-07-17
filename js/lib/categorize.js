@@ -13,6 +13,20 @@
 // Outflows only — except reimbursement words ("payback"), which may categorize an
 // inflow back into a matching category. Imported rows stay unapproved either way.
 
+// ---------- merchant name normalization ----------
+// Bank feeds append store number + location to a chain name ("WOOLWORTHS 1234
+// SYDNEY"). Cut at the first standalone token of 2+ digits, and everything after
+// it — city names alone aren't touched, only a digit-anchored token triggers a cut.
+export function normalizeMerchant(name) {
+  const cleaned = String(name ?? '').toLowerCase().trim()
+    .replace(/[*#]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const tokens = cleaned.split(' ');
+  const idx = tokens.findIndex(t => /^\d{2,}$/.test(t));
+  if (idx === -1) return cleaned;
+  const cut = tokens.slice(0, idx).join(' ');
+  return cut || cleaned; // trailing-only safety: never return empty
+}
+
 // ---------- tier 3: merchant brand dictionary ----------
 
 const BUCKETS = [

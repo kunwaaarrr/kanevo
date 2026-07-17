@@ -1632,7 +1632,7 @@ function renderPendingCard(g) {
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
         <div class="pending-card-sub">
-          <span class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}">${label}</span>
+          <button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>
           ${showAuto ? raw('<span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}
         </div>
       </div>
@@ -1655,17 +1655,40 @@ function renderPendingNudge() {
   </div>`;
 }
 
+// eligible for "Approve all" = has a single, non-mixed category (INFLOW counts — pendingGroups
+// nulls categoryId out the moment a group's members disagree, so this is just "not null").
+function approveAllEligible(groups) { return groups.filter(g => g.categoryId != null); }
+
 function renderPendingSection(groups) {
   if (!groups.length) return '';
   const noCategories = !store.state.categories.some(c => !c.hidden);
+  const eligible = approveAllEligible(groups);
+  const remaining = groups.length - eligible.length;
   return h`<section class="pending-section">
     <div class="pending-section-head">
       <h2>Pending review</h2>
-      <button type="button" class="link-btn" id="pending-autosort">Auto-sort</button>
+      <div class="pending-section-actions">
+        ${eligible.length ? h`<button type="button" class="pending-approve-all-btn" id="pending-approve-all">Approve all (${eligible.length})</button>` : ''}
+        <button type="button" class="link-btn" id="pending-autosort">Auto-sort</button>
+      </div>
     </div>
+    ${eligible.length && remaining ? h`<p class="pending-remaining-note muted">${remaining} group${remaining === 1 ? '' : 's'} still need${remaining === 1 ? 's' : ''} a category</p>` : ''}
     ${noCategories ? renderPendingNudge() : ''}
     <div class="pending-list">${groups.map(renderPendingCard)}</div>
   </section>`;
+}
+
+// snapshot for undoApprove: which txns to un-approve + each affected payee's category before teaching
+function captureApproveSnapshot(memberIds) {
+  const payeeIds = new Set();
+  for (const id of memberIds) {
+    const tx = store.state.transactions.find(t => t.id === id);
+    if (tx?.payeeId) payeeIds.add(tx.payeeId);
+  }
+  return {
+    memberIds: memberIds.slice(),
+    payees: [...payeeIds].map(id => ({ id, lastCategoryId: store.getPayee(id)?.lastCategoryId ?? null })),
+  };
 }
 
 // Lightweight category-list modal for a multi-row group: sets the category on every member,
@@ -1697,13 +1720,27 @@ function wirePendingSection(root, accountId, groups, rerender) {
     rerender();
   });
   root.querySelector('#pending-nudge-btn')?.addEventListener('click', () => navigate('#/budget'));
+  root.querySelector('#pending-approve-all')?.addEventListener('click', () => {
+    const eligible = approveAllEligible(groups);
+    if (!eligible.length) return;
+    const memberIds = eligible.flatMap(g => g.memberIds);
+    const snapshot = captureApproveSnapshot(memberIds);
+    store.approveGroup(memberIds);
+    toast(`Approved ${memberIds.length} transaction${memberIds.length === 1 ? '' : 's'}`, {
+      onAction: () => { store.undoApprove(snapshot); rerender(); },
+    });
+    rerender();
+  });
   root.querySelectorAll('[data-approve-group]').forEach(btn => {
     btn.onclick = () => {
       const g = groups.find(x => x.key === btn.dataset.approveGroup);
       if (!g) return;
+      const snapshot = captureApproveSnapshot(g.memberIds);
       if (g.memberIds.length === 1) store.approveTransaction(g.memberIds[0]);
       else store.approveGroup(g.memberIds);
-      toast(`Approved ${g.count} from ${g.payeeName}`);
+      toast(`Approved ${g.count} × ${g.payeeName}`, {
+        onAction: () => { store.undoApprove(snapshot); rerender(); },
+      });
       rerender();
     };
   });
@@ -1713,6 +1750,12 @@ function wirePendingSection(root, accountId, groups, rerender) {
       if (!g) return;
       if (g.memberIds.length === 1) openAddTransactionModal(accountId, g.memberIds[0]);
       else openPendingCategoryPicker(g, rerender);
+    };
+  });
+  root.querySelectorAll('[data-pill-group]').forEach(pill => {
+    pill.onclick = () => {
+      const g = groups.find(x => x.key === pill.dataset.pillGroup);
+      if (g) openPendingCategoryPicker(g, rerender);
     };
   });
 }
