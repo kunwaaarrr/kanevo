@@ -79,6 +79,7 @@ export function applyDisplaySettings() {
   const theme = resolveTheme(s.theme || 'light');
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.balance = s.balanceStyle || 'default';
+  document.documentElement.dataset.amountStyle = s.amountStyle || 'velvet';
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = theme === 'dark' ? '#12141c' : '#f7f4ea';
 }

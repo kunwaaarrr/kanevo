@@ -386,9 +386,9 @@ html, body { overflow-x: clip; }
   --green: #7fc24a;
   --green-dark: #6aa63c;
   --rta-bg: #26421d;        /* deep-green Ready-to-Assign card (light text) */
-  --pill-pos-bg: #74b93c;  --pill-pos-text: #10200a;
-  --pill-warn-bg: #e2ad38; --pill-warn-text: #241c04;
-  --pill-neg-bg: #cf4a42;  --pill-neg-text: #ffffff;
+  --pill-pos-bg: #47702f;  --pill-pos-text: #eef6e6;
+  --pill-warn-bg: #7a5f20; --pill-warn-text: #f7eed3;
+  --pill-neg-bg: #93403a;  --pill-neg-text: #ffe3e1;
   --pill-zero-bg: #2a2e3d; --pill-zero-text: #9a9eac;
   --red: #f2726f;
   --red-dark: #d95b57;
@@ -449,6 +449,51 @@ html, body { overflow-x: clip; }
 }
 [data-balance="mono"] .acct-bal.neg { color: var(--navy-text); text-decoration: underline; text-underline-offset: 2px; }
 [data-balance="mono"] .rta-card.neg { background: var(--track); box-shadow: inset 0 0 0 2px var(--text); }
+
+/* ================= dark mode: amount style (Settings) =================
+   Velvet is the default dark look, set directly in [data-theme="dark"] above.
+   These three are opt-in overrides selected via data-amount-style on <html>. */
+[data-theme="dark"][data-amount-style="bright"] {
+  --pill-pos-bg: #74b93c;  --pill-pos-text: #191818;
+  --pill-warn-bg: #e2ad38; --pill-warn-text: #191818;
+  --pill-neg-bg: #f2938c;  --pill-neg-text: #191818;
+}
+[data-theme="dark"][data-amount-style="soft"] { --pill-pos-bg: #5f9e30; --pill-warn-bg: #cf9d2e; }
+[data-theme="dark"][data-amount-style="soft"] .pill.pos { background: rgba(127,194,74,.20); color: #bce89a; box-shadow: inset 0 0 0 1px rgba(127,194,74,.38); }
+[data-theme="dark"][data-amount-style="soft"] .pill.underfunded { background: rgba(226,173,56,.20); color: #f2d488; box-shadow: inset 0 0 0 1px rgba(226,173,56,.38); }
+[data-theme="dark"][data-amount-style="soft"] .pill.overspent { background: rgba(242,114,111,.20); color: #f9b8b3; box-shadow: inset 0 0 0 1px rgba(242,114,111,.42); }
+[data-theme="dark"][data-amount-style="outline"] { --pill-pos-bg: #5f9e30; --pill-warn-bg: #cf9d2e; }
+[data-theme="dark"][data-amount-style="outline"] .pill.pos { background: transparent; color: #8fc763; box-shadow: inset 0 0 0 1.5px rgba(143,199,99,.45); }
+[data-theme="dark"][data-amount-style="outline"] .pill.underfunded { background: transparent; color: #ecc76a; box-shadow: inset 0 0 0 1.5px rgba(236,199,106,.45); }
+[data-theme="dark"][data-amount-style="outline"] .pill.overspent { background: transparent; color: #f5a09b; box-shadow: inset 0 0 0 1.5px rgba(245,160,155,.5); }
+
+/* ================= amount-style settings preview (theme-independent) =================
+   Self-contained mini-canvas rendered per option in Settings; does not use .pill so
+   it always shows the style regardless of the active setting or current theme. */
+.amt-prev {
+  background: #1b1e2b; border-radius: 10px; padding: 8px 9px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.amt-prev-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.amt-prev-name { font-size: 11px; color: #b7b9c4; white-space: nowrap; }
+.amt-prev-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+
+.amt-prev--velvet .pos  { background: #47702f; color: #eef6e6; }
+.amt-prev--velvet .warn { background: #7a5f20; color: #f7eed3; }
+.amt-prev--velvet .neg  { background: #93403a; color: #ffe3e1; }
+
+.amt-prev--bright .pos  { background: #74b93c; color: #191818; }
+.amt-prev--bright .warn { background: #e2ad38; color: #191818; }
+.amt-prev--bright .neg  { background: #f2938c; color: #191818; }
+
+.amt-prev--soft .pos  { background: rgba(127,194,74,.20); color: #bce89a; box-shadow: inset 0 0 0 1px rgba(127,194,74,.38); }
+.amt-prev--soft .warn { background: rgba(226,173,56,.20); color: #f2d488; box-shadow: inset 0 0 0 1px rgba(226,173,56,.38); }
+.amt-prev--soft .neg  { background: rgba(242,114,111,.20); color: #f9b8b3; box-shadow: inset 0 0 0 1px rgba(242,114,111,.42); }
+
+.amt-prev--outline .pos  { background: transparent; color: #8fc763; box-shadow: inset 0 0 0 1.5px rgba(143,199,99,.45); }
+.amt-prev--outline .warn { background: transparent; color: #ecc76a; box-shadow: inset 0 0 0 1.5px rgba(236,199,106,.45); }
+.amt-prev--outline .neg  { background: transparent; color: #f5a09b; box-shadow: inset 0 0 0 1.5px rgba(245,160,155,.5); }
+.disp-default-badge { margin-left: 7px; font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; background: var(--chip-active-bg); color: var(--link); vertical-align: 1px; }
 
 /* ================= Display Options (settings) ================= */
 .disp-group { margin-bottom: 20px; }

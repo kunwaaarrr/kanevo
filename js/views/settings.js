@@ -16,6 +16,7 @@ export function render(root, params) {
   const s = store.state.settings;
   const theme = s.theme || 'light';
   const balance = s.balanceStyle || 'default';
+  const amountStyle = s.amountStyle || 'velvet';
   root.innerHTML = h`<div class="settings-overview">
     <div class="settings-inner">
       <header class="settings-overview-head mobile-page-head">
@@ -84,6 +85,59 @@ export function render(root, params) {
             </label>
             </div>
           </div>
+          <div class="settings-option-block">
+            <div class="settings-option-head"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">Aa</span><span><strong>Amount style</strong><small>How amounts and bars look in dark mode</small></span></div>
+            <small>Solid</small>
+            <div class="settings-choice-grid">
+            <label class="settings-choice">
+              <input type="radio" name="disp-amount-style" value="velvet" ${amountStyle === 'velvet' ? 'checked' : ''}>
+              <span class="disp-radio-body">
+                <span class="amt-prev amt-prev--velvet">
+                  <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
+                </span>
+                <span class="disp-radio-title">Velvet<span class="disp-default-badge">Default</span></span>
+              </span>
+            </label>
+            <label class="settings-choice">
+              <input type="radio" name="disp-amount-style" value="bright" ${amountStyle === 'bright' ? 'checked' : ''}>
+              <span class="disp-radio-body">
+                <span class="amt-prev amt-prev--bright">
+                  <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
+                </span>
+                <span class="disp-radio-title">Bright</span>
+              </span>
+            </label>
+            </div>
+            <small>Subtle</small>
+            <div class="settings-choice-grid">
+            <label class="settings-choice">
+              <input type="radio" name="disp-amount-style" value="soft" ${amountStyle === 'soft' ? 'checked' : ''}>
+              <span class="disp-radio-body">
+                <span class="amt-prev amt-prev--soft">
+                  <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
+                </span>
+                <span class="disp-radio-title">Soft tint</span>
+              </span>
+            </label>
+            <label class="settings-choice">
+              <input type="radio" name="disp-amount-style" value="outline" ${amountStyle === 'outline' ? 'checked' : ''}>
+              <span class="disp-radio-body">
+                <span class="amt-prev amt-prev--outline">
+                  <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
+                  <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
+                </span>
+                <span class="disp-radio-title">Outline</span>
+              </span>
+            </label>
+            </div>
+          </div>
         </section>
 
         <section class="settings-card">
@@ -122,6 +176,8 @@ export function render(root, params) {
     r.onchange = e => store.updateSettings({ theme: e.target.value }));
   root.querySelectorAll('input[name="disp-balance"]').forEach(r =>
     r.onchange = e => store.updateSettings({ balanceStyle: e.target.value }));
+  root.querySelectorAll('input[name="disp-amount-style"]').forEach(r =>
+    r.onchange = e => store.updateSettings({ amountStyle: e.target.value }));
 
   root.querySelector('#set-export').onclick = () => {
     download(`kanevo-backup-${new Date().toISOString().slice(0, 10)}.json`, store.exportJSON());
