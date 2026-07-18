@@ -4,6 +4,7 @@ import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, raw, debounce, a
 import { simulateBankFeed } from '../seed.js';
 import { parseStatement, buildTxns } from '../lib/csv.js';
 import { normalizeMerchant } from '../lib/categorize.js';
+import { openLearnedMerchantsSheet } from './budget.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 const FREQ_LABEL = {
@@ -286,12 +287,14 @@ function openSpendingMore(root) {
       <button class="mobile-options-row" id="spending-more-filter"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.filter}</span>${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</span></button>
       <button class="mobile-options-row" id="spending-more-scheduled"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.clock}</span>${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</span></button>
       <button class="mobile-options-row" id="spending-more-add"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.addCircle}</span>Add a transaction</span></button>
+      <button class="mobile-options-row" id="spending-more-learned"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.tag}</span>Learned merchants</span><span aria-hidden="true">›</span></button>
       <button class="mobile-options-row" id="spending-more-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
   modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
+  modal.querySelector('#spending-more-learned').onclick = () => { closeModal(); openLearnedMerchantsSheet(); };
   modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
 }
 
