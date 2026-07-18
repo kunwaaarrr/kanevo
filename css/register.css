@@ -731,3 +731,10 @@
 .fi-advanced summary::after { content: '▾'; font-size: 11px; }
 .fi-advanced[open] summary::after { content: '▴'; }
 .fi-advanced > *:not(summary) { margin-top: 8px; }
+
+/* file-import: full-width phone-friendly file button + touch targets */
+.fi-file-btn { width: 100%; min-height: 44px; justify-content: flex-start; }
+.fi-file-btn #fi-filename { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-advanced summary { min-height: 36px; }
+.modal .fi-preview-table td { padding: 3px 0; }
+.modal .fi-preview-table td:last-child { white-space: nowrap; padding-left: 8px; }

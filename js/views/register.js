@@ -818,7 +818,9 @@ export function openFileImportModal(accountId, initialFile) {
   const accounts = store.state.accounts.filter(a => !a.closed);
   const defaultAcc = accountId || accounts[0]?.id;
   openModal(h`<h2>File Import</h2>
-    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file"></div>
+    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label>
+      <label class="btn secondary file-btn fi-file-btn"><span aria-hidden="true">↑</span><span id="fi-filename">Choose file…</span><input id="fi-file" type="file" hidden></label>
+    </div>
     <div id="fi-csv" hidden>
       ${accounts.length ? h`<div class="form-row"><label>Into account</label>
         <select id="fi-account">${raw(accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join(''))}</select>
@@ -872,6 +874,7 @@ export function openFileImportModal(accountId, initialFile) {
       // .json = plan backup; anything else (csv, txt, whatever the bank exports) tries the statement parser
       const handleFile = async file => {
         pickedFile = file;
+        modal.querySelector('#fi-filename').textContent = file.name;
         if (/\.json$/i.test(file.name) || file.type === 'application/json') {
           csv = null;
           modal.querySelector('#fi-csv').hidden = true;
@@ -883,10 +886,7 @@ export function openFileImportModal(accountId, initialFile) {
         }
       };
       modal.querySelector('#fi-file').onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
-      if (initialFile) {
-        try { const dt = new DataTransfer(); dt.items.add(initialFile); modal.querySelector('#fi-file').files = dt.files; } catch { /* cosmetic only */ }
-        handleFile(initialFile);
-      }
+      if (initialFile) handleFile(initialFile);
 
       modal.querySelector('#fi-import').onclick = async () => {
         const file = pickedFile;
