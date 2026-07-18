@@ -92,45 +92,45 @@ export function render(root, params) {
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="velvet" ${amountStyle === 'velvet' ? 'checked' : ''}>
               <span class="disp-radio-body">
+                <span class="disp-radio-title">Velvet<span class="disp-default-badge">Default</span></span>
                 <span class="amt-prev amt-prev--velvet">
                   <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
                 </span>
-                <span class="disp-radio-title">Velvet<span class="disp-default-badge">Default</span></span>
               </span>
             </label>
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="bright" ${amountStyle === 'bright' ? 'checked' : ''}>
               <span class="disp-radio-body">
+                <span class="disp-radio-title">Bright</span>
                 <span class="amt-prev amt-prev--bright">
                   <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
                 </span>
-                <span class="disp-radio-title">Bright</span>
               </span>
             </label>
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="soft" ${amountStyle === 'soft' ? 'checked' : ''}>
               <span class="disp-radio-body">
+                <span class="disp-radio-title">Soft tint</span>
                 <span class="amt-prev amt-prev--soft">
                   <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
                 </span>
-                <span class="disp-radio-title">Soft tint</span>
               </span>
             </label>
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="outline" ${amountStyle === 'outline' ? 'checked' : ''}>
               <span class="disp-radio-body">
+                <span class="disp-radio-title">Outline</span>
                 <span class="amt-prev amt-prev--outline">
                   <span class="amt-prev-row"><span class="amt-prev-name">🏠 Rent</span><span class="amt-prev-pill pos">$2,450</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">📱 Phone</span><span class="amt-prev-pill warn">$5</span></span>
                   <span class="amt-prev-row"><span class="amt-prev-name">🍜 Dining</span><span class="amt-prev-pill neg">−$178</span></span>
                 </span>
-                <span class="disp-radio-title">Outline</span>
               </span>
             </label>
             </div>

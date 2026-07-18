@@ -282,7 +282,6 @@
 .mobile-category-pill { display: inline-flex; max-width: 145px; min-width: 0; flex-shrink: 1; padding: 3px 9px; border-radius: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--track); color: var(--text); font-size: 11px; }
 .mobile-category-pill.inflow { background: var(--accounts-glyph-bg); color: var(--green); }
 .mobile-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
-.mobile-approval-badge { flex-shrink: 0; color: var(--warning-text); font-size: 10px; font-weight: 700; }
 /* amount + cleared icon share one line; a thin hairline separates them (keeps the card short) */
 .mobile-row-side { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; max-width: 44%; }
 .mobile-row-right { display: flex; flex-direction: row; align-items: center; gap: 8px; }
@@ -366,6 +365,12 @@
 }
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
+/* pending-review banner reuses .mobile-account-approval; spending view has no gutter of its own */
+.spending-review-banner { margin: 15px 14px 0; width: auto; }
+/* pending-card states: empty category is a call-to-action; guessed categories say so in words */
+.pill-cta { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px dashed var(--blue); color: var(--blue-dark); font-size: 11px; font-weight: 700; background: transparent; }
+.pending-card.needs-category { box-shadow: 0 2px 8px rgba(20,30,70,.04), inset 0 0 0 1.5px var(--blue); }
+.suggested-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
 .spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
 .spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
 .spending-overview .mobile-date-card { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
@@ -514,20 +519,56 @@
 .mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
 /* grouped pending review — one card per merchant instead of one per row */
 .pending-section { margin-top: 15px; }
+.spending-overview .pending-section { padding: 0 14px; } /* spending view has no gutter of its own */
 .pending-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
 .pending-section-head h2 { font-size: 14px; font-weight: 750; color: var(--text); }
+.pending-section-actions { display: flex; align-items: center; gap: 12px; }
+/* "Approve all" — same green as .pending-approve-btn, sized as a compact header pill */
+.pending-approve-all-btn {
+  height: 30px; padding: 0 12px; border-radius: 999px;
+  background: var(--green); color: #fff; font-size: 12px; font-weight: 700;
+  box-shadow: 0 3px 9px rgba(20,30,70,.16);
+}
+.pending-approve-all-btn:active { background: var(--green-dark); transform: translateY(1px); }
+.pending-remaining-note { padding: 0 2px 10px; font-size: 11px; }
 .pending-nudge { margin-bottom: 10px; padding: 12px 13px; border-radius: 14px; background: var(--chip-active-bg); color: var(--blue-dark); }
 .pending-nudge p { font-size: 12px; line-height: 1.45; }
 .pending-nudge button { margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg); color: var(--blue-dark); font-size: 12px; font-weight: 700; }
 .pending-nudge button:active { background: var(--bg-alt); }
-.pending-list { display: flex; flex-direction: column; gap: 9px; }
-.pending-card { padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+/* isolate: the deck layers are z-index:-1 — without a stacking context boundary here they'd
+   paint behind the view's opaque cream background and vanish entirely */
+.pending-list { display: flex; flex-direction: column; gap: 9px; isolation: isolate; }
+/* NOTE: no z-index on .pending-card — the card must not create a stacking context, or the
+   negative-z deck layers below would paint ON TOP of its own background (CSS paint order). */
+.pending-card { position: relative; padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+/* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
+   angled toward the right edge. Tapping anywhere but a button expands the card into its
+   member rows (wired in wirePendingSection). */
+.pending-card.stacked { cursor: pointer; margin-bottom: 11px; }
+/* card-deck: ×2 groups show one layer under the bottom edge; ×3+ (.stacked-deep) show two.
+   ::before is the nearer layer so it gets the higher z (nearer paints on top). */
+.pending-card.stacked::before, .pending-card.stacked-deep::after {
+  content: ''; position: absolute; height: 26px;
+  background: var(--bg); border-radius: 16px; box-shadow: 0 2px 5px rgba(20,30,70,.07);
+}
+.pending-card.stacked::before { z-index: -1; left: 10px; right: 6px; bottom: -6px; }
+.pending-card.stacked-deep::after { z-index: -2; left: 20px; right: 12px; bottom: -12px; }
+.pending-card.stacked-deep { margin-bottom: 16px; }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }
 .pending-card-sub { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
-.pending-card-amt { flex-shrink: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pending-card-amt { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pending-card-meta { display: flex; align-items: center; gap: 6px; }
+.pending-card-acct { font-size: 11px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
 .pending-card-count { padding: 2px 7px; border-radius: 999px; background: var(--track); color: var(--text-dim); font-size: 11px; font-weight: 700; }
+.pending-card-members { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-subtle); }
+.pending-member-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+.pending-member-memo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-member-amt { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.pending-member-edit { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--text-dim); }
+.pending-member-edit:active { background: var(--bg-alt); }
+.pending-member-edit .ico { width: 13px; height: 13px; }
 .mobile-account-detail .sched-section { margin-top: 15px; border: 0; background: transparent; }
 .mobile-account-detail .sched-head { padding: 0 2px 8px; color: var(--text); font-size: 14px; }
 .mobile-account-detail .sched-list { padding: 0; gap: 9px; }
@@ -708,7 +749,7 @@
 .txe-list-item.txe-new-payee { color: var(--link); font-weight: 700; }
 .txe-list-empty { padding: 14px 6px; }
 .txe-cat-group-label { padding: 11px 6px 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
-.txe-cat-item { min-height: 45px; margin-bottom: 6px; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--bg); display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.txe-cat-item { min-height: 40px; margin-bottom: 2px; padding: 8px 12px; border: 0; border-radius: 12px; background: var(--bg); display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 16px; }
 .txe-cat-item:hover, .txe-cat-item:active { background: var(--bg-alt); }
 .txe-cat-item.selected { background: var(--bg); color: var(--blue-dark); box-shadow: inset 0 0 0 1.5px var(--blue); }
 .txe-cat-amt { font-variant-numeric: tabular-nums; font-size: 13px; }

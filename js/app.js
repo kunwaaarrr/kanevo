@@ -1,7 +1,7 @@
 // Shell: router, sidebar, modal, toast. Views own everything inside #view.
 import { store } from './store.js';
 import { maybeSeed } from './seed.js';
-import { fmt, esc, h, raw, thisMonth, setHideAmounts, ICONS } from './util.js';
+import { fmt, esc, h, thisMonth, setHideAmounts, ICONS } from './util.js';
 import * as budgetView from './views/budget.js';
 import * as registerView from './views/register.js';
 import * as reportsView from './views/reports.js';
@@ -60,10 +60,14 @@ export function confirmSheet({ title, body = '', confirmLabel = 'Confirm', cance
 // ---------- toast ----------
 const toastRoot = document.getElementById('toast-root');
 let toastTimer;
-export function toast(msg, { undoable = false } = {}) {
-  toastRoot.innerHTML = h`<div class="toast">${msg}${undoable && store.canUndo() ? [raw('<button id="toast-undo">Undo</button>')] : ''}</div>`;
+// undoable: true wires the action button to the generic store.undo() stack (existing callers).
+// onAction: a scoped, caller-supplied undo (e.g. a category-approve snapshot) — takes priority
+// over undoable when both would apply. actionLabel lets a scoped action rename the button.
+export function toast(msg, { undoable = false, actionLabel = 'Undo', onAction = null } = {}) {
+  const showAction = onAction ? true : (undoable && store.canUndo());
+  toastRoot.innerHTML = h`<div class="toast">${msg}${showAction ? h`<button id="toast-undo">${actionLabel}</button>` : ''}</div>`;
   const btn = document.getElementById('toast-undo');
-  if (btn) btn.onclick = () => { store.undo(); toastRoot.innerHTML = ''; };
+  if (btn) btn.onclick = () => { (onAction || (() => store.undo()))(); toastRoot.innerHTML = ''; };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (toastRoot.innerHTML = ''), 4500);
 }
@@ -111,6 +115,7 @@ function renderView() {
     spending: () => innerWidth < 768
       ? registerView.renderSpendingOverview(viewEl)
       : registerView.render(viewEl, { accountId: null }),
+    review:   () => registerView.renderReview(viewEl),
     account:  () => registerView.render(viewEl, { accountId: r.params[0] }),
     reports:  () => reportsView.render(viewEl, { report: r.params[0] || 'spending' }),
     loans:    () => loansView.render(viewEl, { accountId: r.params[0] || null }),
@@ -141,7 +146,7 @@ function renderSidebar(route) {
   const items = [
     { hash: `#/budget/${month}`, ico: ICONS.plan, label: 'Plan', active: route.name === 'budget' },
     { hash: '#/reports/overview', ico: ICONS.reflect, label: 'Reflect', active: ['reports', 'fifty', 'forecast', 'what-if-v2', 'loans'].includes(route.name) },
-    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' },
+    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' || route.name === 'review' },
     { hash: '#/settings', ico: ICONS.settings, label: 'Settings', active: route.name === 'settings' },
   ];
   nav.innerHTML = items.map(i =>
@@ -182,7 +187,7 @@ document.getElementById('bank-connections-btn').onclick = () => {
 function renderTabbar(route) {
   const map = {
     budget: 'plan',
-    spending: 'spending',
+    spending: 'spending', review: 'spending',
     profile: 'profile', account: 'profile', accounts: 'profile', 'loan-account': 'profile', settings: 'profile',
     reports: 'reflect', fifty: 'reflect', forecast: 'reflect', 'what-if-v2': 'reflect', loans: 'reflect',
   };

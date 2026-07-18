@@ -1109,6 +1109,55 @@ function setupStep2Html() {
   </div>`;
 }
 
+// ---------- Learned merchants sheet (payee -> category rules) ----------
+// Standalone modal, opened from the Spending view's ⋮ menu (register.js). The
+// category-picker step swaps the SAME modal's content rather than stacking a second one.
+export function openLearnedMerchantsSheet() {
+  let pickerFor = null; // payeeId currently picking a category for, or null to show the list
+  const modal = openModal('');
+  const renderList = () => {
+    const rules = store.learnedPayees();
+    modal.innerHTML = h`<h2 id="learned-title">Learned merchants</h2>
+      ${rules.length ? h`<div class="m-menu">
+        ${rules.map(rule => h`<div class="m-menu-row">
+          <span class="m-menu-label">${rule.name}</span>
+          <button type="button" class="pill pos" data-act="learned-pick" data-id="${rule.id}">${rule.category ? rule.category.name : '—'}</button>
+          <button type="button" class="link-btn danger-text" data-act="learned-forget" data-id="${rule.id}" aria-label="Forget ${rule.name}">✕</button>
+        </div>`)}
+      </div>` : h`<p class="muted">Nothing learned yet — approve some transactions.</p>`}
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" data-act="learned-close">Close</button>
+      </div>`;
+  };
+  // reuses planDeleteDestinations — the same category set already offered by the plan-delete
+  // "move assigned money to another category" picker — plus the .m-menu list styling.
+  const renderPicker = () => {
+    const payee = store.getPayee(pickerFor);
+    const cats = planDeleteDestinations([]);
+    modal.innerHTML = h`<h2 id="learned-pick-title">Category for ${payee.name}</h2>
+      <div class="m-menu">
+        ${cats.map(c => h`<button type="button" class="m-menu-row" data-pick-cat="${c.id}"><span class="m-menu-label">${c.name}</span></button>`)}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="link-btn" data-act="pick-back">‹ Back</button>
+      </div>`;
+  };
+  const render = () => (pickerFor ? renderPicker() : renderList());
+  modal.onclick = event => {
+    const pick = event.target.closest('[data-pick-cat]');
+    if (pick) { store.setPayeeCategory(pickerFor, pick.dataset.pickCat); pickerFor = null; render(); return; }
+    const act = event.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'learned-close': closeModal(); break;
+      case 'pick-back': pickerFor = null; render(); break;
+      case 'learned-pick': pickerFor = act.dataset.id; render(); break;
+      case 'learned-forget': store.setPayeeCategory(act.dataset.id, null); render(); break;
+    }
+  };
+  render();
+}
+
 function openNewFocusedViewModal(root, md) {
   const cats = md.groups.flatMap(g => g.categories.map(c => ({ ...c, groupName: g.name })));
   const body = h`<h2>New Focused View</h2>
@@ -1704,6 +1753,9 @@ function wireEditPlanReordering(sheet, root) {
 }
 
 function openEditPlanSheet(root, md) {
+  // Rebuilding the sheet resets its scroll; carry the old position over so
+  // reorders/renames/adds don't jump the user back to the top.
+  const prevScroll = document.querySelector('#modal-root .edit-plan-modal')?.scrollTop ?? 0;
   const monthWord = monthLabel(curMonth).split(' ')[0];
   const totalTargets = md.groups.flatMap(g => g.categories)
     .reduce((sum, category) => sum + (category.target ? neededFor(category, curMonth) + category.assigned : 0), 0);
@@ -1761,6 +1813,7 @@ function openEditPlanSheet(root, md) {
     </div>
   </div>`);
   sheet.classList.add('edit-plan-modal');
+  if (prevScroll) sheet.scrollTop = prevScroll;
   sheet.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
