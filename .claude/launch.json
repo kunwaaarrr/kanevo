@@ -4,8 +4,11 @@
     {
       "name": "kanevo",
       "runtimeExecutable": "/opt/homebrew/bin/python3",
-      "runtimeArgs": ["serve.py"],
-      "port": 8437
+      "runtimeArgs": [
+        "serve.py"
+      ],
+      "port": 8437,
+      "autoPort": true
     }
   ]
 }

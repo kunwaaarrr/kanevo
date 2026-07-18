@@ -1,5 +1,6 @@
 # ponytail: dev server = http.server + no-store so edits always ship; any static host works in prod
 import http.server
+import os
 
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
@@ -8,4 +9,4 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-http.server.ThreadingHTTPServer(('', 8437), NoCacheHandler).serve_forever()
+http.server.ThreadingHTTPServer(('', int(os.environ.get('PORT', 8437))), NoCacheHandler).serve_forever()
