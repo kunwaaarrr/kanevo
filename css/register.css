@@ -538,15 +538,14 @@
 /* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
    angled toward the right edge. Tapping anywhere but a button expands the card into its
    member rows (wired in wirePendingSection). */
-.pending-card.stacked { cursor: pointer; margin-right: 18px; margin-bottom: 14px; } /* room for the deck to peek below-right */
-/* two card edges peeking out from under the bottom-right, fanned toward the right edge */
+.pending-card.stacked { cursor: pointer; margin-bottom: 11px; } /* room for the deck to peek below */
+/* clean card-deck: two narrower layers tucked under the bottom edge, drifting slightly right */
 .pending-card.stacked::before, .pending-card.stacked::after {
-  content: ''; position: absolute; z-index: -1; height: 34px;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 14px;
-  box-shadow: 0 3px 8px rgba(20,30,70,.12);
+  content: ''; position: absolute; z-index: -1; height: 24px;
+  background: var(--bg); border-radius: 16px; box-shadow: 0 2px 6px rgba(20,30,70,.08);
 }
-.pending-card.stacked::before { left: 14px; right: -8px; bottom: -8px; transform: rotate(1.6deg); }
-.pending-card.stacked::after { left: 30px; right: -16px; bottom: -15px; transform: rotate(3.2deg); }
+.pending-card.stacked::before { left: 12px; right: 6px; bottom: -6px; }
+.pending-card.stacked::after { left: 26px; right: 14px; bottom: -11px; }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }
