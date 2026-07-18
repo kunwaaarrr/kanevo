@@ -513,6 +513,7 @@
 .mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
 /* grouped pending review — one card per merchant instead of one per row */
 .pending-section { margin-top: 15px; }
+.spending-overview .pending-section { padding: 0 14px; } /* spending view has no gutter of its own */
 .pending-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
 .pending-section-head h2 { font-size: 14px; font-weight: 750; color: var(--text); }
 .pending-section-actions { display: flex; align-items: center; gap: 12px; }
@@ -535,14 +536,14 @@
 /* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
    angled toward the right edge. Tapping anywhere but a button expands the card into its
    member rows (wired in wirePendingSection). */
-.pending-card.stacked { cursor: pointer; margin-right: 14px; } /* room for the fanned layers to peek */
+.pending-card.stacked { cursor: pointer; margin-right: 18px; margin-bottom: 6px; } /* room for the fanned layers to peek */
 .pending-card.stacked::before, .pending-card.stacked::after {
   content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: var(--bg); border: 1px solid var(--line-subtle); box-shadow: 0 2px 8px rgba(20,30,70,.05);
-  transform-origin: bottom right;
+  background: var(--bg); border: 1px solid var(--line); box-shadow: 0 3px 10px rgba(20,30,70,.10);
+  transform-origin: left center; /* pivot at the left so the fan swings out to the right */
 }
-.pending-card.stacked::before { transform: translate(8px, -2px) rotate(1.8deg); }
-.pending-card.stacked::after { transform: translate(15px, -4px) rotate(3.6deg); }
+.pending-card.stacked::before { transform: translate(9px, 0) rotate(1.5deg); }
+.pending-card.stacked::after { transform: translate(18px, 0) rotate(3deg); }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }
