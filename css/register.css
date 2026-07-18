@@ -538,15 +538,16 @@
 /* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
    angled toward the right edge. Tapping anywhere but a button expands the card into its
    member rows (wired in wirePendingSection). */
-.pending-card.stacked { cursor: pointer; margin-bottom: 15px; box-shadow: 0 3px 7px rgba(20,30,70,.13); } /* stronger bottom shadow casts onto the deck */
-/* clean card-deck: two layers under the bottom edge, even 6px steps, each casting a shadow on
-   the next. ::before is the nearer layer so it gets the higher z (nearer paints on top). */
-.pending-card.stacked::before, .pending-card.stacked::after {
+.pending-card.stacked { cursor: pointer; margin-bottom: 11px; }
+/* card-deck: ×2 groups show one layer under the bottom edge; ×3+ (.stacked-deep) show two.
+   ::before is the nearer layer so it gets the higher z (nearer paints on top). */
+.pending-card.stacked::before, .pending-card.stacked-deep::after {
   content: ''; position: absolute; height: 26px;
-  background: var(--bg); border-radius: 16px; box-shadow: 0 3px 6px rgba(20,30,70,.15);
+  background: var(--bg); border-radius: 16px; box-shadow: 0 2px 5px rgba(20,30,70,.07);
 }
 .pending-card.stacked::before { z-index: -1; left: 10px; right: 6px; bottom: -6px; }
-.pending-card.stacked::after { z-index: -2; left: 20px; right: 12px; bottom: -12px; }
+.pending-card.stacked-deep::after { z-index: -2; left: 20px; right: 12px; bottom: -12px; }
+.pending-card.stacked-deep { margin-bottom: 16px; }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }

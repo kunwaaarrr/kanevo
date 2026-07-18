@@ -1653,7 +1653,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   const showAuto = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
-  return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${expanded ? 'expanded' : ''}" data-pending-card="${g.key}">
+  return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${g.count >= 3 ? 'stacked-deep' : ''} ${expanded ? 'expanded' : ''}" data-pending-card="${g.key}">
     <div class="pending-card-top">
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
