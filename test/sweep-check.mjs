@@ -109,7 +109,29 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   assert.ok(idx('Coles') < atmIdx, 'tier 1 (AUTO guess) before tier 2 (user-confirmed) despite lower count');
   assert.ok(atmIdx < cashIdx, 'tie within tier 2 broken by payeeName ascending ("ATM" < "Cash Withdrawal")');
 
-  console.log('1. pendingGroups: PASS');
+  // ---- cross-account: pendingGroups(null) merges across ALL accounts ----
+  const allGroups = store.pendingGroups(null);
+
+  // Woolworths has 3 unapproved members on acc + 1 unapproved member on acc2 (added above as the
+  // "different account" exclusion case) — same normalized merchant should merge into one group.
+  const wooliesAll = allGroups.find(g => g.payeeName === 'Woolworths');
+  assert.ok(wooliesAll, 'cross-account Woolworths group exists');
+  assert.equal(wooliesAll.count, 4, 'cross-account Woolworths group merges 3 (acc) + 1 (acc2) members');
+  assert.equal(wooliesAll.totalAmount, -1000 + -2000 + -500 + -111, 'cross-account Woolworths totalAmount summed across accounts');
+  assert.equal(wooliesAll.memberIds.length, 4, 'cross-account Woolworths memberIds complete');
+
+  // per-account calls still exclude other accounts — behavior for a given accountId is unchanged
+  const acc2Groups = store.pendingGroups(acc2);
+  assert.ok(!acc2Groups.some(g => g.memberIds.some(id => store.state.transactions.find(t => t.id === id).accountId !== acc2)),
+    'pendingGroups(acc2) still excludes acc txns');
+  const acc2Woolies = acc2Groups.find(g => g.payeeName === 'Woolworths');
+  assert.ok(acc2Woolies && acc2Woolies.count === 1, 'pendingGroups(acc2) sees only its own 1 Woolworths txn, not acc\'s 3');
+
+  // incoming transfer leg still excluded in the null (cross-account) case
+  assert.ok(!allGroups.some(g => g.memberIds.includes(incomingLeg.id)),
+    'incoming transfer leg excluded from cross-account pendingGroups(null) too');
+
+  console.log('1. pendingGroups: PASS (incl. cross-account accountId=null)');
 }
 
 // ============================================================

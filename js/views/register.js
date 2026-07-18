@@ -178,6 +178,7 @@ let spendingQuery = '';
 
 export function renderSpendingOverview(root) {
   const all = sortTxs(gatherTxs(null));
+  const pending = store.pendingGroups(null);
   const scheduled = store.upcomingScheduled(null, 365);
   const unclearedCount = all.filter(transaction => transaction.cleared === 'uncleared').length;
   const query = spendingQuery.trim().toLowerCase();
@@ -203,6 +204,7 @@ export function renderSpendingOverview(root) {
       <input id="spending-search-input" type="search" placeholder="Search transactions" value="${spendingQuery}">
       <button id="spending-search-close" aria-label="Close search">${ICONS.close}</button>
     </div>` : ''}
+    ${renderPendingSection(pending, { showAccount: true })}
     ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
       <span><i aria-hidden="true">${ICONS.clock}</i> Upcoming scheduled</span>
       <span><strong>${scheduled.length}</strong><b class="spending-scheduled-chevron ${spendingScheduledOpen ? 'open' : ''}" aria-hidden="true">${ICONS.chevronDown}</b></span>
@@ -247,6 +249,7 @@ export function renderSpendingOverview(root) {
     };
   });
   wireMobileApproveEdit(root, null, () => renderSpendingOverview(root));
+  wirePendingSection(root, null, pending, () => renderSpendingOverview(root));
   wireScheduled(root, null, () => renderSpendingOverview(root));
 }
 
@@ -1576,7 +1579,7 @@ function renderMobileRow(t, { spending = false, showApproveActions = true } = {}
     <div class="mobile-row-main">
       <div class="mobile-row-left">
         <div class="mobile-payee">${!t.approved ? raw('<span class="unapproved-dot"></span>') : ''}${payeeName}</div>
-        <div class="mobile-sub">${categoryPill}${memo}${!t.approved ? raw('<span class="mobile-approval-badge">Needs approval</span>') : ''}${cat && t.autoCategorized && !t.approved ? raw(' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}</div>
+        <div class="mobile-sub">${categoryPill}${cat && t.autoCategorized && !t.approved ? raw(' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}${memo}</div>
       </div>
       <div class="mobile-row-side">
         <div class="mobile-row-right">
@@ -1618,16 +1621,40 @@ function wireMobileApproveEdit(root, accountId, rerender = () => render(root, { 
 // showApproveActions: false) in favor of this: one card per merchant instead of one per row, so
 // a 1,000-row import with 400 repeats becomes a handful of cards. Spending feed (cross-account,
 // pendingGroups needs a single accountId) keeps the per-row Approve/Edit from renderMobileRow.
+// which stacked (count > 1) pending cards are expanded to show member rows — keyed by group key
+// so it survives rerenders within a view. Collapsing everything on view switch is fine (ponytail:
+// no persistence needed, group keys are stable within a view but not worth carrying across views).
+let expandedPendingGroups = new Set();
+
 function pendingCategoryLabel(g) {
   if (g.categoryId === INFLOW) return 'Ready to Assign';
   if (g.categoryId) return categoryName(g.categoryId);
   return g.count > 1 && !g.allSameCategory ? 'Mixed categories' : 'Uncategorised';
 }
 
-function renderPendingCard(g) {
+// member mini-rows shown when a stacked (count > 1) card is expanded — date, optionally account
+// (cross-account Spending context only; redundant in single-account detail so omitted there), amount,
+// and a per-member Edit that opens the transaction editor for that specific txn.
+function renderPendingMembers(g, showAccount) {
+  return h`<div class="pending-card-members">${g.memberIds.map(id => {
+    const tx = store.state.transactions.find(t => t.id === id);
+    if (!tx) return '';
+    const accName = showAccount ? (store.state.accounts.find(a => a.id === tx.accountId)?.name || '') : '';
+    return h`<div class="pending-member-row">
+      <span class="pending-member-date">${fmtDate(tx.date)}</span>
+      ${accName ? h`<span class="pending-member-account">${accName}</span>` : ''}
+      <span class="pending-member-amt ${tx.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(tx.amount)}</span>
+      <button type="button" class="pending-member-edit" data-member-edit="${id}" aria-label="Edit transaction">${ICONS.edit}</button>
+    </div>`;
+  })}</div>`;
+}
+
+function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
   const showAuto = g.categoryId && g.autoCategorized;
-  return h`<div class="pending-card">
+  const stacked = g.count > 1;
+  const expanded = stacked && expandedPendingGroups.has(g.key);
+  return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${expanded ? 'expanded' : ''}" data-pending-card="${g.key}">
     <div class="pending-card-top">
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
@@ -1641,6 +1668,7 @@ function renderPendingCard(g) {
         <span class="${g.totalAmount > 0 ? 'pos-text' : 'neg-text'}">${fmt(g.totalAmount)}</span>
       </div>
     </div>
+    ${expanded ? renderPendingMembers(g, showAccount) : ''}
     <div class="pending-card-actions">
       <button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>
       <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>
@@ -1659,7 +1687,7 @@ function renderPendingNudge() {
 // nulls categoryId out the moment a group's members disagree, so this is just "not null").
 function approveAllEligible(groups) { return groups.filter(g => g.categoryId != null); }
 
-function renderPendingSection(groups) {
+function renderPendingSection(groups, { showAccount = false } = {}) {
   if (!groups.length) return '';
   const noCategories = !store.state.categories.some(c => !c.hidden);
   const eligible = approveAllEligible(groups);
@@ -1674,7 +1702,7 @@ function renderPendingSection(groups) {
     </div>
     ${eligible.length && remaining ? h`<p class="pending-remaining-note muted">${remaining} group${remaining === 1 ? '' : 's'} still need${remaining === 1 ? 's' : ''} a category</p>` : ''}
     ${noCategories ? renderPendingNudge() : ''}
-    <div class="pending-list">${groups.map(renderPendingCard)}</div>
+    <div class="pending-list">${groups.map(g => renderPendingCard(g, { showAccount }))}</div>
   </section>`;
 }
 
@@ -1748,8 +1776,13 @@ function wirePendingSection(root, accountId, groups, rerender) {
     btn.onclick = () => {
       const g = groups.find(x => x.key === btn.dataset.editGroup);
       if (!g) return;
-      if (g.memberIds.length === 1) openAddTransactionModal(accountId, g.memberIds[0]);
-      else openPendingCategoryPicker(g, rerender);
+      if (g.memberIds.length === 1) {
+        // cross-account (accountId null in Spending): use the member txn's own account, not the
+        // section's accountId param. openAddTransactionModal ignores presetAccountId when editing
+        // an existing txn anyway, but pass the real one so that stays true if that ever changes.
+        const tx = store.state.transactions.find(t => t.id === g.memberIds[0]);
+        openAddTransactionModal(tx ? tx.accountId : accountId, g.memberIds[0]);
+      } else openPendingCategoryPicker(g, rerender);
     };
   });
   root.querySelectorAll('[data-pill-group]').forEach(pill => {
@@ -1757,6 +1790,24 @@ function wirePendingSection(root, accountId, groups, rerender) {
       const g = groups.find(x => x.key === pill.dataset.pillGroup);
       if (g) openPendingCategoryPicker(g, rerender);
     };
+  });
+  root.querySelectorAll('[data-member-edit]').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const tx = store.state.transactions.find(t => t.id === btn.dataset.memberEdit);
+      if (tx) openAddTransactionModal(tx.accountId, tx.id);
+    };
+  });
+  // stacked-card expand/collapse — any tap outside a button (Approve/Edit, the category pill, a
+  // member's own Edit) toggles the member list. e.target.closest('button') covers all of those.
+  root.querySelectorAll('.pending-card.stacked').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      const key = card.dataset.pendingCard;
+      if (expandedPendingGroups.has(key)) expandedPendingGroups.delete(key);
+      else expandedPendingGroups.add(key);
+      rerender();
+    });
   });
 }
 

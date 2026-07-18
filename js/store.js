@@ -716,11 +716,12 @@ function _importTransactions(accountId, bankTxns) {
   return { inserted, merged, skipped };
 }
 
-// group an account's unapproved txns by normalized payee name, for bulk approve/categorize UI
+// group an account's unapproved txns by normalized payee name, for bulk approve/categorize UI.
+// accountId == null groups across ALL accounts (used by the Spending tab's pending review).
 function pendingGroups(accountId) {
   const groups = new Map();
   for (const tx of state.transactions) {
-    if (tx.accountId !== accountId || tx.approved) continue;
+    if ((accountId != null && tx.accountId !== accountId) || tx.approved) continue;
     if (tx.transferAccountId && tx.amount > 0) continue; // incoming leg is the hidden twin — skip so a transfer isn't double-counted
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
     const key = payee ? `p:${normalizeMerchant(payee.name)}` : `tx:${tx.id}`;
