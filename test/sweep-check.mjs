@@ -25,8 +25,7 @@ function setup() {
 // addTransaction resolves payee by name -> id via findOrCreatePayee (matches import flow)
 function payeeId(name) { return store.findOrCreatePayee(name); }
 
-// ============================================================
-// 1. pendingGroups
+// =====================================================// 1. pendingGroups
 // ============================================================
 {
   const { acc, acc2, catA, catB } = setup();
@@ -214,6 +213,41 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   assert.notEqual(cA, cB, 'sanity: the two fixture categories differ');
 
   console.log('3b. teaching auto-sorts elsewhere: PASS');
+}
+// 3c. pending splits keep their subtransactions (invariant: a tx never has BOTH
+//     a categoryId and subtransactions — catRows() would silently ignore the category)
+// ============================================================
+{
+  const { acc, catA, catB } = setup();
+  const pCostco = payeeId('Costco');
+  const splitTx = store.addTransaction({
+    accountId: acc, date: '2026-01-01', payeeId: pCostco, amount: -10000, approved: false,
+    subtransactions: [{ categoryId: catA, amount: -6000 }, { categoryId: catB, amount: -4000 }],
+  });
+  const plainTx = store.addTransaction({ accountId: acc, date: '2026-01-02', payeeId: pCostco, categoryId: null, amount: -2000, approved: false });
+
+  const group = store.pendingGroups(acc).find(g => g.memberIds.includes(splitTx));
+  assert.equal(group.categoryId, null, 'split member leaves the group categoryId null');
+  assert.equal(group.allSplit, false, 'group with a non-split member is not allSplit');
+
+  store.categorizeGroup(group.memberIds, catB);
+  const splitAfter = store.state.transactions.find(t => t.id === splitTx);
+  assert.equal(splitAfter.categoryId, null, 'categorizeGroup leaves split tx categoryId null');
+  assert.equal(splitAfter.subtransactions.length, 2, 'categorizeGroup does not clear subtransactions');
+  assert.equal(store.state.transactions.find(t => t.id === plainTx).categoryId, catB, 'non-split member still categorized');
+
+  // resuggestPending is the other writer that could stomp a pending split (uncategorized + unapproved)
+  store.resuggestPending();
+  const splitAfterResuggest = store.state.transactions.find(t => t.id === splitTx);
+  assert.equal(splitAfterResuggest.categoryId, null, 'resuggestPending skips split txns');
+  assert.ok(!('autoCategorized' in splitAfterResuggest), 'split txn not flagged as a guess');
+
+  // a group where every member is a split -> allSplit, so the card shows "Split" instead of the CTA
+  store.deleteTransaction(plainTx);
+  const splitOnly = store.pendingGroups(acc).find(g => g.memberIds.includes(splitTx));
+  assert.equal(splitOnly.allSplit, true, 'all-split group flagged allSplit for the "Split" pill');
+
+  console.log('3c. pending splits: PASS');
 }
 
 // ============================================================

@@ -1688,6 +1688,7 @@ function wireMobileApproveEdit(root, accountId, rerender = () => render(root, { 
 let expandedPendingGroups = new Set();
 
 function pendingCategoryLabel(g) {
+  if (g.allSplit) return 'Split'; // categories live on the subtransactions — same label renderMobileRow uses
   if (g.categoryId === INFLOW) return 'Ready to Assign';
   if (g.categoryId) return categoryName(g.categoryId);
   return g.count > 1 && !g.allSameCategory ? 'Mixed categories' : 'Uncategorised';
@@ -1711,7 +1712,9 @@ function renderPendingMembers(g) {
 
 function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
-  const needsCategory = g.categoryId == null; // uncategorised or mixed — the dashed CTA pill carries this state
+  // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
+  // categories live on the subtransactions, so there is nothing to choose at the parent level.
+  const needsCategory = g.categoryId == null && !g.allSplit;
   const suggested = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
@@ -1722,7 +1725,9 @@ function renderPendingCard(g, { showAccount = false } = {}) {
         <div class="pending-card-sub">
           ${needsCategory
             ? h`<button type="button" class="pill-cta" data-pill-group="${g.key}">＋ Choose category</button>`
-            : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
+            : g.allSplit
+              ? h`<span class="mobile-category-pill">${label}</span>`
+              : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
           ${suggested ? raw('<span class="suggested-label">✦ suggested</span>') : ''}
         </div>
       </div>
@@ -1750,8 +1755,9 @@ function renderPendingNudge() {
 }
 
 // eligible for "Approve all" = has a single, non-mixed category (INFLOW counts — pendingGroups
-// nulls categoryId out the moment a group's members disagree, so this is just "not null").
-function approveAllEligible(groups) { return groups.filter(g => g.categoryId != null); }
+// nulls categoryId out the moment a group's members disagree, so this is just "not null"), or is
+// all-split (categories live on the subtransactions, so the group doesn't need one).
+function approveAllEligible(groups) { return groups.filter(g => g.categoryId != null || g.allSplit); }
 
 function renderPendingSection(groups, { showAccount = false } = {}) {
   if (!groups.length) return '';

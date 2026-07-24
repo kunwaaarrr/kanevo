@@ -731,7 +731,7 @@ function pendingGroups(accountId) {
       g = {
         key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
-        autoCategorized: true, memberIds: [], sampleDate: tx.date,
+        autoCategorized: true, allSplit: true, memberIds: [], sampleDate: tx.date,
       };
       groups.set(key, g);
     } else if (g.categoryId !== tx.categoryId) {
@@ -740,6 +740,7 @@ function pendingGroups(accountId) {
     g.count++; g.totalAmount += tx.amount; g.memberIds.push(tx.id);
     if (tx.date > g.sampleDate) g.sampleDate = tx.date;
     if (!tx.autoCategorized) g.autoCategorized = false;
+    if (!tx.subtransactions) g.allSplit = false;
   }
   // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
   const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);
@@ -824,6 +825,7 @@ function _resuggestPending() {
   let changed = 0;
   for (const tx of state.transactions) {
     if (tx.approved) continue;
+    if (tx.subtransactions) continue; // split: categories live on the subs, tx.categoryId must stay null
     if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
     const catId = (payee && payee.lastCategoryId) || (payee && findNormalizedMatch(payee.name))
@@ -1037,7 +1039,7 @@ export const store = {
   categorizeGroup: mutate((memberIds, categoryId) => {
     for (const id of memberIds) {
       const tx = state.transactions.find(t => t.id === id);
-      if (!tx) continue;
+      if (!tx || tx.subtransactions) continue; // split: categories live on the subs, tx.categoryId must stay null
       tx.categoryId = categoryId;
       delete tx.autoCategorized;
       if (tx.payeeId) {
