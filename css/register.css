@@ -365,12 +365,9 @@
 }
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
-/* pending-review banner reuses .mobile-account-approval; spending view has no gutter of its own */
-.spending-review-banner { margin: 15px 14px 0; width: auto; }
 /* pending-card states: empty category is a call-to-action; guessed categories say so in words */
 .pill-cta { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px dashed var(--blue); color: var(--blue-dark); font-size: 11px; font-weight: 700; background: transparent; }
-.pending-card.needs-category { box-shadow: 0 2px 8px rgba(20,30,70,.04), inset 0 0 0 1.5px var(--blue); }
-.suggested-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.suggested-label { font-size: 11px; color: var(--link); white-space: nowrap; }
 .spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
 .spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
 .spending-overview .mobile-date-card { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
@@ -517,6 +514,10 @@
 .mobile-account-approval { width: 100%; min-height: 48px; margin-top: 11px; padding: 10px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--chip-active-bg); color: var(--blue-dark); text-align: left; font-size: 13px; }
 .mobile-account-approval strong { display: inline-flex; min-width: 24px; height: 24px; margin-right: 5px; padding: 0 7px; align-items: center; justify-content: center; border-radius: 999px; background: var(--blue); color: var(--on-brand); }
 .mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
+/* spending's review banner: this view has no gutter of its own, so the banner brings its own
+   margins — same width/margin pattern as .spending-scheduled-link below it. Declared after
+   .mobile-account-approval deliberately: same specificity, later wins. */
+.spending-review-banner { width: calc(100% - 28px); margin: 15px 14px 0; }
 /* grouped pending review — one card per merchant instead of one per row */
 .pending-section { margin-top: 15px; }
 .spending-overview .pending-section { padding: 0 14px; } /* spending view has no gutter of its own */
@@ -554,6 +555,11 @@
 .pending-card.stacked::before { z-index: -1; left: 10px; right: 6px; bottom: -6px; }
 .pending-card.stacked-deep::after { z-index: -2; left: 20px; right: 12px; bottom: -12px; }
 .pending-card.stacked-deep { margin-bottom: 16px; }
+/* dark mode: the deck layers are the same colour as the card and shadows don't read on a dark
+   ground, so give card + layers a hairline edge — otherwise the stack is invisible. */
+[data-theme="dark"] .pending-card { box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+[data-theme="dark"] .pending-card.stacked::before,
+[data-theme="dark"] .pending-card.stacked-deep::after { border: 1px solid var(--line); box-shadow: 0 2px 6px rgba(0,0,0,.35); }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }

@@ -1697,7 +1697,7 @@ function renderPendingMembers(g) {
 
 function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
-  const needsCategory = g.categoryId == null; // uncategorised or mixed — either way, picking sets all members
+  const needsCategory = g.categoryId == null; // uncategorised or mixed — the dashed CTA pill carries this state
   const suggested = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);

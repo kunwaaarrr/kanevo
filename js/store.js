@@ -995,6 +995,7 @@ export const store = {
     if (tx.payeeId && tx.categoryId && !tx.transferAccountId) {
       const p = getPayee(tx.payeeId);
       if (p) p.lastCategoryId = tx.categoryId;
+      _resuggestPending(); // what we just learned applies to this merchant's other pending rows
     }
   }),
   toggleCleared: mutate(id => {
@@ -1007,15 +1008,17 @@ export const store = {
   pendingGroups,
   // approve every member of a pending group; teaches the payee for each, same as approveTransaction
   approveGroup: mutate(memberIds => {
+    let taught = false;
     for (const id of memberIds) {
       const tx = state.transactions.find(t => t.id === id);
       if (!tx) continue;
       tx.approved = true;
       if (tx.payeeId && tx.categoryId && !tx.transferAccountId) {
         const p = getPayee(tx.payeeId);
-        if (p) p.lastCategoryId = tx.categoryId;
+        if (p) { p.lastCategoryId = tx.categoryId; taught = true; }
       }
     }
+    if (taught) _resuggestPending(); // same merchant on another account picks it up immediately
   }),
   // reverts a group/all-pending approve: un-approves the given tx ids and restores each affected
   // payee's prior lastCategoryId from a snapshot the caller captured before approving. Scoped to
@@ -1042,6 +1045,9 @@ export const store = {
         if (p) p.lastCategoryId = categoryId;
       }
     }
+    // the members above are user-confirmed (autoCategorized cleared) so resuggest skips them;
+    // it only fills this merchant's still-guessing rows on other accounts.
+    _resuggestPending();
   }),
   // re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category is added)
   resuggestPending: mutate(_resuggestPending),

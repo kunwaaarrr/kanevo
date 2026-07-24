@@ -185,6 +185,38 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
 }
 
 // ============================================================
+// 3b. teaching auto-sorts the merchant's pending rows elsewhere
+// (groups are per-account, so the same merchant on another account is a separate group)
+// ============================================================
+{
+  const { acc, acc2, catA, catB } = setup();
+  const pShop = payeeId('Shop');
+  const here = store.addTransaction({ accountId: acc, date: '2026-02-01', payeeId: pShop, categoryId: null, amount: -1000, approved: false });
+  const other = store.addTransaction({ accountId: acc2, date: '2026-02-02', payeeId: pShop, categoryId: null, amount: -2000, approved: false });
+  const confirmed = store.addTransaction({ accountId: acc2, date: '2026-02-03', payeeId: pShop, categoryId: catA, amount: -300, approved: false }); // user-set, must not move
+  const approved = store.addTransaction({ accountId: acc2, date: '2026-02-04', payeeId: pShop, categoryId: catA, amount: -400, approved: true });
+
+  store.categorizeGroup([here], catB);
+
+  const tx = id => store.state.transactions.find(t => t.id === id);
+  assert.equal(tx(other).categoryId, catB, 'categorizeGroup auto-sorts the same merchant on another account');
+  assert.equal(tx(other).autoCategorized, true, 'the propagated category is flagged as a guess');
+  assert.equal(tx(confirmed).categoryId, catA, 'a user-confirmed pending row is left alone');
+  assert.equal(tx(approved).categoryId, catA, 'an approved row is left alone');
+
+  // approving a single row teaches + auto-sorts the same way
+  const { acc: a3, acc2: a4, catA: cA, catB: cB } = setup();
+  const pCafe = payeeId('Cafe');
+  const seed = store.addTransaction({ accountId: a3, date: '2026-03-01', payeeId: pCafe, categoryId: cB, amount: -500, approved: false });
+  const waiting = store.addTransaction({ accountId: a4, date: '2026-03-02', payeeId: pCafe, categoryId: null, amount: -600, approved: false });
+  store.approveTransaction(seed);
+  assert.equal(tx(waiting).categoryId, cB, 'approveTransaction teaches and auto-sorts pending rows of that merchant');
+  assert.notEqual(cA, cB, 'sanity: the two fixture categories differ');
+
+  console.log('3b. teaching auto-sorts elsewhere: PASS');
+}
+
+// ============================================================
 // 4. resuggestPending
 // ============================================================
 {
@@ -203,19 +235,22 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   // unapproved, uncategorized — eligible
   const uncatTx = store.addTransaction({ accountId: acc, date: '2026-01-04', payeeId: pGym, categoryId: null, amount: -5000, approved: false });
 
-  // teach the payee catB via categorizeGroup on a separate txn from the same payee
-  const teachTx = store.addTransaction({ accountId: acc, date: '2026-01-05', payeeId: pGym, categoryId: null, amount: -5000, approved: false });
-  store.categorizeGroup([teachTx], catB);
-  assert.equal(store.getPayee(pGym).lastCategoryId, catB, 'payee taught catB');
-
+  // snapshot the must-never-touch rows BEFORE teaching, so the assertions below cover both the
+  // auto-run inside categorizeGroup and the explicit resuggestPending call after it
   const before = {
     approved: { ...store.state.transactions.find(t => t.id === approvedTx) },
     confirmed: { ...store.state.transactions.find(t => t.id === confirmedTx) },
   };
 
-  const changed = store.resuggestPending();
+  // teach the payee catB via categorizeGroup on a separate txn from the same payee
+  const teachTx = store.addTransaction({ accountId: acc, date: '2026-01-05', payeeId: pGym, categoryId: null, amount: -5000, approved: false });
+  store.categorizeGroup([teachTx], catB);
+  assert.equal(store.getPayee(pGym).lastCategoryId, catB, 'payee taught catB');
 
-  assert.equal(changed, 2, 'resuggestPending reports 2 changed (guessTx + uncatTx; confirmedTx/approvedTx/teachTx untouched)');
+  // teaching auto-sorts, so the eligible rows (guessTx + uncatTx) have already moved and an
+  // explicit run finds nothing left to do
+  const changed = store.resuggestPending();
+  assert.equal(changed, 0, 'teaching already auto-sorted the eligible rows, so an explicit resuggest is a no-op');
 
   const approvedAfter = store.state.transactions.find(t => t.id === approvedTx);
   assert.deepEqual(approvedAfter, before.approved, 'approved txn completely untouched');
