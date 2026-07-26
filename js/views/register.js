@@ -178,7 +178,8 @@ let spendingOnlyUncleared = false;
 let spendingScheduledOpen = false;
 let spendingQuery = '';
 
-export function renderSpendingOverview(root) {
+export function renderSpendingOverview(root, { refresh = true } = {}) {
+  if (refresh) store.resuggestPending(); // opening Spending refreshes the whole queue, not just Review
   const all = sortTxs(gatherTxs(null));
   const pending = store.pendingGroups(null);
   const scheduled = store.upcomingScheduled(null, 365);
@@ -224,24 +225,24 @@ export function renderSpendingOverview(root) {
   root.querySelector('#spending-search-toggle').onclick = () => {
     spendingSearchOpen = !spendingSearchOpen;
     if (!spendingSearchOpen) spendingQuery = '';
-    renderSpendingOverview(root);
+    renderSpendingOverview(root, { refresh: false });
   };
   root.querySelector('#spending-search-close')?.addEventListener('click', () => {
-    spendingSearchOpen = false; spendingQuery = ''; renderSpendingOverview(root);
+    spendingSearchOpen = false; spendingQuery = ''; renderSpendingOverview(root, { refresh: false });
   });
   const searchInput = root.querySelector('#spending-search-input');
   if (searchInput) {
     searchInput.focus();
     searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
-    searchInput.oninput = debounce(() => { spendingQuery = searchInput.value; renderSpendingOverview(root); }, 120);
+    searchInput.oninput = debounce(() => { spendingQuery = searchInput.value; renderSpendingOverview(root, { refresh: false }); }, 120);
   }
   root.querySelector('#spending-uncleared')?.addEventListener('click', () => {
     spendingOnlyUncleared = !spendingOnlyUncleared;
-    renderSpendingOverview(root);
+    renderSpendingOverview(root, { refresh: false });
   });
   root.querySelector('#spending-scheduled-toggle')?.addEventListener('click', () => {
     spendingScheduledOpen = !spendingScheduledOpen;
-    renderSpendingOverview(root);
+    renderSpendingOverview(root, { refresh: false });
   });
   root.querySelector('#spending-more').onclick = () => openSpendingMore(root);
   root.querySelectorAll('[data-spending-tx]').forEach(row => {
@@ -250,9 +251,9 @@ export function renderSpendingOverview(root) {
       if (transaction) openAddTransactionModal(transaction.accountId, transaction.id);
     };
   });
-  wireMobileApproveEdit(root, null, () => renderSpendingOverview(root));
+  wireMobileApproveEdit(root, null, () => renderSpendingOverview(root, { refresh: false }));
   root.querySelector('#spending-review-banner')?.addEventListener('click', () => { location.hash = '#/review'; });
-  wireScheduled(root, null, () => renderSpendingOverview(root));
+  wireScheduled(root, null, () => renderSpendingOverview(root, { refresh: false }));
 }
 
 function spendingFeedHtml(transactions) {
@@ -294,8 +295,8 @@ function openSpendingMore(root) {
       <button class="mobile-options-row" id="spending-more-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
-  modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
-  modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
+  modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root, { refresh: false }); };
+  modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root, { refresh: false }); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
   modal.querySelector('#spending-more-learned').onclick = () => { closeModal(); openLearnedMerchantsSheet(); };
   modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
@@ -322,7 +323,7 @@ function reviewPill(groups) {
   const label = needsCategory
     ? h`Categorise <strong>${needsCategory}</strong> transaction${needsCategory === 1 ? '' : 's'}`
     : suggested
-      ? h`Confirm <strong>${suggested}</strong> suggested`
+      ? h`Review <strong>${suggested}</strong> suggested`
       : h`Review <strong>${groups.reduce((n, g) => n + g.count, 0)}</strong> transaction${groups.length === 1 ? '' : 's'}`;
   return h`<button class="spending-uncleared spending-review-pill ${needsCategory ? 'needs' : ''}" id="spending-review-banner">
     <span>${label}</span><span aria-hidden="true">›</span>
@@ -1739,9 +1740,13 @@ function renderPendingMembers(g) {
     const tx = store.state.transactions.find(t => t.id === id);
     if (!tx) return '';
     const missing = tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId;
+    // only worth the space when the group has no single category to show at the top
+    const ownCategory = g.categoryId == null && tx.categoryId != null
+      ? (tx.categoryId === INFLOW ? 'Ready to Assign' : categoryName(tx.categoryId)) : '';
     return h`<button type="button" class="pending-member-row ${missing ? 'missing-category' : ''}" data-member-edit="${id}">
       <span class="pending-member-date">${fmtDate(tx.date)}</span>
       ${missing ? raw('<span class="pending-member-missing">no category</span>') : ''}
+      ${ownCategory ? h`<span class="pending-member-cat">${ownCategory}</span>` : ''}
       ${tx.memo ? h`<span class="pending-member-memo">${tx.memo}</span>` : ''}
       <span class="pending-member-amt ${tx.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(tx.amount)}</span>
       <b class="pending-member-go" aria-hidden="true">›</b>
