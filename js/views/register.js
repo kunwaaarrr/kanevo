@@ -258,6 +258,7 @@ export function renderSpendingOverview(root) {
 }
 
 function spendingFeedHtml(transactions) {
+  let lastAccountId = null; // account label only when it changes as you scroll
   const groups = [];
   for (const transaction of transactions) {
     let group = groups.find(item => item.date === transaction.date);
@@ -266,7 +267,11 @@ function spendingFeedHtml(transactions) {
   }
   return groups.map(group => h`<section class="spending-date-group">
     <div class="mobile-date-head">${fmtDate(group.date)}</div>
-    <div class="mobile-date-card">${group.rows.map(transaction => renderMobileRow(transaction, { spending: true }))}</div>
+    <div class="mobile-date-card">${group.rows.map(transaction => {
+      const repeatAccount = transaction.accountId === lastAccountId;
+      lastAccountId = transaction.accountId;
+      return renderMobileRow(transaction, { spending: true, repeatAccount });
+    })}</div>
   </section>`);
 }
 
@@ -1608,19 +1613,19 @@ function renderMobileList(txs, accountId, { showApproveActions = true } = {}) {
     </div>`)}</div>`;
 }
 
-function renderMobileRow(t, { spending = false, showApproveActions = true } = {}) {
+function renderMobileRow(t, { spending = false, showApproveActions = true, repeatAccount = false } = {}) {
   const payee = t.payeeId ? store.getPayee(t.payeeId) : null;
   const payeeName = t.transferAccountId ? transferPayeeLabel(t) : (payee ? payee.name : '(no payee)');
   const cat = t.subtransactions ? 'Split' : (t.categoryId === INFLOW ? 'Ready to Assign' : (t.categoryId ? store.state.categories.find(c => c.id === t.categoryId)?.name : ''));
   const category = cat || 'Uncategorised';
-  const account = spending ? (store.state.accounts.find(a => a.id === t.accountId)?.name || '') : '';
+  const account = spending && !repeatAccount ? (store.state.accounts.find(a => a.id === t.accountId)?.name || '') : '';
   const categoryPill = h`<span class="mobile-category-pill ${t.amount > 0 ? 'inflow' : ''}">${category}</span>`;
   const memo = showMemoCol && t.memo ? h`<span class="mobile-memo">${t.memo}</span>` : '';
   const accountLabel = account ? h`<div class="mobile-row-account">${account}</div>` : '';
   return h`<div class="mobile-row ${!t.approved ? 'unapproved-row' : ''}" data-id="${t.id}" data-spending-tx="${spending ? t.id : ''}">
     <div class="mobile-row-main">
       <div class="mobile-row-left">
-        <div class="mobile-payee">${!t.approved ? raw('<span class="unapproved-dot"></span>') : ''}${payeeName}</div>
+        <div class="mobile-payee">${payeeName}</div>
         <div class="mobile-sub">${categoryPill}${cat && t.autoCategorized && !t.approved ? raw(' <span class="suggested-label">✦ suggested</span>') : ''}${memo}</div>
       </div>
       <div class="mobile-row-side">
@@ -1701,12 +1706,12 @@ function renderPendingMembers(g) {
   return h`<div class="pending-card-members">${g.memberIds.map(id => {
     const tx = store.state.transactions.find(t => t.id === id);
     if (!tx) return '';
-    return h`<div class="pending-member-row">
+    return h`<button type="button" class="pending-member-row" data-member-edit="${id}">
       <span class="pending-member-date">${fmtDate(tx.date)}</span>
       ${tx.memo ? h`<span class="pending-member-memo">${tx.memo}</span>` : ''}
       <span class="pending-member-amt ${tx.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(tx.amount)}</span>
-      <button type="button" class="pending-member-edit" data-member-edit="${id}" aria-label="Edit transaction">${ICONS.edit}</button>
-    </div>`;
+      <b class="pending-member-go" aria-hidden="true">›</b>
+    </button>`;
   })}</div>`;
 }
 

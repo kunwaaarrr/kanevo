@@ -25,7 +25,8 @@ function setup() {
 // addTransaction resolves payee by name -> id via findOrCreatePayee (matches import flow)
 function payeeId(name) { return store.findOrCreatePayee(name); }
 
-// =====================================================// 1. pendingGroups
+// ============================================================
+// 1. pendingGroups
 // ============================================================
 {
   const { acc, acc2, catA, catB } = setup();
