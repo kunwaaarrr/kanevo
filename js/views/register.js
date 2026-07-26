@@ -309,12 +309,11 @@ function openSpendingMore(root) {
 // Styled on .spending-uncleared (a transient filter that disappears when you're done), not on
 // .spending-scheduled-link (a permanent feature).
 function reviewCounts(groups) {
-  let needsCategory = 0, suggested = 0;
-  for (const g of groups) {
-    if (g.uncategorizedCount) needsCategory += g.uncategorizedCount;
-    else if (g.autoCategorized) suggested += g.count;
-  }
-  return { needsCategory, suggested };
+  const b = pendingBuckets(groups);
+  return {
+    needsCategory: b.needs.reduce((n, g) => n + g.uncategorizedCount, 0),
+    suggested: b.suggested.reduce((n, g) => n + g.count, 0),
+  };
 }
 
 function reviewPill(groups) {
@@ -336,7 +335,8 @@ function pendingPreview(groups) {
   return more > 0 ? `${top} · ${more} more` : top;
 }
 
-export function renderReview(root) {
+export function renderReview(root, { refresh = true } = {}) {
+  if (refresh) store.resuggestPending(); // catch anything imported before its category existed
   const pending = store.pendingGroups(null);
   root.innerHTML = h`<div class="spending-overview">
     <header class="settings-overview-head mobile-page-head">
@@ -350,7 +350,7 @@ export function renderReview(root) {
     </div>`}
   </div>`;
   root.querySelector('#review-back').onclick = () => history.back();
-  wirePendingSection(root, null, pending, () => renderReview(root));
+  wirePendingSection(root, null, pending, () => renderReview(root, { refresh: false }));
 }
 
 // ---------- main render ----------
@@ -1724,7 +1724,10 @@ function pendingCategoryLabel(g) {
   if (g.categoryId) return categoryName(g.categoryId);
   // no single category to show: either some rows are genuinely missing one (actionable), or they
   // simply sit in different categories (fine — nothing to fix)
-  if (g.uncategorizedCount) return g.uncategorizedCount === g.count ? '＋ No category' : `${g.uncategorizedCount} without a category`;
+  if (g.uncategorizedCount === g.count) return '＋ No category';
+  if (g.uncategorizedCount) return g.suggestedCount
+    ? `${g.suggestedCount} suggested · ${g.uncategorizedCount} missing`
+    : `${g.uncategorizedCount} of ${g.count} missing`;
   return 'Several categories';
 }
 
@@ -1751,7 +1754,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
   // categories live on the subtransactions, so there is nothing to choose at the parent level.
   const needsCategory = g.uncategorizedCount > 0;
-  const suggested = g.suggestedCount > 0;
+  const suggested = g.suggestedCount > 0 && !g.uncategorizedCount;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
   return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${g.count >= 3 ? 'stacked-deep' : ''} ${expanded ? 'expanded' : ''} ${needsCategory ? 'needs-category' : ''}" data-pending-card="${g.key}">
@@ -1802,7 +1805,7 @@ function pendingBuckets(groups) {
   const needs = [], suggested = [], ready = [];
   for (const g of groups) {
     if (g.uncategorizedCount) needs.push(g);
-    else if (g.categoryId != null && g.autoCategorized) suggested.push(g);
+    else if (g.suggestedCount) suggested.push(g);
     else ready.push(g);
   }
   return { needs, suggested, ready };

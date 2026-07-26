@@ -325,6 +325,9 @@ document.querySelectorAll('[data-ico]').forEach(el => { el.innerHTML = ICONS[el.
 
 // ---------- boot ----------
 maybeSeed();
+// state can arrive without ever passing through the import path — a restored backup, the test
+// fixture, an older save — so make one pass at boot rather than showing rows we could have guessed
+store.resuggestPending();
 store.processDueScheduled();
 store.subscribe(renderView);
 if (!location.hash) location.hash = `#/budget/${thisMonth()}`;
