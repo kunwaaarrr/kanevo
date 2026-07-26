@@ -1724,7 +1724,7 @@ function pendingCategoryLabel(g) {
   if (g.categoryId) return categoryName(g.categoryId);
   // no single category to show: either some rows are genuinely missing one (actionable), or they
   // simply sit in different categories (fine — nothing to fix)
-  if (g.uncategorizedCount) return g.uncategorizedCount === g.count ? 'No category' : `${g.uncategorizedCount} without a category`;
+  if (g.uncategorizedCount) return g.uncategorizedCount === g.count ? '＋ No category' : `${g.uncategorizedCount} without a category`;
   return 'Several categories';
 }
 
@@ -1751,7 +1751,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
   // categories live on the subtransactions, so there is nothing to choose at the parent level.
   const needsCategory = g.uncategorizedCount > 0;
-  const suggested = g.categoryId && g.autoCategorized;
+  const suggested = g.suggestedCount > 0;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
   return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${g.count >= 3 ? 'stacked-deep' : ''} ${expanded ? 'expanded' : ''} ${needsCategory ? 'needs-category' : ''}" data-pending-card="${g.key}">
