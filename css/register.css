@@ -368,7 +368,6 @@
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
 /* pending-card states: empty category is a call-to-action; guessed categories say so in words */
-.pill-cta { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px dashed var(--blue); color: var(--blue-dark); font-size: 11px; font-weight: 700; background: transparent; }
 .suggested-label { font-size: 11px; color: var(--link); white-space: nowrap; }
 .spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
 .spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
@@ -529,6 +528,11 @@
 .pending-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
 .pending-section-head h2 { font-size: 14px; font-weight: 750; color: var(--text); }
 .pending-section-actions { display: flex; align-items: center; gap: 12px; }
+/* one bucket per thing you're being asked to do; the count matches the Spending pill */
+.pending-bucket + .pending-bucket { margin-top: 18px; }
+.pending-bucket-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px 8px; }
+.pending-bucket-head h3 { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 750; color: var(--text-dim); }
+.pending-bucket-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--track); color: var(--text-dim); font-size: 11px; }
 /* "Approve all" — same green as .pending-approve-btn, sized as a compact header pill */
 .pending-approve-all-btn {
   height: 30px; padding: 0 12px; border-radius: 999px;

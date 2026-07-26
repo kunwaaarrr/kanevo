@@ -1754,11 +1754,9 @@ function renderPendingCard(g, { showAccount = false } = {}) {
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
         <div class="pending-card-sub">
-          ${needsCategory
-            ? h`<button type="button" class="pill-cta" data-pill-group="${g.key}">＋ Choose category</button>`
-            : g.allSplit
-              ? h`<span class="mobile-category-pill">${label}</span>`
-              : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
+          ${needsCategory || g.allSplit || g.allTransfer
+            ? h`<span class="mobile-category-pill">${label}</span>`
+            : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
           ${suggested ? raw('<span class="suggested-label">✦ suggested</span>') : ''}
         </div>
       </div>
@@ -1772,7 +1770,9 @@ function renderPendingCard(g, { showAccount = false } = {}) {
     </div>
     ${expanded ? renderPendingMembers(g) : ''}
     <div class="pending-card-actions">
-      <button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>
+      ${needsCategory
+        ? h`<button type="button" class="pending-approve-btn" data-pill-group="${g.key}">Categorise</button>`
+        : h`<button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>`}
       <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>
     </div>
   </div>`;
@@ -1788,24 +1788,46 @@ function renderPendingNudge() {
 // eligible for "Approve all" = has a single, non-mixed category (INFLOW counts — pendingGroups
 // nulls categoryId out the moment a group's members disagree, so this is just "not null"), or is
 // all-split (categories live on the subtransactions, so the group doesn't need one).
-function approveAllEligible(groups) { return groups.filter(g => g.categoryId != null || g.allSplit); }
+
+// three buckets, because each needs a different thing from you. Counts are transactions (not
+// groups) so a section header matches the number on the Spending pill exactly.
+function pendingBuckets(groups) {
+  const needs = [], suggested = [], ready = [];
+  for (const g of groups) {
+    if (g.categoryId == null && !g.allSplit && !g.allTransfer) needs.push(g);
+    else if (g.categoryId != null && g.autoCategorized) suggested.push(g);
+    else ready.push(g);
+  }
+  return { needs, suggested, ready };
+}
+const bucketTotal = gs => gs.reduce((n, g) => n + g.count, 0);
+
+function renderPendingBucket(title, groups, { showAccount, approveAllId } = {}) {
+  if (!groups.length) return '';
+  return h`<div class="pending-bucket">
+    <div class="pending-bucket-head">
+      <h3>${title}<span class="pending-bucket-count">${bucketTotal(groups)}</span></h3>
+      ${approveAllId ? h`<button type="button" class="pending-approve-all-btn" id="${approveAllId}">Approve all</button>` : ''}
+    </div>
+    <div class="pending-list">${groups.map(g => renderPendingCard(g, { showAccount }))}</div>
+  </div>`;
+}
 
 function renderPendingSection(groups, { showAccount = false } = {}) {
   if (!groups.length) return '';
   const noCategories = !store.state.categories.some(c => !c.hidden);
-  const eligible = approveAllEligible(groups);
-  const remaining = groups.length - eligible.length;
+  const { needs, suggested, ready } = pendingBuckets(groups);
   return h`<section class="pending-section">
     <div class="pending-section-head">
       <h2>Pending review</h2>
       <div class="pending-section-actions">
-        ${eligible.length ? h`<button type="button" class="pending-approve-all-btn" id="pending-approve-all">Approve all (${eligible.length})</button>` : ''}
         <button type="button" class="link-btn" id="pending-autosort">Auto-sort</button>
       </div>
     </div>
-    ${eligible.length && remaining ? h`<p class="pending-remaining-note muted">${remaining} group${remaining === 1 ? '' : 's'} still need${remaining === 1 ? 's' : ''} a category</p>` : ''}
     ${noCategories ? renderPendingNudge() : ''}
-    <div class="pending-list">${groups.map(g => renderPendingCard(g, { showAccount }))}</div>
+    ${renderPendingBucket('Needs a category', needs, { showAccount })}
+    ${renderPendingBucket('Suggested', suggested, { showAccount, approveAllId: 'pending-approve-suggested' })}
+    ${renderPendingBucket('Ready to approve', ready, { showAccount, approveAllId: 'pending-approve-ready' })}
   </section>`;
 }
 
@@ -1835,7 +1857,7 @@ function openPendingCategoryPicker(g, onDone) {
     for (const c of cats) rows.push(`<div class="txe-cat-item" data-cat="${c.id}"><span>${esc(c.name)}</span></div>`);
   }
   const modal = openModal(h`<h2>Categorize ${g.payeeName}</h2>
-    <p class="muted" style="margin-bottom:10px">Sets the category on all ${g.count} transactions. They stay pending until you approve.</p>
+    <p class="muted" style="margin-bottom:10px">Categorises all ${g.count} transactions and clears them from review.</p>
     <div class="txe-list">${raw(rows.join('') || '<div class="txe-list-empty muted">No categories yet.</div>')}</div>
     <div class="modal-actions"><button class="btn secondary" id="cp-cancel">Cancel</button></div>`);
   modal.querySelector('#cp-cancel').onclick = closeModal;
@@ -1851,10 +1873,9 @@ function wirePendingSection(root, accountId, groups, rerender) {
     rerender();
   });
   root.querySelector('#pending-nudge-btn')?.addEventListener('click', () => navigate('#/budget'));
-  root.querySelector('#pending-approve-all')?.addEventListener('click', () => {
-    const eligible = approveAllEligible(groups);
-    if (!eligible.length) return;
-    const memberIds = eligible.flatMap(g => g.memberIds);
+  const wireApproveAll = (id, bucket) => root.querySelector(id)?.addEventListener('click', () => {
+    if (!bucket.length) return;
+    const memberIds = bucket.flatMap(g => g.memberIds);
     const snapshot = captureApproveSnapshot(memberIds);
     store.approveGroup(memberIds);
     toast(`Approved ${memberIds.length} transaction${memberIds.length === 1 ? '' : 's'}`, {
@@ -1862,6 +1883,9 @@ function wirePendingSection(root, accountId, groups, rerender) {
     });
     rerender();
   });
+  const buckets = pendingBuckets(groups);
+  wireApproveAll('#pending-approve-suggested', buckets.suggested);
+  wireApproveAll('#pending-approve-ready', buckets.ready);
   root.querySelectorAll('[data-approve-group]').forEach(btn => {
     btn.onclick = () => {
       const g = groups.find(x => x.key === btn.dataset.approveGroup);
