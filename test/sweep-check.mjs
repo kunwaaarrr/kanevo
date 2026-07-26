@@ -178,7 +178,7 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   assert.ok(!('autoCategorized' in store.state.transactions.find(t => t.id === t1)), 'autoCategorized flag deleted on t1');
   assert.ok(!('autoCategorized' in store.state.transactions.find(t => t.id === t2)), 'autoCategorized flag deleted on t2');
   // teaches without approval
-  assert.ok(!store.state.transactions.find(t => t.id === t1).approved, 'categorizeGroup does not approve');
+  assert.ok(store.state.transactions.find(t => t.id === t1).approved, 'categorizeGroup approves: choosing the category IS the review');
   assert.equal(store.getPayee(pShop).lastCategoryId, catB, 'payee taught even without approval');
 
   console.log('3. categorizeGroup: PASS');
@@ -247,6 +247,18 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   store.deleteTransaction(plainTx);
   const splitOnly = store.pendingGroups(acc).find(g => g.memberIds.includes(splitTx));
   assert.equal(splitOnly.allSplit, true, 'all-split group flagged allSplit for the "Split" pill');
+
+  // a transfer between on-budget accounts has no category by design — it must never be counted
+  // as "needs a category", or the Categorise pill nags about something that can't be fixed
+  {
+    const { acc, acc2 } = setup();
+    store.addTransfer({ fromAccountId: acc, toAccountId: acc2, date: '2026-04-01', amount: 25000 });
+    const out = store.state.transactions.find(t => t.accountId === acc && t.transferAccountId === acc2);
+    store.updateTransaction(out.id, { approved: false });
+    const g = store.pendingGroups(acc).find(x => x.memberIds.includes(out.id));
+    assert.ok(g, 'the outgoing transfer leg still appears for review');
+    assert.equal(g.allTransfer, true, 'transfer group flagged allTransfer, so it is not counted as needing a category');
+  }
 
   console.log('3c. pending splits: PASS');
 }

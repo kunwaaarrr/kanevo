@@ -206,9 +206,6 @@ export function renderSpendingOverview(root) {
       <input id="spending-search-input" type="search" placeholder="Search transactions" value="${spendingQuery}">
       <button id="spending-search-close" aria-label="Close search">${ICONS.close}</button>
     </div>` : ''}
-    ${pending.length ? h`<button class="mobile-account-approval spending-review-banner" id="spending-review-banner">
-      <span><strong>${pending.reduce((sum, g) => sum + g.count, 0)}</strong> to review — ${pendingPreview(pending)}</span><span aria-hidden="true">›</span>
-    </button>` : ''}
     ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
       <span><i aria-hidden="true">${ICONS.clock}</i> Upcoming scheduled</span>
       <span><strong>${scheduled.length}</strong><b class="spending-scheduled-chevron ${spendingScheduledOpen ? 'open' : ''}" aria-hidden="true">${ICONS.chevronDown}</b></span>
@@ -216,6 +213,7 @@ export function renderSpendingOverview(root) {
     ${spendingScheduledOpen ? h`<section class="spending-scheduled-panel">
       <div class="spending-scheduled-list">${scheduled.map(item => renderSchedCard(item, null))}</div>
     </section>` : ''}
+    ${reviewPill(pending)}
     ${unclearedCount ? h`<button class="spending-uncleared ${spendingOnlyUncleared ? 'active' : ''}" id="spending-uncleared">
       <span>${spendingOnlyUncleared ? 'Showing' : 'Show'} <strong>${unclearedCount}</strong> uncleared transaction${unclearedCount === 1 ? '' : 's'}</span>
       <span aria-hidden="true">›</span>
@@ -305,6 +303,33 @@ function openSpendingMore(root) {
 
 // ---------- cross-account pending review (#/review) ----------
 // "Woolworths ×6 · Shell ×2 · 3 more" — top two groups by count, ×N only for repeats
+// The entry point counts what's actually broken: a transaction with no category means money left
+// the account without any envelope being debited. Auto-suggested rows aren't broken — they're a
+// guess waiting for a yes — so they only get billing when nothing needs a category.
+// Styled on .spending-uncleared (a transient filter that disappears when you're done), not on
+// .spending-scheduled-link (a permanent feature).
+function reviewCounts(groups) {
+  let needsCategory = 0, suggested = 0;
+  for (const g of groups) {
+    if (g.categoryId == null && !g.allSplit && !g.allTransfer) needsCategory += g.count;
+    else if (g.autoCategorized) suggested += g.count;
+  }
+  return { needsCategory, suggested };
+}
+
+function reviewPill(groups) {
+  if (!groups.length) return '';
+  const { needsCategory, suggested } = reviewCounts(groups);
+  const label = needsCategory
+    ? h`Categorise <strong>${needsCategory}</strong> transaction${needsCategory === 1 ? '' : 's'}`
+    : suggested
+      ? h`Confirm <strong>${suggested}</strong> suggested`
+      : h`Review <strong>${groups.reduce((n, g) => n + g.count, 0)}</strong> transaction${groups.length === 1 ? '' : 's'}`;
+  return h`<button class="spending-uncleared spending-review-pill ${needsCategory ? 'needs' : ''}" id="spending-review-banner">
+    <span>${label}</span><span aria-hidden="true">›</span>
+  </button>`;
+}
+
 function pendingPreview(groups) {
   const top = groups.slice(0, 2).map(g => g.count > 1 ? `${g.payeeName} ×${g.count}` : g.payeeName).join(' · ');
   const more = groups.length - 2;
@@ -1694,6 +1719,7 @@ let expandedPendingGroups = new Set();
 
 function pendingCategoryLabel(g) {
   if (g.allSplit) return 'Split'; // categories live on the subtransactions — same label renderMobileRow uses
+  if (g.allTransfer) return 'Transfer'; // moving money between your own accounts needs no category
   if (g.categoryId === INFLOW) return 'Ready to Assign';
   if (g.categoryId) return categoryName(g.categoryId);
   return g.count > 1 && !g.allSameCategory ? 'Mixed categories' : 'Uncategorised';
@@ -1719,7 +1745,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
   // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
   // categories live on the subtransactions, so there is nothing to choose at the parent level.
-  const needsCategory = g.categoryId == null && !g.allSplit;
+  const needsCategory = g.categoryId == null && !g.allSplit && !g.allTransfer;
   const suggested = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);

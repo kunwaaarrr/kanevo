@@ -731,7 +731,7 @@ function pendingGroups(accountId) {
       g = {
         key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
-        autoCategorized: true, allSplit: true, memberIds: [], sampleDate: tx.date,
+        autoCategorized: true, allSplit: true, allTransfer: true, memberIds: [], sampleDate: tx.date,
       };
       groups.set(key, g);
     } else if (g.categoryId !== tx.categoryId) {
@@ -741,6 +741,7 @@ function pendingGroups(accountId) {
     if (tx.date > g.sampleDate) g.sampleDate = tx.date;
     if (!tx.autoCategorized) g.autoCategorized = false;
     if (!tx.subtransactions) g.allSplit = false;
+    if (!tx.transferAccountId) g.allTransfer = false; // a transfer between on-budget accounts has no category by design
   }
   // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
   const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);
@@ -1042,6 +1043,7 @@ export const store = {
       if (!tx || tx.subtransactions) continue; // split: categories live on the subs, tx.categoryId must stay null
       tx.categoryId = categoryId;
       delete tx.autoCategorized;
+      tx.approved = true; // choosing the category IS the review — no second confirming tap
       if (tx.payeeId) {
         const p = getPayee(tx.payeeId);
         if (p) p.lastCategoryId = categoryId;

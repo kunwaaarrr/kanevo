@@ -519,11 +519,10 @@
 /* spending's review banner: this view has no gutter of its own, so the banner brings its own
    margins — same width/margin pattern as .spending-scheduled-link below it. Declared after
    .mobile-account-approval deliberately: same specificity, later wins. */
-/* 16px below so the feed's first date header doesn't hug it (margins collapse, so this also
-   covers the case where the scheduled/uncleared rows sit in between) */
-.spending-review-banner { width: calc(100% - 28px); margin: 15px 14px 16px; }
-/* keep the summary on one line — the merchant preview used to wrap and truncate mid-name */
-.spending-review-banner > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* review entry: same muted pill as "uncleared" — both are transient states that vanish once
+   you're done, unlike the scheduled row which is a permanent feature. Sits below scheduled. */
+.spending-review-pill > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spending-review-pill.needs strong { background: var(--blue); color: var(--on-brand); }
 /* grouped pending review — one card per merchant instead of one per row */
 .pending-section { margin-top: 15px; }
 .spending-overview .pending-section { padding: 0 14px; } /* spending view has no gutter of its own */
