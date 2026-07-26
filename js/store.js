@@ -662,6 +662,7 @@ function _addTransaction(tx) {
     subtransactions: tx.subtransactions || null,
   };
   if (tx.autoCategorized) full.autoCategorized = true; // category was a guess, pending user approval
+  if (tx.suggestSource) full.suggestSource = tx.suggestSource; // payee | peer | model — drives 'Check these'
   if (full.subtransactions) full.categoryId = null;
   state.transactions.push(full);
   return full.id;
@@ -702,13 +703,16 @@ function _importTransactions(accountId, bankTxns) {
       merged++;
     } else {
       const payeeId = b.payeeName ? findOrCreatePayee(b.payeeName) : null;
-      const catId = payeeId
-        ? (getPayee(payeeId).lastCategoryId || findNormalizedMatch(b.payeeName) || suggestCategory(state, b.payeeName, b.amount, model, b.memo))
-        : null;
+      let catId = null, source = null;
+      if (payeeId) {
+        catId = getPayee(payeeId).lastCategoryId || findNormalizedMatch(b.payeeName);
+        source = catId != null ? 'payee' : null;
+        if (catId == null) { catId = suggestCategory(state, b.payeeName, b.amount, model, b.memo); source = catId != null ? 'model' : null; }
+      }
       _addTransaction({
         accountId, date: b.date, payeeId, categoryId: catId, memo: b.memo || '',
         amount: b.amount, importId: b.importId, approved: false, cleared: 'cleared',
-        autoCategorized: catId != null,
+        autoCategorized: catId != null, suggestSource: source,
       });
       inserted++;
     }
@@ -734,7 +738,7 @@ function pendingGroups(accountId) {
       g = {
         key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
-        autoCategorized: true, allSplit: true, allTransfer: true, uncategorizedCount: 0, uncategorizedIds: [], suggestedCount: 0, memberIds: [], sampleDate: tx.date,
+        autoCategorized: true, allSplit: true, allTransfer: true, uncategorizedCount: 0, uncategorizedIds: [], suggestedCount: 0, weakCount: 0, memberIds: [], sampleDate: tx.date,
       };
       groups.set(key, g);
     } else if (g.categoryId !== tx.categoryId) {
@@ -748,7 +752,10 @@ function pendingGroups(accountId) {
     // how many members genuinely lack a category. NOT the same as g.categoryId == null, which
     // only means the members disagree — a group of three differently-categorised rows is fine.
     if (tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId) { g.uncategorizedCount++; g.uncategorizedIds.push(tx.id); }
-    if (tx.categoryId != null && tx.autoCategorized) g.suggestedCount++; // how many are guesses, even if not all of them are
+    if (tx.categoryId != null && tx.autoCategorized) {
+      g.suggestedCount++; // how many are guesses, even if not all of them are
+      if (tx.suggestSource === 'model') g.weakCount++; // name-matching only — no evidence from this merchant
+    }
   }
   // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
   const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);
@@ -836,6 +843,9 @@ function buildMerchantEvidence() {
   const idx = new Map();
   for (const t of state.transactions) {
     if (t.categoryId == null || t.subtransactions || t.transferAccountId) continue;
+    // a guess the model made from the name alone is not evidence: let two such rows vote for each
+    // other and the model's opinion launders itself into "the merchant's own history"
+    if (t.autoCategorized && t.suggestSource === 'model') continue;
     const p = t.payeeId ? getPayee(t.payeeId) : null;
     if (!p) continue;
     const key = `${normalizeMerchant(p.name)}|${t.amount > 0 ? 'in' : 'out'}`;
@@ -869,10 +879,13 @@ function _resuggestPending() {
     if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
     if (payee && payee.noAutoCategory) continue; // user asked us to stop guessing for this merchant
-    const catId = (payee && payee.lastCategoryId) || (payee && findNormalizedMatch(payee.name))
-      || peerCategory(tx, evidence)
-      || suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo);
-    if (catId != null && catId !== tx.categoryId) { tx.categoryId = catId; tx.autoCategorized = true; changed++; }
+    let catId = payee && payee.lastCategoryId, source = 'payee';
+    if (catId == null && payee) { catId = findNormalizedMatch(payee.name); source = 'payee'; }
+    if (catId == null) { catId = peerCategory(tx, evidence); source = 'peer'; }
+    if (catId == null) { catId = suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo); source = 'model'; }
+    if (catId != null && (catId !== tx.categoryId || tx.suggestSource !== source)) {
+      tx.categoryId = catId; tx.autoCategorized = true; tx.suggestSource = source; changed++;
+    }
   }
   return changed;
 }

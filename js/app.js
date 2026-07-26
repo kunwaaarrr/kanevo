@@ -92,6 +92,22 @@ darkMQ.addEventListener('change', () => {
 });
 applyDisplaySettings(); // before first paint, so the shell doesn't flash the wrong theme
 
+// ---------- skeletons ----------
+// Shapes only, matched roughly to what each route is about to draw, so the swap doesn't jump.
+const skelRows = (n, cls = 'sk-row') => Array.from({ length: n }, () => `<div class="${cls}"></div>`).join('');
+function skeletonFor(name) {
+  const head = '<div class="sk-head"><div class="sk-line sk-title"></div></div>';
+  if (name === 'budget') return `<div class="sk">${head}<div class="sk-hero"></div>${skelRows(7)}</div>`;
+  if (name === 'reports' || name === 'fifty' || name === 'forecast' || name === 'what-if-v2') {
+    return `<div class="sk">${head}<div class="sk-chart"></div>${skelRows(4)}</div>`;
+  }
+  if (name === 'profile' || name === 'settings' || name === 'accounts') {
+    return `<div class="sk">${head}${skelRows(6, 'sk-row sk-row-tall')}</div>`;
+  }
+  // spending / review / account — a pill or two, then transaction cards
+  return `<div class="sk">${head}<div class="sk-pill"></div>${skelRows(5, 'sk-row sk-row-tall')}</div>`;
+}
+
 // ---------- router ----------
 const viewEl = document.getElementById('view');
 let lastRenderedHash = null;
@@ -100,11 +116,21 @@ function currentRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   return { name: parts[0] || 'budget', params: parts.slice(1) };
 }
+// store.subscribe(renderView) means any mutation re-renders. Re-suggesting *during* a render
+// therefore re-enters renderView, which re-suggests again — an infinite loop that only survived
+// because notify() swallows the stack overflow, after burning through hundreds of renders.
+// So: refresh here, before dispatching, and ignore the render our own mutation triggers.
+let refreshing = false;
 function renderView() {
+  if (refreshing) return;
   const routeKey = location.hash || '#/budget';
   const keepScroll = routeKey === lastRenderedHash;
   const previousScrollTop = viewEl.scrollTop;
   const r = currentRoute();
+  if (r.name === 'spending') { // one pass when you open Spending; Review inherits the result
+    refreshing = true;
+    try { store.resuggestPending(); } finally { refreshing = false; }
+  }
   applyDisplaySettings();
   setHideAmounts(store.state.settings.hideAmounts);
   const table = {
@@ -126,9 +152,22 @@ function renderView() {
     'what-if-v2': () => forecastView.render(viewEl, { variant: 'v2' }),
     profile:  () => profileView.render(viewEl),
   };
-  (table[r.name] || table.budget)();
-  renderSidebar(r);
-  renderTabbar(r);
+  // Skeleton first, real view next frame. Rendering is synchronous and can take tens of ms on a
+  // big budget, during which a tap looks ignored — this gives the browser a frame to paint the
+  // response. Same-route redraws skip it (they'd flash), as do views that render instantly.
+  const paint = () => {
+    (table[r.name] || table.budget)();
+    renderSidebar(r);
+    renderTabbar(r);
+  };
+  if (keepScroll) {
+    paint();
+  } else {
+    viewEl.innerHTML = skeletonFor(r.name);
+    renderSidebar(r);
+    renderTabbar(r);
+    requestAnimationFrame(() => { if (currentRoute().name === r.name) paint(); });
+  }
   lastRenderedHash = routeKey;
   if (keepScroll) {
     viewEl.scrollTop = previousScrollTop;

@@ -178,8 +178,7 @@ let spendingOnlyUncleared = false;
 let spendingScheduledOpen = false;
 let spendingQuery = '';
 
-export function renderSpendingOverview(root, { refresh = true } = {}) {
-  if (refresh) store.resuggestPending(); // opening Spending refreshes the whole queue, not just Review
+export function renderSpendingOverview(root) {
   const all = sortTxs(gatherTxs(null));
   const pending = store.pendingGroups(null);
   const scheduled = store.upcomingScheduled(null, 365);
@@ -225,24 +224,24 @@ export function renderSpendingOverview(root, { refresh = true } = {}) {
   root.querySelector('#spending-search-toggle').onclick = () => {
     spendingSearchOpen = !spendingSearchOpen;
     if (!spendingSearchOpen) spendingQuery = '';
-    renderSpendingOverview(root, { refresh: false });
+    renderSpendingOverview(root);
   };
   root.querySelector('#spending-search-close')?.addEventListener('click', () => {
-    spendingSearchOpen = false; spendingQuery = ''; renderSpendingOverview(root, { refresh: false });
+    spendingSearchOpen = false; spendingQuery = ''; renderSpendingOverview(root);
   });
   const searchInput = root.querySelector('#spending-search-input');
   if (searchInput) {
     searchInput.focus();
     searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
-    searchInput.oninput = debounce(() => { spendingQuery = searchInput.value; renderSpendingOverview(root, { refresh: false }); }, 120);
+    searchInput.oninput = debounce(() => { spendingQuery = searchInput.value; renderSpendingOverview(root); }, 120);
   }
   root.querySelector('#spending-uncleared')?.addEventListener('click', () => {
     spendingOnlyUncleared = !spendingOnlyUncleared;
-    renderSpendingOverview(root, { refresh: false });
+    renderSpendingOverview(root);
   });
   root.querySelector('#spending-scheduled-toggle')?.addEventListener('click', () => {
     spendingScheduledOpen = !spendingScheduledOpen;
-    renderSpendingOverview(root, { refresh: false });
+    renderSpendingOverview(root);
   });
   root.querySelector('#spending-more').onclick = () => openSpendingMore(root);
   root.querySelectorAll('[data-spending-tx]').forEach(row => {
@@ -251,9 +250,9 @@ export function renderSpendingOverview(root, { refresh = true } = {}) {
       if (transaction) openAddTransactionModal(transaction.accountId, transaction.id);
     };
   });
-  wireMobileApproveEdit(root, null, () => renderSpendingOverview(root, { refresh: false }));
+  wireMobileApproveEdit(root, null, () => renderSpendingOverview(root));
   root.querySelector('#spending-review-banner')?.addEventListener('click', () => { location.hash = '#/review'; });
-  wireScheduled(root, null, () => renderSpendingOverview(root, { refresh: false }));
+  wireScheduled(root, null, () => renderSpendingOverview(root));
 }
 
 function spendingFeedHtml(transactions) {
@@ -295,8 +294,8 @@ function openSpendingMore(root) {
       <button class="mobile-options-row" id="spending-more-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
-  modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root, { refresh: false }); };
-  modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root, { refresh: false }); };
+  modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
+  modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
   modal.querySelector('#spending-more-learned').onclick = () => { closeModal(); openLearnedMerchantsSheet(); };
   modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
@@ -313,19 +312,22 @@ function reviewCounts(groups) {
   const b = pendingBuckets(groups);
   return {
     needsCategory: b.needs.reduce((n, g) => n + g.uncategorizedCount, 0),
+    lowConfidence: b.weak.reduce((n, g) => n + g.count, 0),
     suggested: b.suggested.reduce((n, g) => n + g.count, 0),
   };
 }
 
 function reviewPill(groups) {
   if (!groups.length) return '';
-  const { needsCategory, suggested } = reviewCounts(groups);
+  const { needsCategory, lowConfidence, suggested } = reviewCounts(groups);
   const label = needsCategory
     ? h`Categorise <strong>${needsCategory}</strong> transaction${needsCategory === 1 ? '' : 's'}`
+    : lowConfidence
+      ? h`Check <strong>${lowConfidence}</strong> guess${lowConfidence === 1 ? '' : 'es'}`
     : suggested
       ? h`Review <strong>${suggested}</strong> suggested`
       : h`Review <strong>${groups.reduce((n, g) => n + g.count, 0)}</strong> transaction${groups.length === 1 ? '' : 's'}`;
-  return h`<button class="spending-uncleared spending-review-pill ${needsCategory ? 'needs' : ''}" id="spending-review-banner">
+  return h`<button class="spending-uncleared spending-review-pill ${needsCategory || lowConfidence ? 'needs' : ''}" id="spending-review-banner">
     <span>${label}</span><span aria-hidden="true">›</span>
   </button>`;
 }
@@ -336,8 +338,7 @@ function pendingPreview(groups) {
   return more > 0 ? `${top} · ${more} more` : top;
 }
 
-export function renderReview(root, { refresh = true } = {}) {
-  if (refresh) store.resuggestPending(); // catch anything imported before its category existed
+export function renderReview(root) {
   const pending = store.pendingGroups(null);
   root.innerHTML = h`<div class="spending-overview">
     <header class="settings-overview-head mobile-page-head">
@@ -351,7 +352,7 @@ export function renderReview(root, { refresh = true } = {}) {
     </div>`}
   </div>`;
   root.querySelector('#review-back').onclick = () => history.back();
-  wirePendingSection(root, null, pending, () => renderReview(root, { refresh: false }));
+  wirePendingSection(root, null, pending, () => renderReview(root));
 }
 
 // ---------- main render ----------
@@ -1759,6 +1760,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
   // categories live on the subtransactions, so there is nothing to choose at the parent level.
   const needsCategory = g.uncategorizedCount > 0;
+  const lowConfidence = !needsCategory && g.weakCount > 0;
   const suggested = g.suggestedCount > 0 && !g.uncategorizedCount;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
@@ -1772,7 +1774,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
             : g.allSplit || g.allTransfer
               ? h`<span class="mobile-category-pill">${label}</span>`
               : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
-          ${suggested ? raw('<span class="suggested-label">✦ suggested</span>') : ''}
+          ${suggested ? raw(lowConfidence ? '<span class="suggested-label guess">✦ guess</span>' : '<span class="suggested-label">✦ suggested</span>') : ''}
         </div>
       </div>
       <div class="pending-card-amt">
@@ -1785,7 +1787,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
     </div>
     ${expanded ? renderPendingMembers(g) : ''}
     <div class="pending-card-actions">
-      ${needsCategory
+      ${needsCategory || lowConfidence
         ? h`<button type="button" class="pending-approve-btn" data-pill-group="${g.key}">Categorise</button>`
         : h`<button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>`}
       <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>
@@ -1807,21 +1809,24 @@ function renderPendingNudge() {
 // three buckets, because each needs a different thing from you. Counts are transactions (not
 // groups) so a section header matches the number on the Spending pill exactly.
 function pendingBuckets(groups) {
-  const needs = [], suggested = [], ready = [];
+  const needs = [], weak = [], suggested = [], ready = [];
   for (const g of groups) {
     if (g.uncategorizedCount) needs.push(g);
+    // guessed purely from the merchant's name, with nothing from this merchant's own history
+    // to back it up — a starting point, not something to bulk-accept
+    else if (g.weakCount) weak.push(g);
     else if (g.suggestedCount) suggested.push(g);
     else ready.push(g);
   }
-  return { needs, suggested, ready };
+  return { needs, weak, suggested, ready };
 }
 const bucketTotal = gs => gs.reduce((n, g) => n + (g.uncategorizedCount || g.count), 0);
 
-function renderPendingBucket(title, groups, { showAccount, approveAllId } = {}) {
+function renderPendingBucket(title, groups, { showAccount, approveAllId, note } = {}) {
   if (!groups.length) return '';
   return h`<div class="pending-bucket">
     <div class="pending-bucket-head">
-      <h3>${title}<span class="pending-bucket-count">${bucketTotal(groups)}</span></h3>
+      <h3>${title}<span class="pending-bucket-count">${bucketTotal(groups)}</span>${note ? h`<small class="pending-bucket-note">${note}</small>` : ''}</h3>
       ${approveAllId ? h`<button type="button" class="pending-approve-all-btn" id="${approveAllId}">Approve all</button>` : ''}
     </div>
     <div class="pending-list">${groups.map(g => renderPendingCard(g, { showAccount }))}</div>
@@ -1831,7 +1836,7 @@ function renderPendingBucket(title, groups, { showAccount, approveAllId } = {}) 
 function renderPendingSection(groups, { showAccount = false } = {}) {
   if (!groups.length) return '';
   const noCategories = !store.state.categories.some(c => !c.hidden);
-  const { needs, suggested, ready } = pendingBuckets(groups);
+  const { needs, weak, suggested, ready } = pendingBuckets(groups);
   return h`<section class="pending-section">
     <div class="pending-section-head">
       <h2>Pending review</h2>
@@ -1841,6 +1846,7 @@ function renderPendingSection(groups, { showAccount = false } = {}) {
     </div>
     ${noCategories ? renderPendingNudge() : ''}
     ${renderPendingBucket('Needs a category', needs, { showAccount })}
+    ${renderPendingBucket('Check these', weak, { showAccount, note: '(low confidence suggestions)' })}
     ${renderPendingBucket('Suggested', suggested, { showAccount, approveAllId: 'pending-approve-suggested' })}
     ${renderPendingBucket('Ready to approve', ready, { showAccount, approveAllId: 'pending-approve-ready' })}
   </section>`;

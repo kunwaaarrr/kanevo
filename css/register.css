@@ -533,6 +533,8 @@
 .pending-bucket + .pending-bucket { margin-top: 18px; }
 .pending-bucket-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px 8px; }
 .pending-bucket-head h3 { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 750; color: var(--text-dim); }
+.pending-bucket-note { margin-left: 2px; font-size: 10px; font-weight: 500; color: var(--text-faint); }
+.suggested-label.guess { color: var(--orange); }
 .pending-bucket-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--track); color: var(--text-dim); font-size: 11px; }
 /* "Approve all" — same green as .pending-approve-btn, sized as a compact header pill */
 .pending-approve-all-btn {

@@ -383,6 +383,7 @@ export function loadTestData() {
       transferAccountId: o.transferAccountId || null, transferTxId: o.transferTxId || null,
       importId: o.importId || 'test-' + uid(), attachments: [], subtransactions: o.subtransactions || null,
       ...(o.autoCategorized ? { autoCategorized: true } : {}),
+      ...(o.suggestSource ? { suggestSource: o.suggestSource } : {}),
     });
     return s.transactions.at(-1).id;
   };
@@ -437,6 +438,30 @@ export function loadTestData() {
   const outId = uid(), inId = uid();
   tx({ id: outId, accountId: checking, date: nextDate(), amount: -50000, transferAccountId: savings, transferTxId: inId, memo: 'to savings' });
   tx({ id: inId, accountId: savings, date: nextDate(), amount: 50000, transferAccountId: checking, transferTxId: outId });
+
+  // ---- confidence cases: the same guess means different things depending on its evidence ----
+  // strong: this merchant has been taught, so the guess is really a rule
+  const pGym = payee('Anytime Fitness', cat('Fitness'));
+  tx({ accountId: checking, date: nextDate(), payeeId: pGym, categoryId: cat('Fitness'), amount: -6500, autoCategorized: true, suggestSource: 'payee' });
+  // strong: nothing taught, but this merchant's own rows agree
+  const pBaker = payee('Sourdough & Co');
+  for (const amt of [-1150, -980, -1420]) {
+    tx({ accountId: checking, date: nextDate(), payeeId: pBaker, categoryId: cat('Groceries'), amount: amt, autoCategorized: true, suggestSource: 'peer' });
+  }
+  // weak: name-matching only, no history behind it — these land in "Check these"
+  const pHardware = payee('Mitre 10 Mega');
+  for (const amt of [-4200, -1875]) {
+    tx({ accountId: checking, date: nextDate(), payeeId: pHardware, categoryId: cat('Home Maintenance'), amount: amt, autoCategorized: true, suggestSource: 'model' });
+  }
+  tx({ accountId: checking, date: nextDate(), payeeId: payee('Pharmacy 4 Less'), categoryId: cat('Medical'), amount: -3390, autoCategorized: true, suggestSource: 'model' });
+
+  // ---- rows that cannot be categorised at all, so they only ever need confirming ----
+  // (a second transfer pair, and a split whose categories live on its parts)
+  const outId2 = uid(), inId2 = uid();
+  tx({ id: outId2, accountId: visa, date: nextDate(), amount: -30000, transferAccountId: checking, transferTxId: inId2, memo: 'card payment' });
+  tx({ id: inId2, accountId: checking, date: nextDate(), amount: 30000, transferAccountId: visa, transferTxId: outId2 });
+  tx({ accountId: checking, date: nextDate(), payeeId: payee('Bunnings Trade'), amount: -9600, memo: 'garden + tools',
+       subtransactions: [{ categoryId: cat('Home Maintenance'), amount: -6000 }, { categoryId: cat('Car Maintenance'), amount: -3600 }] });
 
   // learned merchants: rules the Learned merchants sheet should list (and Auto-sort can apply)
   payee('Chemist Warehouse', cat('Medical'));

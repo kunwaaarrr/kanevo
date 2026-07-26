@@ -298,6 +298,19 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
     assert.notEqual(catA, catB, 'sanity');
   }
 
+  // a guess made from the merchant NAME alone must not become evidence for its own siblings
+  {
+    const { acc, catA } = setup();
+    const pm = payeeId('Mitre 10 Mega');
+    const a = store.addTransaction({ accountId: acc, date: '2026-07-01', payeeId: pm, categoryId: catA, amount: -4200, approved: false, autoCategorized: true, suggestSource: 'model' });
+    const b = store.addTransaction({ accountId: acc, date: '2026-07-02', payeeId: pm, categoryId: catA, amount: -1875, approved: false, autoCategorized: true, suggestSource: 'model' });
+    store.resuggestPending();
+    const rows = [a, b].map(id => store.state.transactions.find(t => t.id === id));
+    assert.ok(rows.every(r => r.suggestSource === 'model'), 'two weak guesses do not upgrade each other to peer evidence');
+    const g = store.pendingGroups(acc).find(x => x.payeeName === 'Mitre 10 Mega');
+    assert.equal(g.weakCount, 2, 'both stay low-confidence, so the group lands in "Check these"');
+  }
+
   console.log('3c. pending splits: PASS');
 }
 
