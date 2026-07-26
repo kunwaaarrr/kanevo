@@ -731,7 +731,7 @@ function pendingGroups(accountId) {
       g = {
         key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
-        autoCategorized: true, allSplit: true, allTransfer: true, memberIds: [], sampleDate: tx.date,
+        autoCategorized: true, allSplit: true, allTransfer: true, uncategorizedCount: 0, memberIds: [], sampleDate: tx.date,
       };
       groups.set(key, g);
     } else if (g.categoryId !== tx.categoryId) {
@@ -742,6 +742,9 @@ function pendingGroups(accountId) {
     if (!tx.autoCategorized) g.autoCategorized = false;
     if (!tx.subtransactions) g.allSplit = false;
     if (!tx.transferAccountId) g.allTransfer = false; // a transfer between on-budget accounts has no category by design
+    // how many members genuinely lack a category. NOT the same as g.categoryId == null, which
+    // only means the members disagree — a group of three differently-categorised rows is fine.
+    if (tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId) g.uncategorizedCount++;
   }
   // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
   const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);

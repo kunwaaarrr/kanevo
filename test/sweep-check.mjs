@@ -260,6 +260,24 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
     assert.equal(g.allTransfer, true, 'transfer group flagged allTransfer, so it is not counted as needing a category');
   }
 
+  // a group whose members sit in DIFFERENT categories is not missing anything — it must not be
+  // counted as needing a category just because there's no single one to display
+  {
+    const { acc, catA, catB } = setup();
+    const p = payeeId('Uber Eats');
+    store.addTransaction({ accountId: acc, date: '2026-05-01', payeeId: p, categoryId: catA, amount: -2450, approved: false });
+    store.addTransaction({ accountId: acc, date: '2026-05-02', payeeId: p, categoryId: catB, amount: -2450, approved: false });
+    const mixed = store.pendingGroups(acc).find(g => g.payeeName === 'Uber Eats');
+    assert.equal(mixed.categoryId, null, 'no single category to display');
+    assert.equal(mixed.uncategorizedCount, 0, 'but nothing is actually missing a category');
+
+    const p2 = payeeId('Kmart');
+    store.addTransaction({ accountId: acc, date: '2026-05-03', payeeId: p2, categoryId: null, amount: -1200, approved: false });
+    store.addTransaction({ accountId: acc, date: '2026-05-04', payeeId: p2, categoryId: catA, amount: -1300, approved: false });
+    const partial = store.pendingGroups(acc).find(g => g.payeeName === 'Kmart');
+    assert.equal(partial.uncategorizedCount, 1, 'partially categorised group counts only the row that is missing one');
+  }
+
   console.log('3c. pending splits: PASS');
 }
 

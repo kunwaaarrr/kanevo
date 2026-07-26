@@ -311,7 +311,7 @@ function openSpendingMore(root) {
 function reviewCounts(groups) {
   let needsCategory = 0, suggested = 0;
   for (const g of groups) {
-    if (g.categoryId == null && !g.allSplit && !g.allTransfer) needsCategory += g.count;
+    if (g.uncategorizedCount) needsCategory += g.uncategorizedCount;
     else if (g.autoCategorized) suggested += g.count;
   }
   return { needsCategory, suggested };
@@ -1722,7 +1722,10 @@ function pendingCategoryLabel(g) {
   if (g.allTransfer) return 'Transfer'; // moving money between your own accounts needs no category
   if (g.categoryId === INFLOW) return 'Ready to Assign';
   if (g.categoryId) return categoryName(g.categoryId);
-  return g.count > 1 && !g.allSameCategory ? 'Mixed categories' : 'Uncategorised';
+  // no single category to show: either some rows are genuinely missing one (actionable), or they
+  // simply sit in different categories (fine — nothing to fix)
+  if (g.uncategorizedCount) return g.uncategorizedCount === g.count ? 'No category' : `${g.uncategorizedCount} without a category`;
+  return 'Several categories';
 }
 
 // member mini-rows shown when a stacked (count > 1) card is expanded — date, optionally account
@@ -1745,7 +1748,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
   // uncategorised or mixed — the dashed CTA pill carries this state. Splits are excluded: their
   // categories live on the subtransactions, so there is nothing to choose at the parent level.
-  const needsCategory = g.categoryId == null && !g.allSplit && !g.allTransfer;
+  const needsCategory = g.uncategorizedCount > 0;
   const suggested = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
@@ -1754,9 +1757,11 @@ function renderPendingCard(g, { showAccount = false } = {}) {
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
         <div class="pending-card-sub">
-          ${needsCategory || g.allSplit || g.allTransfer
-            ? h`<span class="mobile-category-pill">${label}</span>`
-            : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
+          ${needsCategory
+            ? h`<span class="pill-cta">＋ ${label}</span>`
+            : g.allSplit || g.allTransfer
+              ? h`<span class="mobile-category-pill">${label}</span>`
+              : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
           ${suggested ? raw('<span class="suggested-label">✦ suggested</span>') : ''}
         </div>
       </div>
@@ -1794,13 +1799,13 @@ function renderPendingNudge() {
 function pendingBuckets(groups) {
   const needs = [], suggested = [], ready = [];
   for (const g of groups) {
-    if (g.categoryId == null && !g.allSplit && !g.allTransfer) needs.push(g);
+    if (g.uncategorizedCount) needs.push(g);
     else if (g.categoryId != null && g.autoCategorized) suggested.push(g);
     else ready.push(g);
   }
   return { needs, suggested, ready };
 }
-const bucketTotal = gs => gs.reduce((n, g) => n + g.count, 0);
+const bucketTotal = gs => gs.reduce((n, g) => n + (g.uncategorizedCount || g.count), 0);
 
 function renderPendingBucket(title, groups, { showAccount, approveAllId } = {}) {
   if (!groups.length) return '';

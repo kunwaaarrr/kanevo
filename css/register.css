@@ -368,6 +368,7 @@
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
 /* pending-card states: empty category is a call-to-action; guessed categories say so in words */
+.pill-cta { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px dashed var(--blue); color: var(--blue-dark); font-size: 11px; font-weight: 700; background: transparent; }
 .suggested-label { font-size: 11px; color: var(--link); white-space: nowrap; }
 .spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
 .spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
