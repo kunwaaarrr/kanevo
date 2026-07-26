@@ -278,6 +278,26 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
     assert.equal(partial.uncategorizedCount, 1, 'partially categorised group counts only the row that is missing one');
   }
 
+  // a merchant's own rows are evidence: an uncategorised row inherits what its siblings use
+  {
+    const { acc, catA, catB } = setup();
+    const pw = payeeId('Woolworths');
+    for (const d of ['2026-06-01', '2026-06-02', '2026-06-03']) {
+      store.addTransaction({ accountId: acc, date: d, payeeId: pw, categoryId: catA, amount: -2000, approved: false, autoCategorized: true });
+    }
+    const lonely = store.addTransaction({ accountId: acc, date: '2026-06-04', payeeId: pw, categoryId: null, amount: -1500, approved: false });
+    store.resuggestPending();
+    const after = store.state.transactions.find(t => t.id === lonely);
+    assert.equal(after.categoryId, catA, 'the odd row out inherits the category its siblings already use');
+    assert.equal(after.autoCategorized, true, 'and is flagged as a guess, not user-confirmed');
+
+    // an inflow must not inherit an expense category from the same merchant
+    const refund = store.addTransaction({ accountId: acc, date: '2026-06-05', payeeId: pw, categoryId: null, amount: 900, approved: false });
+    store.resuggestPending();
+    assert.notEqual(store.state.transactions.find(t => t.id === refund).categoryId, catA, 'inflows do not inherit an outflow category');
+    assert.notEqual(catA, catB, 'sanity');
+  }
+
   console.log('3c. pending splits: PASS');
 }
 

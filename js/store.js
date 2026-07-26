@@ -713,6 +713,9 @@ function _importTransactions(accountId, bankTxns) {
       inserted++;
     }
   }
+  // rows are categorised as they land, so an early row can't learn from a later one — a second
+  // pass lets the whole batch see itself (five Woolworths rows agreeing on one category)
+  if (inserted) _resuggestPending();
   return { inserted, merged, skipped };
 }
 
@@ -731,7 +734,7 @@ function pendingGroups(accountId) {
       g = {
         key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
-        autoCategorized: true, allSplit: true, allTransfer: true, uncategorizedCount: 0, memberIds: [], sampleDate: tx.date,
+        autoCategorized: true, allSplit: true, allTransfer: true, uncategorizedCount: 0, uncategorizedIds: [], memberIds: [], sampleDate: tx.date,
       };
       groups.set(key, g);
     } else if (g.categoryId !== tx.categoryId) {
@@ -744,7 +747,7 @@ function pendingGroups(accountId) {
     if (!tx.transferAccountId) g.allTransfer = false; // a transfer between on-budget accounts has no category by design
     // how many members genuinely lack a category. NOT the same as g.categoryId == null, which
     // only means the members disagree — a group of three differently-categorised rows is fine.
-    if (tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId) g.uncategorizedCount++;
+    if (tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId) { g.uncategorizedCount++; g.uncategorizedIds.push(tx.id); }
   }
   // attention-first: (0) no category or mixed, (1) auto-categorized guesses, (2) user-confirmed
   const tier = g => (g.categoryId == null ? 0 : g.autoCategorized ? 1 : 2);
@@ -824,15 +827,49 @@ function _reconcileAccount(accountId, actualBalanceCents) {
 
 // re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category
 // is added, or a payee's learned category changes). Shared body for the public mutation and internal callers.
+// The rows a merchant already has are usually better evidence than any model: four Woolworths
+// rows sitting in Groceries say more than a global classifier does. Confirmed rows weigh most,
+// then user-set-but-pending, then other guesses. Indexed by sign so an expense never inherits
+// a category from an inflow of the same merchant.
+function buildMerchantEvidence() {
+  const idx = new Map();
+  for (const t of state.transactions) {
+    if (t.categoryId == null || t.subtransactions || t.transferAccountId) continue;
+    const p = t.payeeId ? getPayee(t.payeeId) : null;
+    if (!p) continue;
+    const key = `${normalizeMerchant(p.name)}|${t.amount > 0 ? 'in' : 'out'}`;
+    if (!idx.has(key)) idx.set(key, []);
+    idx.get(key).push({ id: t.id, categoryId: t.categoryId, weight: t.approved ? 3 : (t.autoCategorized ? 1 : 2) });
+  }
+  return idx;
+}
+function peerCategory(tx, idx) {
+  const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
+  if (!payee) return null;
+  const peers = idx.get(`${normalizeMerchant(payee.name)}|${tx.amount > 0 ? 'in' : 'out'}`);
+  if (!peers) return null;
+  const votes = new Map();
+  for (const p of peers) {
+    if (p.id === tx.id) continue; // a guess must not vote for itself
+    votes.set(p.categoryId, (votes.get(p.categoryId) || 0) + p.weight);
+  }
+  let best = null, bestWeight = 0;
+  for (const [cid, w] of votes) if (w > bestWeight) { best = cid; bestWeight = w; }
+  return best;
+}
+
 function _resuggestPending() {
   const model = trainClassifier(state);
+  const evidence = buildMerchantEvidence();
   let changed = 0;
   for (const tx of state.transactions) {
     if (tx.approved) continue;
     if (tx.subtransactions) continue; // split: categories live on the subs, tx.categoryId must stay null
     if (tx.categoryId != null && !tx.autoCategorized) continue; // user-confirmed category, leave alone
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
+    if (payee && payee.noAutoCategory) continue; // user asked us to stop guessing for this merchant
     const catId = (payee && payee.lastCategoryId) || (payee && findNormalizedMatch(payee.name))
+      || peerCategory(tx, evidence)
       || suggestCategory(state, payee ? payee.name : '', tx.amount, model, tx.memo);
     if (catId != null && catId !== tx.categoryId) { tx.categoryId = catId; tx.autoCategorized = true; changed++; }
   }
@@ -846,6 +883,9 @@ function _setPayeeCategory(payeeId, categoryId) {
   const p = getPayee(payeeId);
   if (!p) return;
   p.lastCategoryId = categoryId ?? null;
+  // "Forget" has to mean it: without this, the merchant's own approved rows would just vote the
+  // same category straight back in via peer evidence, and the rule would look un-forgettable.
+  if (categoryId == null) p.noAutoCategory = true; else delete p.noAutoCategory;
   _resuggestPending();
 }
 

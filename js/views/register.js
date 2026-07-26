@@ -1735,8 +1735,10 @@ function renderPendingMembers(g) {
   return h`<div class="pending-card-members">${g.memberIds.map(id => {
     const tx = store.state.transactions.find(t => t.id === id);
     if (!tx) return '';
-    return h`<button type="button" class="pending-member-row" data-member-edit="${id}">
+    const missing = tx.categoryId == null && !tx.subtransactions && !tx.transferAccountId;
+    return h`<button type="button" class="pending-member-row ${missing ? 'missing-category' : ''}" data-member-edit="${id}">
       <span class="pending-member-date">${fmtDate(tx.date)}</span>
+      ${missing ? raw('<span class="pending-member-missing">no category</span>') : ''}
       ${tx.memo ? h`<span class="pending-member-memo">${tx.memo}</span>` : ''}
       <span class="pending-member-amt ${tx.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(tx.amount)}</span>
       <b class="pending-member-go" aria-hidden="true">›</b>
@@ -1758,7 +1760,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
         <div class="pending-card-payee">${g.payeeName}</div>
         <div class="pending-card-sub">
           ${needsCategory
-            ? h`<span class="pill-cta">＋ ${label}</span>`
+            ? h`<button type="button" class="pill-cta" data-show-missing="${g.key}">${label}</button>`
             : g.allSplit || g.allTransfer
               ? h`<span class="mobile-category-pill">${label}</span>`
               : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
@@ -1853,6 +1855,9 @@ function captureApproveSnapshot(memberIds) {
 // leaves them pending so the user can then Approve. (Singleton groups skip this — Edit opens the
 // full transaction editor instead.)
 function openPendingCategoryPicker(g, onDone) {
+  // only fill the gaps: on a group where some rows are already categorised, overwriting them
+  // would silently undo the user's own work
+  const targetIds = g.uncategorizedCount ? g.uncategorizedIds : g.memberIds;
   const rows = [];
   if (g.totalAmount > 0) rows.push(`<div class="txe-cat-item" data-cat="${INFLOW}"><span>Ready to Assign</span></div>`);
   for (const grp of store.state.categoryGroups.filter(x => !x.hidden)) {
@@ -1862,12 +1867,12 @@ function openPendingCategoryPicker(g, onDone) {
     for (const c of cats) rows.push(`<div class="txe-cat-item" data-cat="${c.id}"><span>${esc(c.name)}</span></div>`);
   }
   const modal = openModal(h`<h2>Categorize ${g.payeeName}</h2>
-    <p class="muted" style="margin-bottom:10px">Categorises all ${g.count} transactions and clears them from review.</p>
+    <p class="muted" style="margin-bottom:10px">Categorises ${targetIds.length === g.count ? `all ${g.count}` : `${targetIds.length} of ${g.count}`} transaction${targetIds.length === 1 ? '' : 's'} and clears them from review.</p>
     <div class="txe-list">${raw(rows.join('') || '<div class="txe-list-empty muted">No categories yet.</div>')}</div>
     <div class="modal-actions"><button class="btn secondary" id="cp-cancel">Cancel</button></div>`);
   modal.querySelector('#cp-cancel').onclick = closeModal;
   modal.querySelectorAll('[data-cat]').forEach(item => {
-    item.onclick = () => { store.categorizeGroup(g.memberIds, item.dataset.cat); closeModal(); onDone(); };
+    item.onclick = () => { store.categorizeGroup(targetIds, item.dataset.cat); closeModal(); onDone(); };
   });
 }
 
@@ -1915,6 +1920,14 @@ function wirePendingSection(root, accountId, groups, rerender) {
         const tx = store.state.transactions.find(t => t.id === g.memberIds[0]);
         openAddTransactionModal(tx ? tx.accountId : accountId, g.memberIds[0]);
       } else openPendingCategoryPicker(g, rerender);
+    };
+  });
+  root.querySelectorAll('[data-show-missing]').forEach(chip => {
+    chip.onclick = e => {
+      e.stopPropagation(); // the card body toggles too — don't let both fire
+      const key = chip.dataset.showMissing;
+      expandedPendingGroups.has(key) ? expandedPendingGroups.delete(key) : expandedPendingGroups.add(key);
+      rerender();
     };
   });
   root.querySelectorAll('[data-pill-group]').forEach(pill => {
