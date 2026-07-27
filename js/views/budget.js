@@ -1753,6 +1753,9 @@ function wireEditPlanReordering(sheet, root) {
 }
 
 function openEditPlanSheet(root, md) {
+  // A clean pass on entry (before the sheet paints, so its own re-render doesn't fight it) and
+  // again on close — categories may have been added, renamed, merged or hidden in between.
+  if (store.hasSuggestibleRows()) store.resuggestPending();
   // Rebuilding the sheet resets its scroll; carry the old position over so
   // reorders/renames/adds don't jump the user back to the top.
   const prevScroll = document.querySelector('#modal-root .edit-plan-modal')?.scrollTop ?? 0;
@@ -1817,7 +1820,7 @@ function openEditPlanSheet(root, md) {
   sheet.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
-    if (act.dataset.act === 'plan-close') closeModal();
+    if (act.dataset.act === 'plan-close') { closeModal(); if (store.hasSuggestibleRows()) store.resuggestPending(); }
     else if (act.dataset.act === 'plan-new-group') {
       openPlanEditor(root, { title: 'New category group', label: 'Group name', onSave: name => { store.addGroup(name); store.resuggestPending(); } });
     } else if (act.dataset.act === 'plan-add-cat') {

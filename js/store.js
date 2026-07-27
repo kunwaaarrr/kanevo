@@ -870,7 +870,8 @@ function peerCategory(tx, idx) {
 }
 
 function _resuggestPending() {
-  const model = trainClassifier(state);
+  // memo() lives in the mutation-invalidated cache, so this is rebuilt only when data changes
+  const model = memo('classifier', () => trainClassifier(state));
   const evidence = buildMerchantEvidence();
   let changed = 0;
   for (const tx of state.transactions) {
@@ -1112,6 +1113,14 @@ export const store = {
   }),
   // re-run auto-categorization over unapproved/uncategorized-or-still-guessed txns (e.g. after a new category is added)
   resuggestPending: mutate(_resuggestPending),
+  // is there anything a pass could even change? cheap enough to call before every navigation
+  hasSuggestibleRows() {
+    for (const tx of state.transactions) {
+      if (tx.approved || tx.subtransactions) continue;
+      if (tx.categoryId == null || tx.autoCategorized) return true;
+    }
+    return false;
+  },
 
   // scheduled
   addScheduled: mutate(s => { const full = { id: uid(), ...s }; state.scheduled.push(full); return full.id; }),

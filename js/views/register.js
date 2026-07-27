@@ -1787,7 +1787,7 @@ function renderPendingCard(g, { showAccount = false } = {}) {
     </div>
     ${expanded ? renderPendingMembers(g) : ''}
     <div class="pending-card-actions">
-      ${needsCategory || lowConfidence
+      ${needsCategory
         ? h`<button type="button" class="pending-approve-btn" data-pill-group="${g.key}">Categorise</button>`
         : h`<button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>`}
       <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>

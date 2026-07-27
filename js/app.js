@@ -93,19 +93,55 @@ darkMQ.addEventListener('change', () => {
 applyDisplaySettings(); // before first paint, so the shell doesn't flash the wrong theme
 
 // ---------- skeletons ----------
-// Shapes only, matched roughly to what each route is about to draw, so the swap doesn't jump.
-const skelRows = (n, cls = 'sk-row') => Array.from({ length: n }, () => `<div class="${cls}"></div>`).join('');
+// Shapes measured off the real views (block heights, radii and gutters), so the swap from
+// skeleton to content doesn't shift anything on screen.
+const blk = (h, r = 12, style = '') => `<div class="sk-b" style="height:${h}px;border-radius:${r}px;${style}"></div>`;
+const rep = (n, fn) => Array.from({ length: n }, (_, i) => fn(i)).join('');
+const skHead = () => `<div class="sk-pad" style="padding:14px 14px 6px">${blk(26, 8, 'width:44%')}</div>`;
+
 function skeletonFor(name) {
-  const head = '<div class="sk-head"><div class="sk-line sk-title"></div></div>';
-  if (name === 'budget') return `<div class="sk">${head}<div class="sk-hero"></div>${skelRows(7)}</div>`;
-  if (name === 'reports' || name === 'fifty' || name === 'forecast' || name === 'what-if-v2') {
-    return `<div class="sk">${head}<div class="sk-chart"></div>${skelRows(4)}</div>`;
+  switch (name) {
+    case 'budget': // title, Ready-to-Assign pill, cover banner, then group label + category rows
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px 11px">${blk(53, 999)}</div>
+        <div class="sk-pad" style="padding:0 14px 12px">${blk(50, 16)}</div>
+        ${rep(3, () => `<div class="sk-pad" style="padding:14px 14px 8px">${blk(15, 6, 'width:38%')}</div>` +
+          rep(3, () => blk(56, 0, 'margin-bottom:1px')))}</div>`;
+    case 'spending': // title, the scheduled/review/uncleared pills, then dated transaction cards
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:11px">
+          ${blk(46, 15)}${blk(48, 999)}${blk(48, 999)}</div>
+        ${rep(3, () => `<div class="sk-pad" style="padding:14px 14px 6px">${blk(13, 5, 'width:26%')}</div>` +
+          `<div class="sk-pad" style="padding:0 14px">${blk(150, 18)}</div>`)}</div>`;
+    case 'review': // back header, section heading, bucket heading, then group cards
+      return `<div class="sk"><div class="sk-pad" style="padding:14px 14px 10px;display:flex;justify-content:center">${blk(26, 8, 'width:34%')}</div>
+        <div class="sk-pad" style="padding:0 16px 10px">${blk(17, 6, 'width:42%')}</div>
+        <div class="sk-pad" style="padding:0 16px 10px">${blk(15, 6, 'width:56%')}</div>
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:13px">
+          ${rep(3, () => blk(150, 18))}</div></div>`;
+    case 'profile': // hero card, then grouped setting rows (two rows per card, one on the last)
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:12px">
+          ${blk(87, 21)}${blk(124, 19)}${blk(124, 19)}${blk(124, 19)}${blk(62, 19)}</div></div>`;
+    case 'settings':
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:10px">
+          ${rep(6, () => blk(58, 14))}</div></div>`;
+    case 'accounts':
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:12px">
+          ${blk(96, 18)}${rep(4, () => blk(74, 18))}</div></div>`;
+    case 'reports': case 'fifty': case 'forecast': case 'what-if-v2': // summary card, then link cards
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:12px">
+          ${blk(342, 20)}${blk(178, 20)}
+          <div style="display:flex;gap:12px">${blk(101, 16, 'flex:1')}${blk(101, 16, 'flex:1')}</div>
+          ${blk(168, 20)}</div></div>`;
+    default: // account detail and anything else: balance card then transaction rows
+      return `<div class="sk">${skHead()}
+        <div class="sk-pad" style="padding:0 14px;display:flex;flex-direction:column;gap:12px">
+          ${blk(120, 18)}${rep(4, () => blk(92, 16))}</div></div>`;
   }
-  if (name === 'profile' || name === 'settings' || name === 'accounts') {
-    return `<div class="sk">${head}${skelRows(6, 'sk-row sk-row-tall')}</div>`;
-  }
-  // spending / review / account — a pill or two, then transaction cards
-  return `<div class="sk">${head}<div class="sk-pill"></div>${skelRows(5, 'sk-row sk-row-tall')}</div>`;
 }
 
 // ---------- router ----------
@@ -127,7 +163,7 @@ function renderView() {
   const keepScroll = routeKey === lastRenderedHash;
   const previousScrollTop = viewEl.scrollTop;
   const r = currentRoute();
-  if (r.name === 'spending') { // one pass when you open Spending; Review inherits the result
+  if (r.name === 'spending' && store.hasSuggestibleRows()) { // Review inherits the result
     refreshing = true;
     try { store.resuggestPending(); } finally { refreshing = false; }
   }
@@ -366,7 +402,7 @@ document.querySelectorAll('[data-ico]').forEach(el => { el.innerHTML = ICONS[el.
 maybeSeed();
 // state can arrive without ever passing through the import path — a restored backup, the test
 // fixture, an older save — so make one pass at boot rather than showing rows we could have guessed
-store.resuggestPending();
+if (store.hasSuggestibleRows()) store.resuggestPending();
 store.processDueScheduled();
 store.subscribe(renderView);
 if (!location.hash) location.hash = `#/budget/${thisMonth()}`;
