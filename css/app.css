@@ -51,6 +51,8 @@
   --accounts-glyph-bg: #e5f3d8;
   --accounts-glyph-line: rgba(80,131,22,.24);
   --accounts-action-bg: #ece9df;
+  --sk-base: rgba(25,24,24,.07);   /* skeleton block — alpha so it reads on white AND cream */
+  --sk-shine: rgba(255,255,255,.5);
 
   --font: "Figtree", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --sidebar-w: 240px; /* real app default; user-resizable via the drag handle */
@@ -414,6 +416,8 @@ html, body { overflow-x: clip; }
   --accounts-intro-icon-bg: rgba(152,160,255,.16);
   --accounts-glyph-bg: #24351d;
   --accounts-glyph-line: rgba(127,194,74,.24);
+  --sk-base: rgba(255,255,255,.08);
+  --sk-shine: rgba(255,255,255,.09);
   --accounts-action-bg: #262a3a;
   /* --navy* (sidebar) intentionally unchanged — it's dark navy in both themes */
 }
@@ -531,7 +535,7 @@ html, body { overflow-x: clip; }
 /* One shimmer for the whole app; the router swaps these in while a view renders. */
 .sk { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .sk-head { padding: 6px 0 2px; }
-.sk-line, .sk-row, .sk-hero, .sk-pill, .sk-chart { background: var(--track); border-radius: 12px; position: relative; overflow: hidden; }
+.sk-line, .sk-row, .sk-hero, .sk-pill, .sk-chart { background: var(--sk-base); border-radius: 12px; position: relative; overflow: hidden; }
 .sk-title { width: 42%; height: 26px; border-radius: 8px; }
 .sk-hero { height: 74px; border-radius: 18px; }
 .sk-pill { height: 46px; border-radius: 999px; }
@@ -540,7 +544,7 @@ html, body { overflow-x: clip; }
 .sk-row-tall { height: 92px; }
 .sk-line::after, .sk-row::after, .sk-hero::after, .sk-pill::after, .sk-chart::after {
   content: ''; position: absolute; inset: 0; transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, var(--bg-alt), transparent);
+  background: linear-gradient(90deg, transparent, var(--sk-shine), transparent);
   animation: sk-sweep 1.1s infinite;
 }
 @keyframes sk-sweep { to { transform: translateX(100%); } }
