@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Kanevo Git Map</title>
+  <link rel="stylesheet" href="styles.css?v=7">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">K</span>
+      <div>
+        <strong>Kanevo Git Map</strong>
+        <span id="repoPath">Loading repository…</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="scan-status" id="scanStatus" role="status">Starting scan…</span>
+      <button class="btn ghost compact" id="toggleSummary" type="button" aria-expanded="false">Show summary</button>
+      <button class="btn ghost" id="localRefresh">↻ Update map</button>
+      <button class="btn primary" id="githubRefresh">↓ Fetch GitHub + update</button>
+    </div>
+  </header>
+
+  <main class="summary-collapsed" id="mainContent">
+    <section class="overview" aria-labelledby="overviewTitle">
+      <div>
+        <p class="eyebrow">Plain-English status</p>
+        <h1 id="overviewTitle">Making sense of your Git universe</h1>
+        <p class="lede" id="plainSummary">Scanning branches, worktrees and commits…</p>
+      </div>
+      <div class="stat-grid" id="statGrid" aria-label="Repository totals"></div>
+    </section>
+
+    <section class="workspace left-collapsed" id="workspace">
+      <aside class="left-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Places you can work</p>
+            <h2>Worktrees</h2>
+          </div>
+          <span class="count-badge" id="worktreeCount">0</span>
+        </div>
+        <p class="panel-help">A worktree is another open copy of the same project. Click one to jump to its latest commit.</p>
+        <div class="card-list" id="worktreeList"></div>
+
+        <div class="panel-head branch-head">
+          <div>
+            <p class="eyebrow">Pointers into history</p>
+            <h2>Branches</h2>
+          </div>
+          <span class="count-badge" id="branchCount">0</span>
+        </div>
+        <div class="branch-filters">
+          <button class="tiny-toggle active" data-branch-kind="local">Local</button>
+          <button class="tiny-toggle" data-branch-kind="remote">GitHub</button>
+        </div>
+        <div class="card-list branches" id="branchList"></div>
+      </aside>
+
+      <section class="graph-panel">
+        <div class="graph-toolbar">
+          <div>
+            <p class="eyebrow">Newest at the top</p>
+            <h2>Commit flow</h2>
+          </div>
+          <label>
+            History
+            <select id="historyRef" aria-label="Choose branch history">
+              <option value="--all">Everything</option>
+            </select>
+          </label>
+          <label class="search-label">
+            Find
+            <input id="commitSearch" type="search" placeholder="message, person or SHA">
+          </label>
+          <div class="map-controls" aria-label="Map controls">
+            <span class="map-hint">Drag background to pan</span>
+            <button class="btn ghost compact" id="toggleSidebar" type="button" aria-expanded="false">Show sidebar</button>
+            <button class="map-control" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+            <output class="zoom-level" id="zoomLevel" aria-live="polite">100%</output>
+            <button class="map-control" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+            <button class="btn ghost compact" id="fitGraph" type="button">Fit</button>
+            <button class="btn ghost compact" id="resetGraph" type="button">Reset</button>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot head"></i> Current HEAD</span>
+          <span><i class="dot local"></i> Local branch</span>
+          <span><i class="dot remote"></i> GitHub branch</span>
+          <span><i class="dot merge"></i> Merge commit</span>
+        </div>
+        <div class="graph-scroll" id="graphScroll">
+          <div class="graph-canvas" id="graphCanvas">
+            <div class="empty-state">Building your graph…</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="detail-panel" id="detailPanel" aria-live="polite"></aside>
+    </section>
+
+    <details class="secondary-section compare-section">
+      <summary>
+        <span><strong>Compare branches</strong><small>Preview what a merge would bring across</small></span>
+      </summary>
+      <div class="section-body compare-body">
+        <div class="compare-intro">
+          <p class="eyebrow">Safe merge planning</p>
+          <h2>Compare before you merge</h2>
+          <p>This map never merges automatically. It shows what would come across and gives you review commands to copy.</p>
+        </div>
+        <div class="compare-controls">
+          <label>Bring changes from <select id="compareSource"></select></label>
+          <span class="compare-arrow">→</span>
+          <label>Into <select id="compareTarget"></select></label>
+          <button class="btn primary" id="compareBtn">Compare branches</button>
+        </div>
+        <div class="compare-result" id="compareResult">
+          <p>Choose two local branches to see their differences.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="secondary-section github-section" id="githubSection">
+      <summary>
+        <span><strong>GitHub status</strong><small>Remote repository and recent workflows</small></span>
+      </summary>
+      <div class="section-body github-body">
+        <div>
+          <p class="eyebrow">Remote pulse</p>
+          <h2>GitHub</h2>
+        </div>
+        <div id="githubContent" class="github-content">
+          <p>Click “Fetch GitHub + update” to check the live repository and recent workflows.</p>
+        </div>
+      </div>
+    </details>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script defer src="app.js?v=7"></script>
+</body>
+</html>
